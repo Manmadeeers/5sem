@@ -1,0 +1,49 @@
+# Visual Studio temporary files
+.vs/
+*.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Bb]in/
+[Oo]bj/
+*.exe
+*.dll
+*.app
+*.pdb
+*.idb
+*.obj
+*.lib
+*.ilk
+*.log
+*.sdf
+*.opendb
+*.suo
+*.tlog
+*.ncb
+*.sbr
+*.aps
+*.pch
+*.pdb
+*.ipch
+*.aps
+*.cache
+*.msm
+*.manifest
+
+# C++ specific
+*.o
+*.d
+
+# C# specific
+*.csproj.user
+*.sln.ide
+
+# NuGet Packages
+*.nupkg
+packages/
+
+# OneDrive files
+OneDriveTemp/
