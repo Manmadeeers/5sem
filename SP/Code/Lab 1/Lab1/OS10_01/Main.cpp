@@ -17,12 +17,12 @@ int main() {
 		}
 
 
-		if (HT::Close(ht)) {
+		/*if (HT::Close(ht)) {
 			cout << "--Closure Succesfull" << endl;
 		}
 		else {
 			cout << "--Closure Failed" << endl;
-		}
+		}*/
 
 
 	}
