@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>xmlHTTPRequest</title>
+</head>
+<body>
+    <h1>User Data</h1>
+    <button id="fetch-button">Fetch user data</button>
+    <div id="user-data">
+
+    </div>
+</body>
+<script>
+    document.getElementById('fetch-button').addEventListener('click',function(){
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET','http://localhost:5000/api/name',true);
+        xhr.onreadystatechange = function(){
+            if(xhr.readyState===4&&xhr.status===200){
+                document.getElementById('user-data').innerText = xhr.responseText;
+            }
+        }
+        xhr.send();
+    })
+</script>
+</html>

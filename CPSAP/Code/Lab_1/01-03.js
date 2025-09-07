@@ -3,7 +3,7 @@ var http = require('http');
 let hMapper = (r)=>{
     let rc = '';
     for(key in r.headers){
-        rc+='<h3>'+key+':'+r.headers[key]+'</h3>';
+        rc+='<h3>'+key+':'+r.headers[key]+'</h3>'+'---';
     }
     return rc;
 }
@@ -18,7 +18,7 @@ http.createServer(function(request,response){
         '<body>'+
         '<h1>Request Structure</h1>'+
         '<h2>'+
-        'Method: '+request.method+
+        'Method: '+request.method+ 
         '</h2>'+
         '<h2>'+
         'URI: '+request.url+

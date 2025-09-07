@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JQuery</title>
+</head>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"
+    integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous">
+</script>
+
+<body>
+    <h1>Fetch user data via JQuery</h1>
+    <button id="fetch-button">Fetch user data</button>
+    <div id="user-data"></div>
+</body>
+
+<script>
+    $(document).ready(function(){
+        $('#fetch-button').click(function(){
+            $.ajax({
+                url:"http://localhost:5000/api/name",
+                method:'GET',
+                success:function(data){
+                    $('#user-data').text(data);
+                },
+                error:function(){
+                    console.log("Error Occured");
+                }
+            })
+        })
+    })
+</script>
+
+</html>
