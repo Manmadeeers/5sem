@@ -1,0 +1,284 @@
+
+Активные подключения
+
+  Имя    Локальный адрес        Внешний адрес          Состояние
+  TCP    0.0.0.0:135            genuine:0              LISTENING
+  RpcSs
+ [svchost.exe]
+  TCP    0.0.0.0:445            genuine:0              LISTENING
+ Не удается получить сведения о владельце
+  TCP    0.0.0.0:2179           genuine:0              LISTENING
+ [vmms.exe]
+  TCP    0.0.0.0:2382           genuine:0              LISTENING
+ [sqlbrowser.exe]
+  TCP    0.0.0.0:5040           genuine:0              LISTENING
+  CDPSvc
+ [svchost.exe]
+  TCP    0.0.0.0:5357           genuine:0              LISTENING
+ Не удается получить сведения о владельце
+  TCP    0.0.0.0:7070           genuine:0              LISTENING
+ [AnyDesk.exe]
+  TCP    0.0.0.0:8391           genuine:0              LISTENING
+ Не удается получить сведения о владельце
+  TCP    0.0.0.0:49664          genuine:0              LISTENING
+ [lsass.exe]
+  TCP    0.0.0.0:49665          genuine:0              LISTENING
+ Не удается получить сведения о владельце
+  TCP    0.0.0.0:49666          genuine:0              LISTENING
+  EventLog
+ [svchost.exe]
+  TCP    0.0.0.0:49667          genuine:0              LISTENING
+  Schedule
+ [svchost.exe]
+  TCP    0.0.0.0:49668          genuine:0              LISTENING
+ [spoolsv.exe]
+  TCP    0.0.0.0:52311          genuine:0              LISTENING
+ Не удается получить сведения о владельце
+  TCP    0.0.0.0:58837          genuine:0              LISTENING
+  PolicyAgent
+ [svchost.exe]
+  TCP    127.0.0.1:55562        kubernetes:55563       ESTABLISHED
+ [WUDFHost.exe]
+  TCP    127.0.0.1:55563        kubernetes:55562       ESTABLISHED
+ [WUDFHost.exe]
+  TCP    127.0.0.1:58616        kubernetes:58617       ESTABLISHED
+ [firefox.exe]
+  TCP    127.0.0.1:58617        kubernetes:58616       ESTABLISHED
+ [firefox.exe]
+  TCP    127.0.0.1:58618        kubernetes:58619       ESTABLISHED
+ [firefox.exe]
+  TCP    127.0.0.1:58619        kubernetes:58618       ESTABLISHED
+ [firefox.exe]
+  TCP    172.29.176.1:139       genuine:0              LISTENING
+ Не удается получить сведения о владельце
+  TCP    192.168.0.113:139      genuine:0              LISTENING
+ Не удается получить сведения о владельце
+  TCP    192.168.0.113:49408    98.66.133.184:https    ESTABLISHED
+  WpnService
+ [svchost.exe]
+  TCP    192.168.0.113:58433    132.196.225.214:https  CLOSE_WAIT
+ [Notepads.exe]
+  TCP    192.168.0.113:58434    132.196.225.214:https  CLOSE_WAIT
+ [Notepads.exe]
+  TCP    192.168.0.113:58656    server-18-66-147-111:https  ESTABLISHED
+ [firefox.exe]
+  TCP    192.168.0.113:58660    server-18-66-147-111:https  ESTABLISHED
+ [firefox.exe]
+  TCP    192.168.0.113:59277    146.75.117.91:https    ESTABLISHED
+ [firefox.exe]
+  TCP    192.168.0.113:59342    104.26.12.192:https    ESTABLISHED
+ [firefox.exe]
+  TCP    192.168.0.113:59520    149.154.167.41:https   ESTABLISHED
+ [Telegram.exe]
+  TCP    192.168.0.113:60226    13.107.253.254:https   CLOSE_WAIT
+ [SearchApp.exe]
+  TCP    192.168.0.113:60285    lb-140-82-112-25-iad:https  ESTABLISHED
+ [firefox.exe]
+  TCP    192.168.0.113:60738    13.107.253.45:https    CLOSE_WAIT
+ [SearchApp.exe]
+  TCP    192.168.0.113:61199    a95-101-61-217:https   CLOSE_WAIT
+ [SearchApp.exe]
+  TCP    192.168.0.113:61213    13.107.253.45:https    CLOSE_WAIT
+ [SearchApp.exe]
+  TCP    192.168.0.113:61339    146.75.117.91:https    ESTABLISHED
+ [firefox.exe]
+  TCP    192.168.0.113:61449    server-18-172-112-15:https  ESTABLISHED
+ [firefox.exe]
+  TCP    192.168.0.113:61452    93:https               ESTABLISHED
+ [firefox.exe]
+  TCP    192.168.0.113:61453    93:https               ESTABLISHED
+ [firefox.exe]
+  TCP    192.168.0.113:61454    146.75.117.91:https    ESTABLISHED
+ [firefox.exe]
+  TCP    192.168.0.113:61474    leased-line-185-61-104-70:https  SYN_SENT
+ [firefox.exe]
+  TCP    192.168.0.113:61475    leased-line-185-61-104-70:https  SYN_SENT
+ [firefox.exe]
+  TCP    192.168.0.113:62718    relay-d21f7624:https   ESTABLISHED
+ [AnyDesk.exe]
+  TCP    192.168.56.1:139       genuine:0              LISTENING
+ Не удается получить сведения о владельце
+  TCP    [::]:135               DESKTOP-I:0            LISTENING
+  RpcSs
+ [svchost.exe]
+  TCP    [::]:445               DESKTOP-I:0            LISTENING
+ Не удается получить сведения о владельце
+  TCP    [::]:2179              DESKTOP-I:0            LISTENING
+ [vmms.exe]
+  TCP    [::]:2382              DESKTOP-I:0            LISTENING
+ [sqlbrowser.exe]
+  TCP    [::]:5357              DESKTOP-I:0            LISTENING
+ Не удается получить сведения о владельце
+  TCP    [::]:7070              DESKTOP-I:0            LISTENING
+ [AnyDesk.exe]
+  TCP    [::]:8391              DESKTOP-I:0            LISTENING
+ Не удается получить сведения о владельце
+  TCP    [::]:49664             DESKTOP-I:0            LISTENING
+ [lsass.exe]
+  TCP    [::]:49665             DESKTOP-I:0            LISTENING
+ Не удается получить сведения о владельце
+  TCP    [::]:49666             DESKTOP-I:0            LISTENING
+  EventLog
+ [svchost.exe]
+  TCP    [::]:49667             DESKTOP-I:0            LISTENING
+  Schedule
+ [svchost.exe]
+  TCP    [::]:49668             DESKTOP-I:0            LISTENING
+ [spoolsv.exe]
+  TCP    [::]:52311             DESKTOP-I:0            LISTENING
+ Не удается получить сведения о владельце
+  TCP    [::]:58837             DESKTOP-I:0            LISTENING
+  PolicyAgent
+ [svchost.exe]
+  TCP    [::1]:49669            DESKTOP-I:0            LISTENING
+ [jhi_service.exe]
+  TCP    [fe80::68fe:70e8:e196:cfdf%10]:8391  DESKTOP-I:58581        ESTABLISHED
+ Не удается получить сведения о владельце
+  TCP    [fe80::68fe:70e8:e196:cfdf%10]:58581  DESKTOP-I:8391         ESTABLISHED
+ [Microsoft.SqlServer.IntegrationServices.WorkerAgentServiceHost.exe]
+  UDP    0.0.0.0:53             *:*                    
+  SharedAccess
+ [svchost.exe]
+  UDP    0.0.0.0:500            *:*                    
+  IKEEXT
+ [svchost.exe]
+  UDP    0.0.0.0:1434           *:*                    
+ [sqlbrowser.exe]
+  UDP    0.0.0.0:3702           *:*                    
+  FDResPub
+ [svchost.exe]
+  UDP    0.0.0.0:3702           *:*                    
+ [dashost.exe]
+  UDP    0.0.0.0:3702           *:*                    
+ [dashost.exe]
+  UDP    0.0.0.0:3702           *:*                    
+  FDResPub
+ [svchost.exe]
+  UDP    0.0.0.0:4500           *:*                    
+  IKEEXT
+ [svchost.exe]
+  UDP    0.0.0.0:5050           *:*                    
+  CDPSvc
+ [svchost.exe]
+  UDP    0.0.0.0:5353           *:*                    
+  Dnscache
+ [svchost.exe]
+  UDP    0.0.0.0:5355           *:*                    
+  Dnscache
+ [svchost.exe]
+  UDP    0.0.0.0:50001          *:*                    
+ [AnyDesk.exe]
+  UDP    0.0.0.0:54772          *:*                    
+  FDResPub
+ [svchost.exe]
+  UDP    0.0.0.0:54806          *:*                    
+ [dashost.exe]
+  UDP    0.0.0.0:57115          *:*                    
+  SharedAccess
+ [svchost.exe]
+  UDP    0.0.0.0:57116          *:*                    
+  SharedAccess
+ [svchost.exe]
+  UDP    0.0.0.0:59381          *:*                    
+ [firefox.exe]
+  UDP    127.0.0.1:1900         *:*                    
+  SSDPSRV
+ [svchost.exe]
+  UDP    127.0.0.1:49800        *:*                    
+  SSDPSRV
+ [svchost.exe]
+  UDP    127.0.0.1:53479        *:*                    
+  iphlpsvc
+ [svchost.exe]
+  UDP    172.29.176.1:67        *:*                    
+  SharedAccess
+ [svchost.exe]
+  UDP    172.29.176.1:68        *:*                    
+  SharedAccess
+ [svchost.exe]
+  UDP    172.29.176.1:137       *:*                    
+ Не удается получить сведения о владельце
+  UDP    172.29.176.1:138       *:*                    
+ Не удается получить сведения о владельце
+  UDP    172.29.176.1:1900      *:*                    
+  SSDPSRV
+ [svchost.exe]
+  UDP    172.29.176.1:49797     *:*                    
+  SSDPSRV
+ [svchost.exe]
+  UDP    192.168.0.113:137      *:*                    
+ Не удается получить сведения о владельце
+  UDP    192.168.0.113:138      *:*                    
+ Не удается получить сведения о владельце
+  UDP    192.168.0.113:1900     *:*                    
+  SSDPSRV
+ [svchost.exe]
+  UDP    192.168.0.113:49799    *:*                    
+  SSDPSRV
+ [svchost.exe]
+  UDP    192.168.56.1:137       *:*                    
+ Не удается получить сведения о владельце
+  UDP    192.168.56.1:138       *:*                    
+ Не удается получить сведения о владельце
+  UDP    192.168.56.1:1900      *:*                    
+  SSDPSRV
+ [svchost.exe]
+  UDP    192.168.56.1:49798     *:*                    
+  SSDPSRV
+ [svchost.exe]
+  UDP    [::]:500               *:*                    
+  IKEEXT
+ [svchost.exe]
+  UDP    [::]:1434              *:*                    
+ [sqlbrowser.exe]
+  UDP    [::]:3702              *:*                    
+ [dashost.exe]
+  UDP    [::]:3702              *:*                    
+ [dashost.exe]
+  UDP    [::]:3702              *:*                    
+  FDResPub
+ [svchost.exe]
+  UDP    [::]:3702              *:*                    
+  FDResPub
+ [svchost.exe]
+  UDP    [::]:4500              *:*                    
+  IKEEXT
+ [svchost.exe]
+  UDP    [::]:5353              *:*                    
+  Dnscache
+ [svchost.exe]
+  UDP    [::]:5355              *:*                    
+  Dnscache
+ [svchost.exe]
+  UDP    [::]:54773             *:*                    
+  FDResPub
+ [svchost.exe]
+  UDP    [::]:54807             *:*                    
+ [dashost.exe]
+  UDP    [::]:57117             *:*                    
+  SharedAccess
+ [svchost.exe]
+  UDP    [::1]:1900             *:*                    
+  SSDPSRV
+ [svchost.exe]
+  UDP    [::1]:49796            *:*                    
+  SSDPSRV
+ [svchost.exe]
+  UDP    [fe80::68fe:70e8:e196:cfdf%10]:1900  *:*                    
+  SSDPSRV
+ [svchost.exe]
+  UDP    [fe80::68fe:70e8:e196:cfdf%10]:49795  *:*                    
+  SSDPSRV
+ [svchost.exe]
+  UDP    [fe80::7488:8af4:474e:e877%43]:1900  *:*                    
+  SSDPSRV
+ [svchost.exe]
+  UDP    [fe80::7488:8af4:474e:e877%43]:49793  *:*                    
+  SSDPSRV
+ [svchost.exe]
+  UDP    [fe80::9eb8:4a5c:b5e:4d07%5]:1900  *:*                    
+  SSDPSRV
+ [svchost.exe]
+  UDP    [fe80::9eb8:4a5c:b5e:4d07%5]:49794  *:*                    
+  SSDPSRV
+ [svchost.exe]
