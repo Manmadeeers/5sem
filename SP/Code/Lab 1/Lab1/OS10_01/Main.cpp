@@ -1,6 +1,6 @@
 #include "OS10_1.h"
 #include <iostream>
-
+#define VAULT_PATH "C:\\Users\\Manmade\\Desktop\\5sem\\SP\\Code\\Lab 1\\HTSpace.ht"
 using namespace std;
 
 
@@ -16,13 +16,12 @@ int main() {
 			cout << "--Creation Failed" << endl;
 		}
 
-		if (HT::Insert(ht, new HT::Element("TestKey",8,"TestPayload",12))) {
-			std::cout << "--Insertion Successful" << std::endl;
-		}
-		else {
-			std::cout << "--Insertion Failed" << std::endl;
-		}
-
+		//if (HT::Open("C:\\Users\\Manmade\\Desktop\\5sem\\SP\\Code\\Lab 1\\HTSpace.ht")) {
+		//	std::cout << "Opened Successfully at " << VAULT_PATH << std::endl;
+		//}
+		//else {
+		//	std::cout << "Failed to open" << std::endl;
+		//}
 	}
 	catch (char* msg) {
 		cout << msg << endl;

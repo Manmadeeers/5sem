@@ -39,7 +39,21 @@ namespace HT {
 		if (File == INVALID_HANDLE_VALUE) {
 
 			snprintf(LastErrorMessage, sizeof(LastErrorMessage), "Failed to create file.");
+            throw new exception("FUCK file");
 		}
+
+        FileMapping = CreateFileMappingA(this->FileName, NULL, PAGE_READWRITE, 0, 0, NULL);
+
+        if (FileMapping == INVALID_HANDLE_VALUE) {
+            snprintf(LastErrorMessage, sizeof(LastErrorMessage), "Failed to create file.");
+            throw new exception("FUCK file mapping");
+        }
+
+        Addr = MapViewOfFile(this->FileName, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+        if (Addr == INVALID_HANDLE_VALUE) {
+            snprintf(LastErrorMessage, sizeof(LastErrorMessage), "Failed to create file.");
+            throw new exception("FUCK map of view ");
+        }
 
 	}
 
@@ -61,112 +75,81 @@ namespace HT {
 		return handle;
 	}
 
-	HTHANDLE* Open(const char FileName[512]) {
-		std::lock_guard<std::mutex>lock(ht_mutex);
-		HTHANDLE* handle = new HTHANDLE();
-		handle->File = CreateFileA(FileName, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
-		if (handle->File == INVALID_HANDLE_VALUE) {
-			snprintf(handle->LastErrorMessage, sizeof(handle->LastErrorMessage), "Failed to open a file");
-			delete handle;
-			return nullptr;
-		}
+    BOOL Insert(const HTHANDLE* hthandle, const Element* element) {
+        std::lock_guard<std::mutex>lock(ht_mutex);
 
-		handle->FileMapping = CreateFileMapping(handle->File, NULL, PAGE_READWRITE, 0, handle->Capacity * sizeof(Element), NULL);
-
-		if (!handle->FileMapping) {
-			snprintf(handle->LastErrorMessage, sizeof(handle->LastErrorMessage), "Failed to create file mapping");
-			CloseHandle(handle->File);
-			delete handle;
-			return nullptr;
-;		}
-
-		handle->Addr = MapViewOfFile(handle->FileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
-		if (!handle->Addr) {
-			snprintf(handle->LastErrorMessage, sizeof(handle->LastErrorMessage), "Failed to map view of file");
-			CloseHandle(handle->FileMapping);
-			CloseHandle(handle->File);
-			delete handle;
-			return nullptr;
-		}
-
-		return handle;
+        if (!hthandle || !element || element->keylength > hthandle->MaxKeyLength || element->payloadlength > hthandle->MaxPayloadLength) {
+            std::cout << "Failed to insert an element" << std::endl;
+            return FALSE;
+        }
 
 
-	}
+    }
 
-	BOOL Snap(const HTHANDLE* hthandle) {
-		std::lock_guard<std::mutex> lock(ht_mutex);
+    //DOES NOT WORK 
+    //FIX REQUIRED  
+    HTHANDLE* Open(const char FileName[512]) {
+        std::lock_guard<std::mutex> lock(ht_mutex);
 
-		//TODO:implement
-		return TRUE;
+        HTHANDLE* handle = new HTHANDLE();
+        strncpy_s(handle->FileName, FileName, sizeof(handle->FileName));
 
+        handle->File = CreateFileA(
+            handle->FileName,
+            GENERIC_READ | GENERIC_WRITE,
+            0, // No sharing for this file
+            NULL, // Set default security attributes
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            NULL
+        );
 
-	}
+        if (handle->File == INVALID_HANDLE_VALUE) {
+            snprintf(handle->LastErrorMessage, sizeof(handle->LastErrorMessage),
+                "Failed to open file: %s. Error code: %lu",
+                FileName);
+            delete handle;
+            return nullptr;
+        }
 
-	BOOL Close(const HTHANDLE* hthandle) {
-		std::lock_guard<std::mutex> lock(ht_mutex);
-		UnmapViewOfFile(hthandle->Addr);
-		CloseHandle(hthandle->FileMapping);
-		CloseHandle(hthandle->File);
-		return TRUE;
-	}
+        handle->FileMapping = CreateFileMappingA(
+            handle->File,
+            NULL, // Default security
+            PAGE_READWRITE,
+            0,
+            0,
+            NULL
+        );
 
-	BOOL Insert(const HTHANDLE* hthandle, const Element* element) {
-		std::lock_guard<std::mutex> lock(ht_mutex);
+        if (handle->FileMapping == NULL) {
+            snprintf(handle->LastErrorMessage, sizeof(handle->LastErrorMessage),
+                "Failed to create file mapping: %s",
+                FileName);
+            CloseHandle(handle->File);
+            delete handle;
+            return nullptr;
+        }
 
-		int index = std::hash<std::string>{}(std::string(static_cast<const char*>(element->key), element->keylength)) % hthandle->Capacity;
+        handle->Addr = MapViewOfFile(
+            handle->FileMapping,
+            FILE_MAP_ALL_ACCESS,
+            0, // Offset
+            0, // Offset
+            0  // Enable entire file usage
+        );
 
+        if (handle->Addr == NULL) {
+            snprintf(handle->LastErrorMessage, sizeof(handle->LastErrorMessage),
+                "Failed to map view of file: %s",
+                FileName);
+            CloseHandle(handle->FileMapping);
+            CloseHandle(handle->File);
+            delete handle;
+            return nullptr;
+        }
 
-		for (int i = 0; i < hthandle->Capacity; ++i) {
-
-			int probeIndex = (index + i) % hthandle->Capacity;
-
-			Element* slot = reinterpret_cast<Element*>(
-
-				static_cast<char*>(hthandle->Addr) + probeIndex * sizeof(Element));
-
-			if (slot->key == nullptr) {
-
-				memcpy(slot, element, sizeof(Element));
-
-				return TRUE;
-
-			}
-
-		}
-
-		snprintf(const_cast<char*>(hthandle->LastErrorMessage), sizeof(hthandle->LastErrorMessage), "HT storage is full.");
-
-		return FALSE;
-	}
-
-	BOOL Delete(const HTHANDLE* hthandle, const Element* element) {
-		std::lock_guard<std::mutex> lock(ht_mutex);
-		//TODO:implement
-		return true;
-	}
-
-	Element* Get(const HTHANDLE* hthandle, const Element* element) {
-		std::lock_guard<std::mutex> lock(ht_mutex);
-		//TODO:implement;
-
-		return nullptr;//to be changed to a real element that should be returned
-	}
-
-	BOOL Update(const HTHANDLE* hthandle, const Element* oldelement, const void* newpayload, int newpayloadlength) {
-		std::lock_guard<std::mutex> lock(ht_mutex);
-		//TODO:implement
-
-		return TRUE;
-	}
-
-	char* GetLastError(HTHANDLE*ht) {
-		std::lock_guard<std::mutex> lock(ht_mutex);
-		return ht->LastErrorMessage;
-	}
-
-	void print(const Element* element) {
-		std::cout << "Key: " << static_cast<const char*>(element->key) << ", Payload: " << static_cast<const char*>(element->payload) << std::endl;
-	}
+        return handle;
+    }//does 
+	
 };
