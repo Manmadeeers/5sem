@@ -10,20 +10,18 @@ int main() {
 	try {
 		ht = HT::Create(1000, 3, 10, 256, "C:\\Users\\Manmade\\Desktop\\5sem\\SP\\Code\\Lab 1\\HTSpace.ht");
 		if (ht) {
-			cout << "--Creation Succesfull" << endl;
+			cout << "--Creation Successful" << endl;
 		}
 		else {
 			cout << "--Creation Failed" << endl;
 		}
 
-
-		/*if (HT::Close(ht)) {
-			cout << "--Closure Succesfull" << endl;
+		if (HT::Insert(ht, new HT::Element("TestKey",8,"TestPayload",12))) {
+			std::cout << "--Insertion Successful" << std::endl;
 		}
 		else {
-			cout << "--Closure Failed" << endl;
-		}*/
-
+			std::cout << "--Insertion Failed" << std::endl;
+		}
 
 	}
 	catch (char* msg) {
