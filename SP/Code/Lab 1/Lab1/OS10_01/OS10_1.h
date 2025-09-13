@@ -16,13 +16,14 @@ namespace HT    // HT API
 	//          Close  - выполнить Snap и закрыть HT-хранилище для использования
 	//          GetLastError - получить сообщение о последней ошибке
 
+	
 
 	struct HTHANDLE    // блок управления HT
 	{
 		HTHANDLE();
 		HTHANDLE(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char FileName[512]);
 		int     Capacity;               // емкость хранилища в количестве элементов 
-		int     SecSnapshotInterval;    // переодичность сохранения в сек. 
+		int     SecSnapshotInterval;    // периодичность сохранения в сек. 
 		int     MaxKeyLength;           // максимальная длина ключа
 		int     MaxPayloadLength;       // максимальная длина данных
 		char    FileName[512];          // имя файла 
@@ -30,7 +31,8 @@ namespace HT    // HT API
 		HANDLE  FileMapping;            // Mapping File HANDLE != 0, если mapping создан  
 		LPVOID  Addr;                   // Addr != NULL, если mapview выполнен  
 		char    LastErrorMessage[512];  // сообщение об последней ошибке или 0x00  
-		time_t  lastsnaptime;           // дата последнего snap'a (time())  
+		time_t  lastsnaptime;			// дата последнего snap'a (time())  
+		int CurrentElements;            //Added: the number of elements in a storage
 	};
 
 	struct Element   // элемент 
@@ -73,7 +75,7 @@ namespace HT    // HT API
 
 	BOOL Insert      // добавить элемент в хранилище
 	(
-		const HTHANDLE* hthandle,            // управление HT
+		 HTHANDLE* hthandle,            // управление HT
 		const Element* element              // элемент
 	);	//  == TRUE успешное завершение 
 

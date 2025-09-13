@@ -11,6 +11,37 @@ namespace HT {
 
 	std::mutex ht_mutex;
 
+    //default constructor
+    Element::Element() :
+        key(nullptr),
+        keylength(0),
+        payload(nullptr),
+        payloadlength(0){}
+
+    //for Get operation
+    Element::Element(const void*key, int keylength):
+        key(key),
+        keylength(keylength),
+        payload(nullptr),
+        payloadlength(0){}
+
+    //for Insert operation
+    Element::Element(const void* key, int keylength, const void* payload, int  payloadlength):
+        key(key),
+        keylength(keylength),
+        payload(payload),
+        payloadlength(payloadlength){}
+
+    //for Update operation
+    Element::Element(Element* oldelement, const void* newpayload, int  newpayloadlength):
+        key(oldelement->key),
+        keylength(oldelement->keylength),
+        payload(newpayload),
+        payloadlength(newpayloadlength){ }
+
+
+
+
     HTHANDLE::HTHANDLE() :
         Capacity(0),
         SecSnapshotInterval(0),
@@ -19,7 +50,8 @@ namespace HT {
         File(NULL),
         FileMapping(NULL),
         Addr(NULL),
-        lastsnaptime(0)
+        lastsnaptime(0),
+        CurrentElements(0)
     {
         ZeroMemory(LastErrorMessage, sizeof(LastErrorMessage));
 	}
@@ -29,7 +61,7 @@ namespace HT {
 		: Capacity(Capacity), SecSnapshotInterval(SecSnapshotInterval),
 
 		MaxKeyLength(MaxKeyLength), MaxPayloadLength(MaxPayloadLength), lastsnaptime(0),
-        File(NULL),FileMapping(NULL),Addr(NULL)
+        File(NULL),FileMapping(NULL),Addr(NULL),CurrentElements(0)
     {
 
         strcpy_s(this->FileName, 512, FileName);
@@ -38,22 +70,12 @@ namespace HT {
 
 	}
 
-	Element::Element() :
-		key(nullptr),
-		keylength(0),
-		payload(nullptr),
-		payloadlength(0) {}
-
-	Element::Element(const void* key, int keylength): key(key),keylength(keylength){}
-
-	Element::Element(const void* key, int keylength, const void* payload, int  payloadlength):
-		key(key),keylength(keylength),payload(payload),payloadlength(payloadlength){}
-
 	HTHANDLE* Create(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char FileName[512]) {//should return NULL if smth went wrong
+
         HTHANDLE* ht = new HTHANDLE(Capacity,SecSnapshotInterval,MaxKeyLength,MaxPayloadLength,FileName);
 
         ht->File = CreateFileA(
-            "HTStorage.ht",//file name
+            FileName,//file name
             GENERIC_READ | GENERIC_WRITE,//desired access
             FILE_SHARE_READ | FILE_SHARE_WRITE,//share mode(for other processes)
             NULL,//security attributes
@@ -68,16 +90,18 @@ namespace HT {
             return NULL;
         }
         else {
-            cout << "--Creation Successful(Create)--" << endl;
+            cout << "--File Creation Successful(Create)--" << endl;
         }
 
+        //DOESN'T WORK
         ht->FileMapping = CreateFileMappingA(
             ht->File,//handle to a file for which a FileMapping is being created
             NULL,//security descriptor pointer. in that case NULL represents a default security descriptor
             PAGE_READWRITE,//protection for the mapping. now file is allowed to be read and written to
             0,//max mapping size
             0,//min mapping size(both max and min values are 0 so the max and min file size is decided by the actual file size)
-            "SharedHTMapping"//named mapping. that means other processes can access the file(if NULL - they can not)
+           "SharedHTMappingTest"//named mapping. that means other processes can access the file(if NULL - they can not)
+            
         );
         if (ht->FileMapping == NULL) {
             cout << "--File Mapping Creation Failed(Create)--" << endl;
@@ -108,7 +132,7 @@ namespace HT {
 	}
 
     //the only parameter difference here is file open mode in CreateFileA function. the rest is identical
-    HTHANDLE* Open(const char FileName[512]) {
+    HTHANDLE* Open(const char FileName[512]) {//returns NULL if something went wrong
         HTHANDLE* ht = new HTHANDLE();
         ht->File = CreateFileA(
             FileName,
@@ -176,9 +200,9 @@ namespace HT {
         HANDLE htSnapshotFile = CreateFileA(
             SnapshotFileName,
             GENERIC_READ|GENERIC_WRITE,
-            0,//sharing mode: here sharing is not alowed
+            0,//sharing mode: here sharing is not allowed
             NULL,
-            CREATE_ALWAYS,//create a new file or rewrite the content in already exisitng file. needed cause' we can have just one snapshot at a time
+            CREATE_ALWAYS,//create a new file or rewrite the content in already existing file. needed cause' we can have just one snapshot at a time
             FILE_ATTRIBUTE_NORMAL,
             NULL
         );
@@ -195,13 +219,13 @@ namespace HT {
 
         DWORD bytesWritten;
 
-        //need to clarify the meaning of the parametres and the way this function works
+      
         BOOL writeResult = WriteFile(
-            htSnapshotFile,
-            hthandle->Addr,
-            dataSize,
-            &bytesWritten,
-            NULL
+            htSnapshotFile,//handle to an opened file (must be opened with generic_read/generic_write or both)
+            hthandle->Addr,//pointer to the buffer containing data to write
+            dataSize,//number of bytes to write
+            &bytesWritten,//number of bytes written
+            NULL//null if the operation is asynchronous
         );
 
         if (!writeResult || bytesWritten != dataSize) {
@@ -212,19 +236,89 @@ namespace HT {
         }
         else {
             cout << "--Snapshot Taken Successful(Snap)--" << endl;
+            CloseHandle(htSnapshotFile);
+            return TRUE;
         }
 
     }
 
-    BOOL Insert(const HTHANDLE* hthandle, const Element* element) {
-        std::lock_guard<std::mutex>lock(ht_mutex);
+    BOOL Close(const HTHANDLE* hthandle) {
 
-        if (!hthandle || !element || element->keylength > hthandle->MaxKeyLength || element->payloadlength > hthandle->MaxPayloadLength) {
-            std::cout << "Failed to insert an element" << std::endl;
+        if (hthandle == NULL) {
+            cout << "--Failed To Close. Hthandle was NULL--" << endl;
+            return FALSE;
+        }
+
+        //executing a snapshot before closing an hthandle
+        if (Snap(hthandle)) {
+            cout << "--Closing...Snapshot taken--" << endl;
+        }
+        else {
+            cout << "--Closing...Failed To Take a Snapshot--" << endl;
+            return FALSE;
+        }
+
+        if (hthandle->Addr != NULL) {
+            UnmapViewOfFile(hthandle->Addr);//taking FileMapping out of the RAM
+            cout << "--Unmapped View Of File--" << endl;
+        }
+        if (hthandle->FileMapping != NULL) {
+            CloseHandle(hthandle->FileMapping);
+            cout << "--File Mapping Handle Closed--" << endl;
+        }
+        if (hthandle->File != NULL) {
+            BOOL result = CloseHandle(hthandle->File);
+            if (!result) {
+                cout << "--Failed To Close The File Handle--" << endl;
+                return FALSE;
+            }
+        }
+        cout << "--File Handle Closed Successfully--" << endl;
+        return TRUE;
+    }
+
+
+    BOOL Insert(HTHANDLE* hthandle, const Element* element) {
+
+        if (hthandle == NULL || hthandle->Addr == NULL || element == NULL) {
+            cout << "--Failed To Insert Element. Invalid Handle Or Element--" << endl;
             return FALSE;
         }
 
 
+        if (hthandle->CurrentElements >= hthandle->Capacity) {
+            cout << "--Could Not Insert a New Element Because It Exceeds The Boundaries Of The Storage--" << endl;
+            return FALSE;
+        }
+
+        int nextIndex = hthandle->CurrentElements;
+
+        char* storageLocation = static_cast<char*>(hthandle->Addr) + (nextIndex * (hthandle->MaxKeyLength + hthandle->MaxPayloadLength));
+
+        if (element->keylength > 0) {
+            memcpy(storageLocation,element->key,element->keylength );
+        }
+        else {
+            cout << "--Failed To Insert an Element With an Empty Key--" << endl;
+            return FALSE;
+        }
+
+        if (element->payloadlength > 0) {
+            memcpy(storageLocation + hthandle->MaxKeyLength, element->payload, element->payloadlength);
+        }
+        else {
+            cout << "--Failed To Insert an Element With an Empty Payload--" << endl;
+            return FALSE;
+        }
+
+        hthandle->CurrentElements += 1;
+       cout << "--Element Inserted Successfully--" << endl;
+
+       return TRUE;
     }
+
+
+
+
 	
 };
