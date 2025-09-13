@@ -53,7 +53,7 @@ namespace HT {
         lastsnaptime(0),
         CurrentElements(0)
     {
-        ZeroMemory(LastErrorMessage, sizeof(LastErrorMessage));
+        
 	}
 
 	HTHANDLE::HTHANDLE(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char FileName[512])
@@ -66,26 +66,26 @@ namespace HT {
 
         strcpy_s(this->FileName, 512, FileName);
 
-        ZeroMemory(LastErrorMessage, sizeof(LastErrorMessage));
+       
 
 	}
 
-	HTHANDLE* Create(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char FileName[512]) {//should return NULL if smth went wrong
+    HTHANDLE* Create(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char FileName[512]) {
+        HTHANDLE* ht = new HTHANDLE(Capacity, SecSnapshotInterval, MaxKeyLength, MaxPayloadLength,FileName);
 
-        HTHANDLE* ht = new HTHANDLE(Capacity,SecSnapshotInterval,MaxKeyLength,MaxPayloadLength,FileName);
-
+        // Create the file
         ht->File = CreateFileA(
-            FileName,//file name
-            GENERIC_READ | GENERIC_WRITE,//desired access
-            FILE_SHARE_READ | FILE_SHARE_WRITE,//share mode(for other processes)
-            NULL,//security attributes
-            OPEN_ALWAYS,//creation disposition. here - opens existing or creates a new one if does not exist
-            FILE_ATTRIBUTE_NORMAL,//file attributes. here - normal file with no specified attributes
-            NULL//template file for handle. here no templates are being used
+            FileName,
+            GENERIC_READ | GENERIC_WRITE,
+            0, // No sharing
+            NULL, // Default security attributes    
+            OPEN_ALWAYS, // Open if exists, else create
+            FILE_ATTRIBUTE_NORMAL,
+            NULL // No template file
         );
 
         if (ht->File == INVALID_HANDLE_VALUE) {
-            cout << "--File Creation Failed(Create)--" << endl;
+            cout << "--File Creation Failed(Create)-- Error: " << GetLastError() << endl;
             delete ht;
             return NULL;
         }
@@ -93,34 +93,45 @@ namespace HT {
             cout << "--File Creation Successful(Create)--" << endl;
         }
 
-        //DOESN'T WORK
+        DWORD fileSize = GetFileSize(ht->File, NULL);
+        if (fileSize == INVALID_FILE_SIZE) {
+            cout << "File error: " << GetLastError() << endl;
+        }
+        // Create file mapping
         ht->FileMapping = CreateFileMappingA(
-            ht->File,//handle to a file for which a FileMapping is being created
-            NULL,//security descriptor pointer. in that case NULL represents a default security descriptor
-            PAGE_READWRITE,//protection for the mapping. now file is allowed to be read and written to
-            0,//max mapping size
-            0,//min mapping size(both max and min values are 0 so the max and min file size is decided by the actual file size)
-           "SharedHTMappingTest"//named mapping. that means other processes can access the file(if NULL - they can not)
-            
+            ht->File, // Handle to the file
+            NULL, // Default security descriptor
+            PAGE_READWRITE, // Protection
+            0, // Maximum size (higher DWORD) - responsible for more 4GB files
+            0x00000001, // Maximum size (lower DWORD) responsible for less 4GB files
+            "HtMapping" // No name
         );
+            
         if (ht->FileMapping == NULL) {
-            cout << "--File Mapping Creation Failed(Create)--" << endl;
+            DWORD error = GetLastError();
+            cout << "--File Mapping Failed(Create)-- Error: " << error << endl;
+            CloseHandle(ht->File);
+            delete ht;
             return NULL;
         }
         else {
             cout << "--File Mapping Successful(Create)--" << endl;
         }
 
+        // Map the view of the file
         ht->Addr = MapViewOfFile(
-            ht->FileMapping,//handle to the file mapping created earlier
-            FILE_MAP_ALL_ACCESS,//access level option
-            0,//file offset high - specifies the offset where the view starts. needed if we need to map a portion of a file
-            0,//file offset low - specifies the offset where the view ends. needed if we need to map a portion of a file
-            0//number of bytes to map. if 0 - the whole file mapping file will be mapped into RAM
+            ht->FileMapping,
+            FILE_MAP_ALL_ACCESS, // Access rights for the view
+            0, // Offset high
+            0, // Offset low
+            0 // Map the entire file
         );
 
         if (ht->Addr == NULL) {
-            cout << "--Failed to Map View Of File(Create)--" << endl;
+            cout << "--Failed to Map View Of File(Create)-- Error: " << GetLastError() << endl;
+            CloseHandle(ht->FileMapping);
+            CloseHandle(ht->File);
+            delete ht;
             return NULL;
         }
         else {
@@ -128,8 +139,7 @@ namespace HT {
         }
 
         return ht;
-
-	}
+    }
 
     //the only parameter difference here is file open mode in CreateFileA function. the rest is identical
     HTHANDLE* Open(const char FileName[512]) {//returns NULL if something went wrong
