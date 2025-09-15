@@ -73,14 +73,14 @@ namespace HT {
     HTHANDLE* Create(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char FileName[512]) {
         HTHANDLE* ht = new HTHANDLE(Capacity, SecSnapshotInterval, MaxKeyLength, MaxPayloadLength,FileName);
 
-        // Create the file
+        
         ht->File = CreateFileA(
             FileName,
-            GENERIC_READ | GENERIC_WRITE,
-            0, // No sharing
-            NULL, // Default security attributes    
-            OPEN_ALWAYS, // Open if exists, else create
-            FILE_ATTRIBUTE_NORMAL,
+            GENERIC_READ | GENERIC_WRITE,//access mode:read &writes
+            0, //sharing between processes: No sharing
+            NULL, //security attributes: Default security attributes    
+            OPEN_ALWAYS, //how to open: Open if exists, else create
+            FILE_ATTRIBUTE_NORMAL,//file attribute:normal
             NULL // No template file
         );
 
@@ -97,14 +97,14 @@ namespace HT {
         if (fileSize == INVALID_FILE_SIZE) {
             cout << "File error: " << GetLastError() << endl;
         }
-        // Create file mapping
+       
         ht->FileMapping = CreateFileMappingA(
             ht->File, // Handle to the file
-            NULL, // Default security descriptor
-            PAGE_READWRITE, // Protection
+            NULL, //security descriptor: Default security descriptor
+            PAGE_READWRITE, //access mode: read & write
             0, // Maximum size (higher DWORD) - responsible for more 4GB files
             0x00000001, // Maximum size (lower DWORD) responsible for less 4GB files
-            "HtMapping" // No name
+            "HtMapping" //named mapping(null if not named)
         );
             
         if (ht->FileMapping == NULL) {
@@ -118,12 +118,12 @@ namespace HT {
             cout << "--File Mapping Successful(Create)--" << endl;
         }
 
-        // Map the view of the file
+        
         ht->Addr = MapViewOfFile(
-            ht->FileMapping,
-            FILE_MAP_ALL_ACCESS, // Access rights for the view
-            0, // Offset high
-            0, // Offset low
+            ht->FileMapping,//handle to file mappint
+            FILE_MAP_ALL_ACCESS, //access mode: all access
+            0, // Offset high: from the top of the file
+            0, // Offset low: from the bottom of the file
             0 // Map the entire file
         );
 
@@ -141,8 +141,8 @@ namespace HT {
         return ht;
     }
 
-    //the only parameter difference here is file open mode in CreateFileA function. the rest is identical
-    HTHANDLE* Open(const char FileName[512]) {//returns NULL if something went wrong
+
+    HTHANDLE* Open(const char FileName[512]) {
         HTHANDLE* ht = new HTHANDLE();
         ht->File = CreateFileA(
             FileName,
@@ -198,68 +198,40 @@ namespace HT {
         }
         return ht;
     }
-
+    
+    //IN PROGRESS
     BOOL Snap(const HTHANDLE* hthandle) {
-        if (!hthandle|| !hthandle->Addr) {
-            cout << "--HThandle was invalid or Address was NULL(Snap)--" << endl;
+
+        cout << endl << "----------Snap----------" << endl;
+
+        if (!hthandle) {
+            cout << "--Failed to open the handle--" << endl;
             return FALSE;
         }
 
-        const char SnapshotFileName[] = "Snapshot.htsnapshot";
-
-        HANDLE htSnapshotFile = CreateFileA(
-            SnapshotFileName,
-            GENERIC_READ|GENERIC_WRITE,
-            0,//sharing mode: here sharing is not allowed
+        HANDLE HTSnapshot = CreateFileA(
+            "HtSnapshot.htsnap",
+            GENERIC_READ | GENERIC_WRITE,
+            0,
             NULL,
-            CREATE_ALWAYS,//create a new file or rewrite the content in already existing file. needed cause' we can have just one snapshot at a time
+            CREATE_ALWAYS,
             FILE_ATTRIBUTE_NORMAL,
             NULL
         );
+            
 
-        if (htSnapshotFile == INVALID_HANDLE_VALUE) {
-            cout << "--Failed To Create a Snapshot File(Snap)--" << endl;
-            return FALSE;
-        }
-        else {
-            cout << "--Snapshot File Creation Successful(Snap)--" << endl;
-        }
-
-        SIZE_T dataSize = hthandle->Capacity * (hthandle->MaxKeyLength + hthandle->MaxPayloadLength);//determine the size of data for a snapshot
-
-        DWORD bytesWritten;
-
-      
-        BOOL writeResult = WriteFile(
-            htSnapshotFile,//handle to an opened file (must be opened with generic_read/generic_write or both)
-            hthandle->Addr,//pointer to the buffer containing data to write
-            dataSize,//number of bytes to write
-            &bytesWritten,//number of bytes written
-            NULL//null if the operation is asynchronous
-        );
-
-        if (!writeResult || bytesWritten != dataSize) {
-            cout << "--Failed To Take a Snapshot(Snap)--" << endl;
-            CloseHandle(htSnapshotFile);
-            return FALSE;
-
-        }
-        else {
-            cout << "--Snapshot Taken Successful(Snap)--" << endl;
-            CloseHandle(htSnapshotFile);
-            return TRUE;
-        }
+        cout << endl << "----------End----------" << endl;
 
     }
 
     BOOL Close(const HTHANDLE* hthandle) {
 
-        if (hthandle == NULL) {
+        if (!hthandle) {
             cout << "--Failed To Close. Hthandle was NULL--" << endl;
             return FALSE;
         }
 
-        //executing a snapshot before closing an hthandle
+        //executing a snapshot before closing an hthandle0
         if (Snap(hthandle)) {
             cout << "--Closing...Snapshot taken--" << endl;
         }

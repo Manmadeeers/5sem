@@ -3,6 +3,7 @@
 #define CREATION_ENABLED
 //#define OPENING_ENABLED
 #define INSERTION_ENABLED
+#define CLOSURE_ENABLED
 using namespace std;
 
 
@@ -22,6 +23,16 @@ int main() {
 		}
 
 #endif // CREATION_ENABLED
+
+#ifdef CLOSURE_ENABLED
+		if (HT::Close(handle)) {
+			cout << "--Closed Successfully--" << endl;
+		}
+		else {
+			cout << "--Failed to Close--" << endl;
+		}
+#endif // CLOSURE_ENABLED
+
 
 		
 
