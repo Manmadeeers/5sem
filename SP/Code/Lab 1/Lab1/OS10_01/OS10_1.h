@@ -33,6 +33,7 @@ namespace HT    // HT API
 		char    LastErrorMessage[512];  // сообщение об последней ошибке или 0x00  
 		time_t  lastsnaptime;			// дата последнего snap'a (time())  
 		int CurrentElements=0;            //Added: the number of elements in a storage
+		
 	};
 
 	struct Element   // элемент 
@@ -82,7 +83,7 @@ namespace HT    // HT API
 
 	BOOL Delete      // удалить элемент в хранилище
 	(
-		const HTHANDLE* hthandle,            // управление HT (ключ)
+		 HTHANDLE* hthandle,            // управление HT (ключ)
 		const Element* element              // элемент 
 	);	//  == TRUE успешное завершение 
 
@@ -101,10 +102,10 @@ namespace HT    // HT API
 		int             newpayloadlength     // размер новых данных
 	); 	//  != NULL успешное завершение 
 
-	//char* GetLastError  // получить сообщение о последней ошибке
-	//(
-	//	HTHANDLE* ht                         // управление HT
-	//);
+	char* GetLastErrorMsg  // получить сообщение о последней ошибке
+	(
+		HTHANDLE* ht                         // управление HT
+	);
 
 	void print                               // распечатать элемент 
 	(

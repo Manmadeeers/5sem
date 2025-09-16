@@ -97,13 +97,15 @@ namespace HT {
         if (fileSize == INVALID_FILE_SIZE) {
             cout << "File error: " << GetLastError() << endl;
         }
+
+        int storage_size = ht->Capacity * (ht->MaxKeyLength + ht->MaxPayloadLength);
        
         ht->FileMapping = CreateFileMappingA(
             ht->File, // Handle to the file
             NULL, //security descriptor: Default security descriptor
             PAGE_READWRITE, //access mode: read & write
             0, // Maximum size (higher DWORD) - responsible for more 4GB files
-            0x00000001, // Maximum size (lower DWORD) responsible for less 4GB files
+            storage_size, // Maximum size (lower DWORD) responsible for less 4GB files
             "HtMapping" //named mapping(null if not named)
         );
             
@@ -198,19 +200,19 @@ namespace HT {
         }
         return ht;
     }
-    
-    //IN PROGRESS
+
+
     BOOL Snap(const HTHANDLE* hthandle) {
 
         cout << endl << "----------Snap----------" << endl;
 
         if (!hthandle) {
-            cout << "--Failed to open the handle--" << endl;
+            cout << "--Snap:Failed to open the handle--"<<"Error: "<<GetLastError() << endl;
             return FALSE;
         }
 
         HANDLE HTSnapshot = CreateFileA(
-            "HtSnapshot.htsnap",
+            "TestSnapshot.htsnap",
             GENERIC_READ | GENERIC_WRITE,
             0,
             NULL,
@@ -218,8 +220,51 @@ namespace HT {
             FILE_ATTRIBUTE_NORMAL,
             NULL
         );
-            
 
+
+        if (HTSnapshot == INVALID_HANDLE_VALUE) {
+            cout << "--Snap:Failed to create a snapshot file--"<<"Error: "<<GetLastError() << endl;
+            return FALSE;
+        }
+        else {
+            cout << "--Snap:Snapshot file created--" << endl;
+        }
+
+        SIZE_T data_size = hthandle->CurrentElements * (hthandle->MaxKeyLength + hthandle->MaxPayloadLength);
+        cout << "--Data size to write: " << data_size << "--" << endl;
+
+        cout << "--Buffer size: " << sizeof(hthandle->Addr) << "--" << endl;
+
+        DWORD bytesWritten;
+
+        BOOL writeResult = WriteFile(
+            HTSnapshot,
+            hthandle->Addr,
+            data_size,
+            &bytesWritten,
+            NULL
+        );
+
+        if (!writeResult) {
+            DWORD writeEror = GetLastError();
+            cout << "--Snap:Failed to execute a snapshot(WriteFile error)--" << " Error: " << writeEror << endl;
+            cout << endl << "----------End----------" << endl;
+            CloseHandle(HTSnapshot);
+            return FALSE;
+        }
+        else if (bytesWritten != data_size) {
+            DWORD bytesError = GetLastError();
+            cout << "--Snap:failed to execute a snapshot(Bytes loss)--" << " Error: " << bytesError << endl;
+            cout << endl << "----------End----------" << endl;
+            CloseHandle(HTSnapshot);
+            return FALSE;
+        }
+        else {
+            cout << "--Snap: Snapshot Executed--" << endl;
+        }
+
+        CloseHandle(HTSnapshot);
+        return TRUE;
         cout << endl << "----------End----------" << endl;
 
     }
@@ -227,76 +272,133 @@ namespace HT {
     BOOL Close(const HTHANDLE* hthandle) {
 
         if (!hthandle) {
-            cout << "--Failed To Close. Hthandle was NULL--" << endl;
+            cout << "--Close:Failed To Close(Invalid handle)--"<<" Error: "<<GetLastError() << endl;
             return FALSE;
         }
 
-        //executing a snapshot before closing an hthandle0
+        
         if (Snap(hthandle)) {
-            cout << "--Closing...Snapshot taken--" << endl;
+            cout << "--Close:Snapshot taken--" << endl;
         }
         else {
-            cout << "--Closing...Failed To Take a Snapshot--" << endl;
+            cout << "--Closing:Failed To Take a Snapshot--"<<" Error: "<<GetLastError() << endl;
             return FALSE;
         }
 
         if (hthandle->Addr != NULL) {
-            UnmapViewOfFile(hthandle->Addr);//taking FileMapping out of the RAM
-            cout << "--Unmapped View Of File--" << endl;
+            UnmapViewOfFile(hthandle->Addr);
+            cout << "--Close: Unmapped View Of File--" << endl;
         }
         if (hthandle->FileMapping != NULL) {
             CloseHandle(hthandle->FileMapping);
-            cout << "--File Mapping Handle Closed--" << endl;
+            cout << "--Close: File Mapping Handle Closed--" << endl;
         }
         if (hthandle->File != NULL) {
             BOOL result = CloseHandle(hthandle->File);
             if (!result) {
-                cout << "--Failed To Close The File Handle--" << endl;
+                cout << "--Close:Failed To Close The File Handle--"<<GetLastError() << endl;
                 return FALSE;
             }
         }
-        cout << "--File Handle Closed Successfully--" << endl;
+        cout << "--Close:File Handle Closed Successfully--" << endl;
         return TRUE;
     }
 
-
+    //WORKS PROPERLY BUT THE INSERTION PROCESS NEEDS TO BE REWISED
     BOOL Insert(HTHANDLE* hthandle, const Element* element) {
 
-        if (hthandle == NULL || hthandle->Addr == NULL || element == NULL) {
-            cout << "--Failed To Insert Element. Invalid Handle Or Element--" << endl;
+        if (hthandle == NULL) {
+            cout << "--Insert: Failed to insert(Invalid handle)--" << " Error: " << GetLastError() << endl;
             return FALSE;
         }
-
+        else if (element == NULL) {
+            cout << "--Insert: Failed to insert(Invalid element)--" << " Error: " << GetLastError() << endl;
+            return FALSE;
+        }
+        else if (hthandle->Addr == NULL) {
+            cout << "--Insert: Failed to insert(Address was null)" << endl;
+            return FALSE;
+        }
 
         if (hthandle->CurrentElements >= hthandle->Capacity) {
-            cout << "--Could Not Insert a New Element Because It Exceeds The Boundaries Of The Storage--" << endl;
+            cout << "--Insert: Failed to insert(attempted to exceed the handle capacity)--" << endl;
             return FALSE;
         }
 
-        int nextIndex = hthandle->CurrentElements;
+        if (element->keylength > hthandle->MaxKeyLength) {
+            cout << "--Insert: Failed to insert(Element's key length is too big)--" << endl;
+            return FALSE;
+        }
+        
+        if (element->payloadlength > hthandle->MaxPayloadLength) {
+            cout << "--Insert: Failed to insert(Element's payload length is too big)--" << endl;
+            return FALSE;
+        }
 
-        char* storageLocation = static_cast<char*>(hthandle->Addr) + (nextIndex * (hthandle->MaxKeyLength + hthandle->MaxPayloadLength));
+        int next_index = hthandle->CurrentElements;
+
+        char* storage_location = static_cast<char*>(hthandle->Addr) + (next_index * (hthandle->MaxKeyLength + hthandle->MaxPayloadLength));
 
         if (element->keylength > 0) {
-            memcpy(storageLocation,element->key,element->keylength );
+            memcpy(storage_location, element->key, element->keylength);
         }
         else {
-            cout << "--Failed To Insert an Element With an Empty Key--" << endl;
+            cout << "--Insert: Failed to insert an element with 0 key length--" << endl;
             return FALSE;
         }
 
         if (element->payloadlength > 0) {
-            memcpy(storageLocation + hthandle->MaxKeyLength, element->payload, element->payloadlength);
+            memcpy(storage_location + element->keylength, element->payload, element->payloadlength);
         }
         else {
-            cout << "--Failed To Insert an Element With an Empty Payload--" << endl;
-            return FALSE;
+            cout << "--Insert: Failed to insert an element with 0 payload length--" << endl;
         }
 
         hthandle->CurrentElements += 1;
-       cout << "--Element Inserted Successfully--" << endl;
+        cout << "--Insert: Element inserted successfully--" << endl;
+        return TRUE;
+    }
 
-       return TRUE;
+
+    BOOL Delete(HTHANDLE* handle, const Element* element) {
+        if (handle == NULL||handle->Addr==NULL) {
+            cout << "--Delete: Failed to delete an element(handle was invalid)--" << endl;
+            return FALSE;
+        }
+
+        if (element == NULL || element->keylength == NULL || element->payloadlength == NULL) {
+            cout << "--Delete: Failed to delete an element(element was invalid)--" << endl;
+            return FALSE;
+        }
+
+
+        int index_to_delete = -1;
+
+        for (int i = 0; i < handle->CurrentElements; ++i) {
+            char* storage_location = static_cast<char*>(handle->Addr)+(i*(handle->MaxKeyLength+handle->MaxPayloadLength));
+
+            if (memcmp(storage_location, element->key, element->keylength) == 0) {
+                index_to_delete = i;
+                break;
+            }
+        }
+
+        if (index_to_delete == -1) {
+            cout << "--Delete: Failed to delete an element(element not found)--" << endl;
+            return FALSE;
+        }
+
+        for (int i = index_to_delete + 1; i < handle->CurrentElements; ++i) {
+            char* src_location = static_cast<char*>(handle->Addr) + (i * (handle->MaxKeyLength + handle->MaxPayloadLength));
+            char* dest_location = static_cast<char*>(handle->Addr) + ((i - 1) * (handle->MaxKeyLength + handle->MaxPayloadLength));
+            memcpy(dest_location, src_location, handle->MaxKeyLength + handle->MaxPayloadLength);
+        }
+
+
+        handle->CurrentElements -= 1;
+        cout << "Delete: Successfully deleted an element with key: " << element->key << "--" << endl;
+        return TRUE;
+
     }
 
 
