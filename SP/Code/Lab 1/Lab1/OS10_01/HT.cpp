@@ -72,7 +72,7 @@ namespace HT {
 
     HTHANDLE* Create(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char FileName[512]) {
         HTHANDLE* ht = new HTHANDLE(Capacity, SecSnapshotInterval, MaxKeyLength, MaxPayloadLength,FileName);
-
+        cout << "----------Creation Started----------"<<endl << endl;
         
         ht->File = CreateFileA(
             FileName,
@@ -140,11 +140,14 @@ namespace HT {
             cout << "--MapViewOfFile successful(Create)--" << endl;
         }
 
+
+
         return ht;
     }
 
 
     HTHANDLE* Open(const char FileName[512]) {
+        cout << "----------Opening Started----------" << endl << endl;
         HTHANDLE* ht = new HTHANDLE();
         ht->File = CreateFileA(
             FileName,
@@ -304,7 +307,7 @@ namespace HT {
         return TRUE;
     }
 
-    //WORKS PROPERLY BUT THE INSERTION PROCESS NEEDS TO BE REWISED
+    //SOMETHING WRONG WITH MEMORY ALLOCATION
     BOOL Insert(HTHANDLE* hthandle, const Element* element) {
 
         if (hthandle == NULL) {
@@ -340,7 +343,7 @@ namespace HT {
         char* storage_location = static_cast<char*>(hthandle->Addr) + (next_index * (hthandle->MaxKeyLength + hthandle->MaxPayloadLength));
 
         if (element->keylength > 0) {
-            memcpy(storage_location, element->key, element->keylength);
+            memcpy(storage_location , element->key, element->keylength);
         }
         else {
             cout << "--Insert: Failed to insert an element with 0 key length--" << endl;
@@ -348,7 +351,7 @@ namespace HT {
         }
 
         if (element->payloadlength > 0) {
-            memcpy(storage_location + element->keylength, element->payload, element->payloadlength);
+            memcpy(storage_location+element->keylength, element->payload, element->payloadlength);
         }
         else {
             cout << "--Insert: Failed to insert an element with 0 payload length--" << endl;
@@ -361,6 +364,7 @@ namespace HT {
 
 
     BOOL Delete(HTHANDLE* handle, const Element* element) {
+        cout << endl << "----------Deletion Started----------" << endl << endl;
         if (handle == NULL||handle->Addr==NULL) {
             cout << "--Delete: Failed to delete an element(handle was invalid)--" << endl;
             return FALSE;
@@ -396,11 +400,84 @@ namespace HT {
 
 
         handle->CurrentElements -= 1;
-        cout << "Delete: Successfully deleted an element with key: " << element->key << "--" << endl;
+        cout << "Delete: Successfully deleted an element with key: " << static_cast<const char*>(element->key) << "--" << endl;
+        cout << "----------Deletion Ended----------" << endl;
         return TRUE;
 
     }
 
+    Element* Get(const HTHANDLE* handle, const Element* element) {
+
+        if (handle == NULL||handle->Addr==NULL) {
+            cout << "--Get: Failed to get an element(handle was invalid)--" << endl;
+            return NULL;
+        }
+
+        if (element == NULL || element->keylength == NULL || element->payloadlength == NULL) {
+            cout << "--Get: Failed to get an element(element was invalid)--" << endl;
+            return NULL;
+        }
+        
+        const int slot_size = handle->MaxKeyLength + handle->MaxPayloadLength;
+        for (int i = 0; i <handle->CurrentElements; ++i) {
+
+            char* storage_location = static_cast<char*>(handle->Addr) + i * slot_size;
+
+            if (memcmp(storage_location, element->key, element->keylength)==0) {
+
+                Element* foundElement = new Element(
+                    storage_location,
+                    element->keylength,
+                    storage_location+handle->MaxKeyLength,
+                    handle->MaxPayloadLength
+                );
+              
+                cout << "--Get:Element found--" << endl;
+                return foundElement;
+            }
+        }
+        cout << "--Get: Element not found--" << endl;
+        return NULL;
+    }
+
+    
+    void Print(const Element* element) {
+        cout << "Key: " << static_cast<const char*>(element->key)<<" Payload: "<<static_cast<const char*>(element->payload) << endl;
+    }
+
+
+    //DOESN'T WORK PROPERLY
+    BOOL Update(const HTHANDLE* handle, const Element* element, const void* newpayload, int newpayloadlength) {
+        if (handle == NULL || handle->Addr == NULL) {
+            cout << "--Update: Failed to update an element(handle was invalid)--" << endl;
+            return FALSE;
+        }
+
+        if (element == NULL || element->keylength == NULL || element->payloadlength == NULL) {
+            cout << "--Update: Failed to update an element(element was invalid)--" << endl;
+            return FALSE;
+        }
+
+        if (newpayload == NULL || newpayloadlength == NULL || newpayloadlength > handle->MaxPayloadLength) {
+            cout << "--Update: Failed to update an element(data to update were invalid)--" << endl;
+            return FALSE;
+        }
+
+        for (int i = 0; i < handle->CurrentElements; ++i) {
+            char* storage_location = static_cast<char*>(handle->Addr) + (i * (handle->MaxKeyLength + handle->MaxPayloadLength));
+
+            if (memcmp(storage_location, element->key, element->keylength) == 0) {
+                memcpy(storage_location + handle->MaxKeyLength, newpayload, newpayloadlength);
+                cout << "--Update: Element updated--" << endl;
+                return TRUE;
+            }
+        }
+
+        cout << "--Update: Failed to update(element not found)--" << endl;
+        return FALSE;
+
+
+    }
 
 
 

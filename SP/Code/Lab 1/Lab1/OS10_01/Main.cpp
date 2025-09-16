@@ -3,8 +3,10 @@
 #define CREATION_ENABLED
 //#define OPENING_ENABLED
 #define INSERTION_ENABLED
-#define DELETION_ENABLED
+//#define DELETION_ENABLED
 #define CLOSURE_ENABLED
+#define GET_ENABLED
+//#define UPDATE_ENABLED
 using namespace std;
 
 
@@ -23,6 +25,9 @@ int main() {
 			cout << "--Storage Created Successfully--" << endl;
 		}
 
+
+		cout << endl << "----------Creation Ended----------" << endl;
+
 #endif // CREATION_ENABLED
 
 		
@@ -35,14 +40,16 @@ int main() {
 		else {
 			cout << "--Existing HT-Storage opened successfully--" << endl;
 		}
+
+		cout << endl << "----------Opening Ended----------" << endl;
 #endif // OPENING_ENABLED
 
 
 #ifdef INSERTION_ENABLED
-		cout<<endl << "--Insertion start--" << endl;
+		cout << endl << "----------Insertion Started----------" << endl << endl;
 		HT::Insert(handle, new HT::Element("key", 3, "payload", 7));
 
-		HT::Insert(handle, new HT::Element("key1", 4, "payload1", 8));
+		HT::Insert(handle, new HT::Element("key1", 4, "PAYLOAD1", 8));
 
 		HT::Insert(handle, new HT::Element("key2", 4, "payload2", 8));
 		HT::Insert(handle, new HT::Element("key3", 4, "payload3", 8));
@@ -52,12 +59,40 @@ int main() {
 		HT::Insert(handle, new HT::Element("key7", 4, "payload7", 8));
 		HT::Insert(handle, new HT::Element("key8", 4, "payload8", 8));
 		HT::Insert(handle, new HT::Element("key9", 4, "payload9", 8));
+
+		cout << endl << "----------Insertion Ended----------" << endl;
 	
 #endif // INSERTION_ENABLED
 
 #ifdef DELETION_ENABLED
 		HT::Delete(handle, new HT::Element("key", 3, "payload", 7));
+
 #endif // DELETION_ENABLED
+#ifdef GET_ENABLED
+		cout << endl << "----------Get Started----------" << endl << endl;
+		HT::Element* got_element = HT::Get(handle, new HT::Element("key7", 4, "payload7", 8));
+		if (got_element != NULL) {
+			cout << "--Get executed successful--" << endl;
+			HT::Print(got_element);
+		}
+		else {
+			cout << "--Get failed to execute--" << endl;
+		}
+
+		cout << endl << "----------Get Ended----------" << endl;
+#endif // GET_ENABLED
+#ifdef UPDATE_ENABLED
+		cout << endl << "----------Update Started----------" << endl << endl;
+		if (HT::Update(handle, new HT::Element("key1", 4, "payload1", 8), "updPayload", 10)) {
+			cout << "--Element updated successfully--" << endl;
+		}
+		else {
+			cout << "--Element was not updated--" << endl;
+		}
+
+		cout << "----------Update Ended----------" << endl;
+#endif // UPDATE_ENABLED
+
 
 
 #ifdef CLOSURE_ENABLED

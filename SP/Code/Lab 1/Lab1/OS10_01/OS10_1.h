@@ -107,7 +107,7 @@ namespace HT    // HT API
 		HTHANDLE* ht                         // управление HT
 	);
 
-	void print                               // распечатать элемент 
+	void Print                               // распечатать элемент 
 	(
 		const Element* element              // элемент 
 	);
