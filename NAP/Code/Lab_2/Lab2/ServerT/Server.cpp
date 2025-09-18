@@ -10,10 +10,6 @@ using namespace std;
 string SetErrorMsgText(string text, int code);
 string GetErrorMsgText(int code);
 
-
-
-
-
 int main(int argc, _TCHAR* argv[]) {
 
 	WSADATA WSD_pointer;
@@ -22,15 +18,19 @@ int main(int argc, _TCHAR* argv[]) {
 	SOCKET serverSocket;
 
 	try {
+		//--1: start the server
 		if (WSAStartup(WSD_version, &WSD_pointer) != 0) {
 			throw SetErrorMsgText("Startup: " , WSAGetLastError());
 		}
 
-		if (serverSocket = socket(AF_INET, SOCK_STREAM, NULL) == INVALID_SOCKET) {
+		//--2: create a server socket
+		serverSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP) ;
+		if (serverSocket == INVALID_SOCKET) {
 			throw SetErrorMsgText("Socket Creation: ", WSAGetLastError());
 		}
 
 
+		//socket parameters
 		SOCKADDR_IN serv;
 		serv.sin_family = AF_INET;
 		serv.sin_port = htons(2000);
@@ -41,29 +41,27 @@ int main(int argc, _TCHAR* argv[]) {
 			throw SetErrorMsgText("Socket Parameter Binding: ", WSAGetLastError());
 		}
 
-
+		//--3: listen
 		if (listen(serverSocket, SOMAXCONN) == SOCKET_ERROR) {
-			throw SetErrorMsgText("Listed: ", WSAGetLastError());
+			throw SetErrorMsgText("Listen: ", WSAGetLastError());
 		}
 
 		SOCKET clientSocket;
 		SOCKADDR_IN client;
 		memset(&client, 0, sizeof(client));
 		int Lclient = sizeof(client);
+		clientSocket = accept(serverSocket, (sockaddr*)&client, &Lclient);
 
-		if (clientSocket = accept(serverSocket, (sockaddr*)&client, &Lclient) == INVALID_SOCKET) {
+		if (clientSocket == INVALID_SOCKET) {
 			throw SetErrorMsgText("Accept: ", WSAGetLastError());
 		}
 
 
 
-
-
+		//--6: closure and cleanup
 		if (closesocket(serverSocket) == SOCKET_ERROR) {
 			throw SetErrorMsgText("Socket Closure: ", WSAGetLastError());
 		}
-
-
 
 		if (WSACleanup() == SOCKET_ERROR) {
 			throw SetErrorMsgText("Cleanup: ", WSAGetLastError());
@@ -72,10 +70,14 @@ int main(int argc, _TCHAR* argv[]) {
 	catch (string error_msg) {
 		cout << endl << error_msg << endl;
 	}
+
+
+	return 0;
 }
 
 string SetErrorMsgText(string text, int code) {
-	return text + GetErrorMsgText(code);
+	char code_chr = static_cast<char>(code);
+	return text + GetErrorMsgText(code)+ "(" + code_chr+")";
 }
 
 string GetErrorMsgText(int code) {
