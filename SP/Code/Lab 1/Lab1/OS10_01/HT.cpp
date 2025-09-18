@@ -71,6 +71,8 @@ namespace HT {
 	}
 
     HTHANDLE* Create(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char FileName[512]) {
+        lock_guard<mutex>lock(ht_mutex);
+
         HTHANDLE* ht = new HTHANDLE(Capacity, SecSnapshotInterval, MaxKeyLength, MaxPayloadLength,FileName);
         cout << "----------Creation Started----------"<<endl << endl;
         
@@ -204,8 +206,20 @@ namespace HT {
         return ht;
     }
 
+    const char* CreateSnapshotFileName(HTHANDLE*handle) {
+        static char buffer[100];
+        char time_buffer[80];
+        tm time_info;
 
-    BOOL Snap(const HTHANDLE* hthandle) {
+        localtime_s(&time_info,&handle->lastsnaptime);
+        strftime(time_buffer, sizeof(time_buffer), "%Y%m%d_%H%M%S", &time_info);
+        snprintf(buffer, sizeof(buffer), "Snapshot-%s.htsnap",time_buffer);
+
+        return buffer;
+
+    }
+
+    BOOL Snap(HTHANDLE* hthandle) {
 
         cout << endl << "----------Snap----------" << endl;
 
@@ -214,8 +228,11 @@ namespace HT {
             return FALSE;
         }
 
+        hthandle->lastsnaptime = time(nullptr);
+            
         HANDLE HTSnapshot = CreateFileA(
-            "TestSnapshot.htsnap",
+            CreateSnapshotFileName(hthandle),
+            //"Snapshotfile.htsnap",
             GENERIC_READ | GENERIC_WRITE,
             0,
             NULL,
@@ -272,7 +289,7 @@ namespace HT {
 
     }
 
-    BOOL Close(const HTHANDLE* hthandle) {
+    BOOL Close( HTHANDLE* hthandle) {
 
         if (!hthandle) {
             cout << "--Close:Failed To Close(Invalid handle)--"<<" Error: "<<GetLastError() << endl;
@@ -307,7 +324,6 @@ namespace HT {
         return TRUE;
     }
 
-    //SOMETHING WRONG WITH MEMORY ALLOCATION
     BOOL Insert(HTHANDLE* hthandle, const Element* element) {
 
         if (hthandle == NULL) {
@@ -340,24 +356,28 @@ namespace HT {
 
         int next_index = hthandle->CurrentElements;
 
-        char* storage_location = static_cast<char*>(hthandle->Addr) + (next_index * (hthandle->MaxKeyLength + hthandle->MaxPayloadLength));
+        size_t slot_size = hthandle->MaxKeyLength + hthandle->MaxPayloadLength;
 
-        if (element->keylength > 0) {
-            memcpy(storage_location , element->key, element->keylength);
+        char* base = static_cast<char*>(hthandle->Addr) + hthandle->CurrentElements * slot_size;
+
+        if (element->keylength != NULL) {
+            memcpy(base, element->key, element->keylength);
+            memset(base + element->keylength, 0, hthandle->MaxKeyLength - element->keylength);
         }
         else {
-            cout << "--Insert: Failed to insert an element with 0 key length--" << endl;
-            return FALSE;
+            cout << "--Insert: Failed to insert(key length was NULL)" << endl;
         }
+      
 
-        if (element->payloadlength > 0) {
-            memcpy(storage_location+element->keylength, element->payload, element->payloadlength);
+        if (element->payloadlength!=NULL) {
+            memcpy(base + hthandle->MaxKeyLength, element->payload, element->payloadlength);
+            memset(base + hthandle->MaxKeyLength + element->payloadlength, 0, hthandle->MaxPayloadLength - element->payloadlength);
         }
         else {
-            cout << "--Insert: Failed to insert an element with 0 payload length--" << endl;
+            cout << "--Insert: Failed to insert(payload length was NULL)" << endl;
         }
-
-        hthandle->CurrentElements += 1;
+      
+        hthandle->CurrentElements ++;
         cout << "--Insert: Element inserted successfully--" << endl;
         return TRUE;
     }
@@ -418,22 +438,20 @@ namespace HT {
             return NULL;
         }
         
-        const int slot_size = handle->MaxKeyLength + handle->MaxPayloadLength;
+        size_t slot_size = handle->MaxKeyLength + handle->MaxPayloadLength;
         for (int i = 0; i <handle->CurrentElements; ++i) {
 
-            char* storage_location = static_cast<char*>(handle->Addr) + i * slot_size;
+            char* base = static_cast<char*>(handle->Addr) + (i * slot_size);
 
-            if (memcmp(storage_location, element->key, element->keylength)==0) {
-
-                Element* foundElement = new Element(
-                    storage_location,
+            if (memcmp(base, element->key, element->keylength) == 0) {
+                Element* found = new Element(
+                    base,
                     element->keylength,
-                    storage_location+handle->MaxKeyLength,
+                    base + handle->MaxKeyLength,
                     handle->MaxPayloadLength
                 );
-              
-                cout << "--Get:Element found--" << endl;
-                return foundElement;
+
+                return found;
             }
         }
         cout << "--Get: Element not found--" << endl;
@@ -445,8 +463,6 @@ namespace HT {
         cout << "Key: " << static_cast<const char*>(element->key)<<" Payload: "<<static_cast<const char*>(element->payload) << endl;
     }
 
-
-    //DOESN'T WORK PROPERLY
     BOOL Update(const HTHANDLE* handle, const Element* element, const void* newpayload, int newpayloadlength) {
         if (handle == NULL || handle->Addr == NULL) {
             cout << "--Update: Failed to update an element(handle was invalid)--" << endl;
@@ -463,11 +479,14 @@ namespace HT {
             return FALSE;
         }
 
-        for (int i = 0; i < handle->CurrentElements; ++i) {
-            char* storage_location = static_cast<char*>(handle->Addr) + (i * (handle->MaxKeyLength + handle->MaxPayloadLength));
+        size_t slot_size = handle->MaxKeyLength + handle->MaxPayloadLength;
 
-            if (memcmp(storage_location, element->key, element->keylength) == 0) {
-                memcpy(storage_location + handle->MaxKeyLength, newpayload, newpayloadlength);
+        for (int i = 0; i < handle->CurrentElements; ++i) {
+
+            char* base = static_cast<char*>(handle->Addr) + (i * slot_size);
+
+            if (memcmp(base, element->key, element->keylength) == 0) {
+                memcpy(base + handle->MaxKeyLength, newpayload, newpayloadlength);
                 cout << "--Update: Element updated--" << endl;
                 return TRUE;
             }
@@ -480,6 +499,23 @@ namespace HT {
     }
 
 
+    void ExecuteHT() {
+        HTHANDLE* handle = nullptr;
+        cout << "Welcome!You're at the start. Choose what to do:" << endl;
+        cout << "1-Create a new HT Storage" << endl;
+        cout << "2-Open an existing HT Storage" << endl;
+        char first_option;
+        cin >> first_option;
 
-	
+    }
+
+
+    //char* GetLastErrorMsg(HTHANDLE* handle) {
+    //    
+    //}
+
+
+    //void SetLastError(HTHANDLE* handle) {
+
+    //}	
 };

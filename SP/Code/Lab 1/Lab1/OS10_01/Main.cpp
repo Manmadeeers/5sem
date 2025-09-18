@@ -1,12 +1,13 @@
 #include "OS10_1.h"
 #include <iostream>
-#define CREATION_ENABLED
+//#define CREATION_ENABLED
 //#define OPENING_ENABLED
-#define INSERTION_ENABLED
+//#define INSERTION_ENABLED
 //#define DELETION_ENABLED
-#define CLOSURE_ENABLED
-#define GET_ENABLED
+//#define CLOSURE_ENABLED
+//#define GET_ENABLED
 //#define UPDATE_ENABLED
+#define EXECUTION_ENABLED
 using namespace std;
 
 
@@ -81,7 +82,7 @@ int main() {
 
 		cout << endl << "----------Get Ended----------" << endl;
 #endif // GET_ENABLED
-#ifdef UPDATE_ENABLED
+#ifdef UPDATE_ENABLED	
 		cout << endl << "----------Update Started----------" << endl << endl;
 		if (HT::Update(handle, new HT::Element("key1", 4, "payload1", 8), "updPayload", 10)) {
 			cout << "--Element updated successfully--" << endl;
@@ -103,6 +104,9 @@ int main() {
 			cout << "--Failed to Close--" << endl;
 		}
 #endif // CLOSURE_ENABLED
+#ifdef EXECUTION_ENABLED
+
+#endif // EXECUTION_ENABLED
 
 		
 	}

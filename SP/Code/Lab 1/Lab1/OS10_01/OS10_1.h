@@ -64,13 +64,13 @@ namespace HT    // HT API
 
 	BOOL Snap         // выполнить Snapshot
 	(
-		const HTHANDLE* hthandle           // управление HT (File, FileMapping)
+		HTHANDLE* hthandle           // управление HT (File, FileMapping)
 	);
 
 
 	BOOL Close        // Snap и закрыть HT  и  очистить HTHANDLE
 	(
-		const HTHANDLE* hthandle           // управление HT (File, FileMapping)
+		HTHANDLE* hthandle           // управление HT (File, FileMapping)
 	);	//  == TRUE успешное завершение   
 
 
@@ -111,6 +111,11 @@ namespace HT    // HT API
 	(
 		const Element* element              // элемент 
 	);
+
+
+	//const char* CreateSnapshotFileName(HTHANDLE* handle);
+
+	//void SetLastError(HTHANDLE* handle);
 
 
 };
