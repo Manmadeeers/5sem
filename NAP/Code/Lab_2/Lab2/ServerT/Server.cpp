@@ -1,4 +1,5 @@
-#include "Winsock2.h"
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #include <tchar.h>
 #include <iostream>
 #include <cstring>
@@ -61,6 +62,37 @@ int main(int argc, _TCHAR* argv[]) {
 		if (clientSocket = accept(serverSocket, (sockaddr*)&client, &Lclient) == INVALID_SOCKET) {
 			throw SetErrorMsgText("Accept: ", WSAGetLastError());
 		}
+
+		char ip_buffer[INET_ADDRSTRLEN];
+		if (inet_ntop(AF_INET,&client.sin_addr,ip_buffer,sizeof(ip_buffer))==nullptr) {
+			cerr << "Error converting IP address" << WSAGetLastError() << endl;
+		}
+		cout << "----------Client info----------" << endl;
+		cout<<"Client's IP address: " << ip_buffer << endl;
+		cout << "Client's port: " << ntohs(client.sin_port) << endl;
+
+
+		char in_buffer[50];
+		char out_buffer[50] = "Server: got ";
+
+		int in_buffer_length = 0;
+		int out_buffer_length = 0;
+
+		if ((in_buffer_length = recv(clientSocket, in_buffer, sizeof(in_buffer), NULL)) == SOCKET_ERROR) {
+			cerr << "Recv error: " << WSAGetLastError() << endl;
+		}
+
+		errno_t err = _itoa_s(out_buffer_length, out_buffer + sizeof("Server: got ") - 1, 10, 10);
+
+		if (err != 0) {
+			cerr << "Error converting an error via _itoa_s" << err << endl;
+		}
+
+
+		if ((out_buffer_length = send(clientSocket, out_buffer, strlen(out_buffer) + 1, NULL)) == SOCKET_ERROR) {
+			cerr << "Send error: " << WSAGetLastError() << endl;
+		}
+
 
 
 		//--5: closure and cleanup
