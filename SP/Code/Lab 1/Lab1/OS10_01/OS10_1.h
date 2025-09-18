@@ -113,9 +113,7 @@ namespace HT    // HT API
 	);
 
 
-	//const char* CreateSnapshotFileName(HTHANDLE* handle);
-
-	//void SetLastError(HTHANDLE* handle);
+	void ExecuteHT();
 
 
 };

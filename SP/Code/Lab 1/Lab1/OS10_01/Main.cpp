@@ -106,6 +106,7 @@ int main() {
 #endif // CLOSURE_ENABLED
 #ifdef EXECUTION_ENABLED
 
+		HT::ExecuteHT();
 #endif // EXECUTION_ENABLED
 
 		

@@ -504,18 +504,23 @@ namespace HT {
         cout << "Welcome!You're at the start. Choose what to do:" << endl;
         cout << "1-Create a new HT Storage" << endl;
         cout << "2-Open an existing HT Storage" << endl;
+        cout << "0-Exit" << endl;
+
         char first_option;
         cin >> first_option;
 
+
+        switch (first_option - '0') {
+        case 1:
+            Create(1000, 3, 10, 256, "Test.ht");
+            break;
+        case 2:
+            Open("Test.ht");
+            break;
+
+        case 0:
+            return;
+        }
+
     }
-
-
-    //char* GetLastErrorMsg(HTHANDLE* handle) {
-    //    
-    //}
-
-
-    //void SetLastError(HTHANDLE* handle) {
-
-    //}	
 };
