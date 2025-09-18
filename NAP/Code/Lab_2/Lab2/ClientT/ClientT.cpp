@@ -1,7 +1,9 @@
-﻿#include "Winsock2.h"
+﻿#include <WinSock2.h>
+#include <ws2tcpip.h>
 #include <tchar.h>
 #include <iostream>
 #include <cstring>
+#include <cstdlib>
 #pragma comment(lib,"WS2_32.lib")
 
 
@@ -12,6 +14,7 @@ int main(int argc, _TCHAR* argv[]) {
 	try {
 		WSADATA WSD_pointer;
 		int WSD_version = MAKEWORD(2, 0);
+
 		if (WSAStartup(WSD_version, &WSD_pointer) != 0) {
 			throw "Unable to startup a client: " + WSAGetLastError();
 		}
@@ -22,10 +25,15 @@ int main(int argc, _TCHAR* argv[]) {
 
 		serv.sin_family = AF_INET;
 		serv.sin_port = htons(2000);
-		//to be checked
-		serv.sin_addr.S_un.S_addr = inet_addr("192.168.233.80");
-		if (connect(clientSocket, (sockaddr*)&serv, sizeof(serv)) == SOCKET_ERROR) {
-			throw "Unable to connect: " + WSAGetLastError();;
+
+		if (inet_pton(AF_INET, "127.0.0.1", &serv.sin_addr) <= 0) {
+			throw "Invalid IP address: " + WSAGetLastError();
+		}
+
+
+		if (connect(clientSocket, (sockaddr*)&serv, sizeof(serv)) == SOCKET_ERROR) {//if server is not powered or actively refuses the connection - gives 10061
+
+			throw "Unable to connect: " + WSAGetLastError();
 		}
 
 
@@ -39,7 +47,10 @@ int main(int argc, _TCHAR* argv[]) {
 			throw "Recv: " + WSAGetLastError();
 		}
 
-		_itoa(lout_buffer, out_buffer + sizeof("server: accepted") - 1, 10);
+		errno_t err = _itoa_s(lout_buffer, out_buffer + sizeof("Server: accepted") - 1, 10, 10);
+		if (err != 0) {
+			cerr << "Error converting a number via _itoa_s:" << err << endl;
+		}
 		if (lout_buffer = send(clientSocket, out_buffer, strlen(out_buffer) + 1, NULL) == SOCKET_ERROR) {
 			throw "Send: " + WSAGetLastError();
 		}

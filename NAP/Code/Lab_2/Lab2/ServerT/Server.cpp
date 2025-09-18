@@ -22,12 +22,15 @@ int main(int argc, _TCHAR* argv[]) {
 		if (WSAStartup(WSD_version, &WSD_pointer) != 0) {
 			throw SetErrorMsgText("Startup: " , WSAGetLastError());
 		}
+		cout << "--Server started" << endl;
 
 		//--2: create a server socket
 		serverSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP) ;
 		if (serverSocket == INVALID_SOCKET) {
 			throw SetErrorMsgText("Socket Creation: ", WSAGetLastError());
 		}
+
+		cout << "--Server socket created" << endl;
 
 
 		//socket parameters
@@ -40,25 +43,27 @@ int main(int argc, _TCHAR* argv[]) {
 		if (bind(serverSocket, (LPSOCKADDR)&serv, sizeof(serv)) == SOCKET_ERROR) {
 			throw SetErrorMsgText("Socket Parameter Binding: ", WSAGetLastError());
 		}
-
+		cout << "--Parameters binded" << endl;
 		//--3: listen
 		if (listen(serverSocket, SOMAXCONN) == SOCKET_ERROR) {
 			throw SetErrorMsgText("Listen: ", WSAGetLastError());
 		}
 
+		cout << "--Listening to a port" << endl;
+
 		SOCKET clientSocket;
 		SOCKADDR_IN client;
 		memset(&client, 0, sizeof(client));
 		int Lclient = sizeof(client);
-		clientSocket = accept(serverSocket, (sockaddr*)&client, &Lclient);
 
-		if (clientSocket == INVALID_SOCKET) {
+		//--4: accept and wait
+		cout << "--Accept and wait" << endl;
+		if (clientSocket = accept(serverSocket, (sockaddr*)&client, &Lclient) == INVALID_SOCKET) {
 			throw SetErrorMsgText("Accept: ", WSAGetLastError());
 		}
 
 
-
-		//--6: closure and cleanup
+		//--5: closure and cleanup
 		if (closesocket(serverSocket) == SOCKET_ERROR) {
 			throw SetErrorMsgText("Socket Closure: ", WSAGetLastError());
 		}
