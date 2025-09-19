@@ -5,8 +5,9 @@
 #include <cstdlib>
 #include <string>
 #pragma comment(lib,"WS2_32.lib")
-
-
+//#define SEND_FIRST_HELLO
+#define SEND_1000_MESSAGES
+//#define SEND_AND_GET
 using namespace std;
 
 
@@ -37,17 +38,22 @@ int main(int argc, _TCHAR* argv[]) {
 			cerr << "Unable to connect: " << WSAGetLastError() << endl;
 		}
 
-	/*	const char* message = "Hello from Client!";
+#ifdef SEND_FIRST_HELLO
+		const char* message = "Hello from Client!";
 
 		if (send(clientSocket, message, strlen(message), NULL) == SOCKET_ERROR) {
 			cerr << "Send error:" << WSAGetLastError() << endl;
 		}
 		else {
 			cout << "Message sent to server" << endl;
-		}*/
+		}
 
+#endif // SEND_FIRST_HELLO
+
+
+#ifdef SEND_1000_MESSAGES
 		for (int i = 0; i < 1000; i++) {
-			string message_xxx = "Hello from Client "+to_string(i)+"\n";
+			string message_xxx = "Hello from Client " + to_string(i) + "\n";
 			if (send(clientSocket, message_xxx.c_str(), message_xxx.size(), NULL) == SOCKET_ERROR) {
 				cerr << "Send error: " << WSAGetLastError() << endl;
 				break;
@@ -63,6 +69,21 @@ int main(int argc, _TCHAR* argv[]) {
 		else {
 			cout << "Successfully shut down" << endl;
 		}
+
+#endif // SEND_1000_MESSAGES
+
+#ifdef SEND_AND_GET
+
+		int msg_amount;
+		cout << "Enter the amount of messages: ";
+		cin >> msg_amount;
+
+		for (int i = 0; i < msg_amount; i++) {
+
+		}
+
+#endif // SEND_AND_GET
+
 
 
 		system("pause");

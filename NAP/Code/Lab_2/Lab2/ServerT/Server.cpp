@@ -4,7 +4,9 @@
 #include <iostream>
 #include <cstring>
 #pragma comment(lib,"WS2_32.lib")
-
+//#define GET_FIRST_HELLO
+#define GET_1000_MESSAGES
+//#define GET_AND_SEND
 
 using namespace std;
 
@@ -79,29 +81,32 @@ int main(int argc, _TCHAR* argv[]) {
 		int in_buffer_length = 0;
 
 		string complete_message;
-
+#ifdef GET_FIRST_HELLO
 		//--5: recv and print
-		//cout << "----------Getting the first Hello----------" << endl;
-		//in_buffer_length = recv(clientSocket, in_buffer, sizeof(in_buffer) - 1, NULL);
-		//if (in_buffer_length == SOCKET_ERROR) {
-		//	cerr << "Recv error: " << WSAGetLastError() << endl;
-		//}
-		//else {
-		//	in_buffer[in_buffer_length] = '\0';
-		//	complete_message += in_buffer;
+		cout << "----------Getting the first Hello----------" << endl;
+		in_buffer_length = recv(clientSocket, in_buffer, sizeof(in_buffer) - 1, NULL);
+		if (in_buffer_length == SOCKET_ERROR) {
+			cerr << "Recv error: " << WSAGetLastError() << endl;
+		}
+		else {
+			in_buffer[in_buffer_length] = '\0';
+			complete_message += in_buffer;
 
-		//	size_t pos;
-		//	while ((pos = complete_message.find('\n') != string::npos) ){
-		//		string msg = complete_message.substr(0, pos);
-		//		cout << "Got from client: " << msg << endl;
-		//		complete_message.erase(0, pos + 1);
-		//	}
+			size_t pos;
+			while ((pos = complete_message.find('\n') != string::npos)) {
+				string msg = complete_message.substr(0, pos);
+				cout << "Got from client: " << msg << endl;
+				complete_message.erase(0, pos + 1);
+			}
 
-		//
-		//}
 
-		//cout << "------------------------------------------------" << endl;
+		}
 
+		cout << "------------------------------------------------" << endl;
+
+#endif // GET_FIRST_HELLO
+
+#ifdef GET_1000_MESSAGES
 		cout << "----------Getting a 1000 messages from client----------" << endl;
 		while (true) {
 			in_buffer_length = recv(clientSocket, in_buffer, sizeof(in_buffer) - 1, NULL);
@@ -109,7 +114,7 @@ int main(int argc, _TCHAR* argv[]) {
 				cerr << "Recv error: " << WSAGetLastError() << endl;
 				break;
 			}
-			else if (in_buffer_length==0) {
+			else if (in_buffer_length == 0) {
 				cout << "Client disconnected" << endl;
 				break;
 			}
@@ -123,12 +128,19 @@ int main(int argc, _TCHAR* argv[]) {
 					cout << "Got from client: " << msg << endl;
 					complete_message.erase(0, pos + 1);
 				}
-				
+
 				continue;
 			}
 		}
 
 		cout << "----------------------------------------------------------" << endl;
+#endif // GET_1000_MESSAGES
+
+#ifdef GET_AND_SEND
+		while (true) {
+			in_buffer_length = recv()
+		}
+#endif // GET_AND_SEND
 
 		system("pause");
 
