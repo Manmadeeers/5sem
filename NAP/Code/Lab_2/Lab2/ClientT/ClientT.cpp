@@ -2,12 +2,13 @@
 #include <ws2tcpip.h>
 #include <tchar.h>
 #include <iostream>
-#include <cstring>
 #include <cstdlib>
+#include <string>
 #pragma comment(lib,"WS2_32.lib")
 
 
 using namespace std;
+
 
 
 int main(int argc, _TCHAR* argv[]) {
@@ -33,27 +34,51 @@ int main(int argc, _TCHAR* argv[]) {
 
 		if (connect(clientSocket, (sockaddr*)&serv, sizeof(serv)) == SOCKET_ERROR) {//if server is not powered or actively refuses the connection - gives 10061
 
-			throw "Unable to connect: " + WSAGetLastError();
+			cerr << "Unable to connect: " << WSAGetLastError() << endl;
+		}
+
+	/*	const char* message = "Hello from Client!";
+
+		if (send(clientSocket, message, strlen(message), NULL) == SOCKET_ERROR) {
+			cerr << "Send error:" << WSAGetLastError() << endl;
+		}
+		else {
+			cout << "Message sent to server" << endl;
+		}*/
+
+		for (int i = 0; i < 1000; i++) {
+			string message_xxx = "Hello from Client "+to_string(i)+"\n";
+			if (send(clientSocket, message_xxx.c_str(), message_xxx.size(), NULL) == SOCKET_ERROR) {
+				cerr << "Send error: " << WSAGetLastError() << endl;
+				break;
+			}
+			else {
+				cout << "Message sent: " << message_xxx << endl;
+			}
+		}
+
+		if (shutdown(clientSocket, SD_BOTH) == SOCKET_ERROR) {
+			cerr << "Failed to shutdown: " << WSAGetLastError() << endl;
+		}
+		else {
+			cout << "Successfully shut down" << endl;
 		}
 
 
-		char in_buffer[50];
-		char out_buffer[50] = "server: accepted";
+		system("pause");
 
-		int lin_buffer = 0;
-		int lout_buffer = 0;
 
-		if (lin_buffer = recv(clientSocket, in_buffer, sizeof(in_buffer), NULL) == SOCKET_ERROR) {
-			throw "Recv: " + WSAGetLastError();
+		if (closesocket(clientSocket) == SOCKET_ERROR) {
+			cerr << "Failed to close a socket"<<WSAGetLastError() << endl;
 		}
+		cout << "Socket closed" << endl;
 
-		errno_t err = _itoa_s(lout_buffer, out_buffer + sizeof("Server: accepted") - 1, 10, 10);
-		if (err != 0) {
-			cerr << "Error converting a number via _itoa_s:" << err << endl;
+		if (WSACleanup() == SOCKET_ERROR) {
+			cerr << "Failed to cleanup" << WSAGetLastError() << endl;
 		}
-		if (lout_buffer = send(clientSocket, out_buffer, strlen(out_buffer) + 1, NULL) == SOCKET_ERROR) {
-			throw "Send: " + WSAGetLastError();
-		}
+		cout << "Cleanup executed" << endl;
+
+
 
 	}
 	catch (char* msg) {

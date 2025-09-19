@@ -11,6 +11,8 @@ using namespace std;
 string SetErrorMsgText(string text, int code);
 string GetErrorMsgText(int code);
 
+
+
 int main(int argc, _TCHAR* argv[]) {
 
 	WSADATA WSD_pointer;
@@ -59,7 +61,8 @@ int main(int argc, _TCHAR* argv[]) {
 
 		//--4: accept and wait
 		cout << "--Accept and wait" << endl;
-		if (clientSocket = accept(serverSocket, (sockaddr*)&client, &Lclient) == INVALID_SOCKET) {
+		clientSocket = accept(serverSocket, (sockaddr*)&client, &Lclient);
+		if (clientSocket == INVALID_SOCKET) {
 			throw SetErrorMsgText("Accept: ", WSAGetLastError());
 		}
 
@@ -73,36 +76,80 @@ int main(int argc, _TCHAR* argv[]) {
 
 
 		char in_buffer[50];
-		char out_buffer[50] = "Server: got ";
-
 		int in_buffer_length = 0;
-		int out_buffer_length = 0;
 
-		if ((in_buffer_length = recv(clientSocket, in_buffer, sizeof(in_buffer), NULL)) == SOCKET_ERROR) {
-			cerr << "Recv error: " << WSAGetLastError() << endl;
+		string complete_message;
+
+		//--5: recv and print
+		//cout << "----------Getting the first Hello----------" << endl;
+		//in_buffer_length = recv(clientSocket, in_buffer, sizeof(in_buffer) - 1, NULL);
+		//if (in_buffer_length == SOCKET_ERROR) {
+		//	cerr << "Recv error: " << WSAGetLastError() << endl;
+		//}
+		//else {
+		//	in_buffer[in_buffer_length] = '\0';
+		//	complete_message += in_buffer;
+
+		//	size_t pos;
+		//	while ((pos = complete_message.find('\n') != string::npos) ){
+		//		string msg = complete_message.substr(0, pos);
+		//		cout << "Got from client: " << msg << endl;
+		//		complete_message.erase(0, pos + 1);
+		//	}
+
+		//
+		//}
+
+		//cout << "------------------------------------------------" << endl;
+
+		cout << "----------Getting a 1000 messages from client----------" << endl;
+		while (true) {
+			in_buffer_length = recv(clientSocket, in_buffer, sizeof(in_buffer) - 1, NULL);
+			if (in_buffer_length == SOCKET_ERROR) {
+				cerr << "Recv error: " << WSAGetLastError() << endl;
+				break;
+			}
+			else if (in_buffer_length==0) {
+				cout << "Client disconnected" << endl;
+				break;
+			}
+			else {
+				in_buffer[in_buffer_length] = '\0';
+				complete_message += in_buffer;
+
+				size_t pos;
+				while ((pos = complete_message.find('\n')) != string::npos) {
+					string msg = complete_message.substr(0, pos);
+					cout << "Got from client: " << msg << endl;
+					complete_message.erase(0, pos + 1);
+				}
+				
+				continue;
+			}
 		}
 
-		errno_t err = _itoa_s(out_buffer_length, out_buffer + sizeof("Server: got ") - 1, 10, 10);
+		cout << "----------------------------------------------------------" << endl;
 
-		if (err != 0) {
-			cerr << "Error converting an error via _itoa_s" << err << endl;
-		}
-
-
-		if ((out_buffer_length = send(clientSocket, out_buffer, strlen(out_buffer) + 1, NULL)) == SOCKET_ERROR) {
-			cerr << "Send error: " << WSAGetLastError() << endl;
-		}
-
-
+		system("pause");
 
 		//--5: closure and cleanup
+		if (closesocket(clientSocket) == SOCKET_ERROR) {
+			throw SetErrorMsgText("Client Socket closure", WSAGetLastError());
+		}
+		cout << "Client socket closed" << endl;
+
 		if (closesocket(serverSocket) == SOCKET_ERROR) {
 			throw SetErrorMsgText("Socket Closure: ", WSAGetLastError());
 		}
 
+		cout << "Server socket closed" << endl;
+
 		if (WSACleanup() == SOCKET_ERROR) {
 			throw SetErrorMsgText("Cleanup: ", WSAGetLastError());
 		}
+
+		cout << "Cleanup executed" << endl;
+
 	}
 	catch (string error_msg) {
 		cout << endl << error_msg << endl;
@@ -114,7 +161,7 @@ int main(int argc, _TCHAR* argv[]) {
 
 string SetErrorMsgText(string text, int code) {
 	char code_chr = static_cast<char>(code);
-	return text + GetErrorMsgText(code)+ "(" + code_chr+")";
+	return text + GetErrorMsgText(code) + "(" + code_chr + ")";
 }
 
 string GetErrorMsgText(int code) {
