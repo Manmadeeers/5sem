@@ -156,8 +156,10 @@ namespace HT {
 
 
     HTHANDLE* Open(const char FileName[512]) {
-        lock_guard<mutex>lock(ht_mutex);
+        
+
         cout << "----------Opening Started----------" << endl << endl;
+        lock_guard<mutex>lock(ht_mutex);
         HTHANDLE* ht = new HTHANDLE();
         ht->File = CreateFileA(
             FileName,
@@ -228,7 +230,6 @@ namespace HT {
     }
 
     BOOL Snap(HTHANDLE* hthandle) {
-        lock_guard<mutex>lock(ht_mutex);
 
         cout << endl << "----------Snap----------" << endl;
 
@@ -236,6 +237,8 @@ namespace HT {
             cout << "--Snap:Failed to open the handle--" << "Error: " << GetLastError() << endl;
             return FALSE;
         }
+
+        //lock_guard<mutex>lock(ht_mutex);
 
         hthandle->lastsnaptime = time(nullptr);
 
@@ -299,13 +302,13 @@ namespace HT {
     }
 
     BOOL Close(HTHANDLE* hthandle) {
-        lock_guard<mutex>lock(ht_mutex);
 
         if (!hthandle) {
             cout << "--Close:Failed To Close(Invalid handle)--" << " Error: " << GetLastError() << endl;
             return FALSE;
         }
 
+        lock_guard<mutex>lock(ht_mutex);
 
         if (Snap(hthandle)) {
             cout << "--Close:Snapshot taken--" << endl;
@@ -335,7 +338,6 @@ namespace HT {
     }
 
     BOOL Insert(HTHANDLE* hthandle, const Element* element) {
-        lock_guard<mutex>lock(ht_mutex);
 
         if (hthandle == NULL) {
             cout << "--Insert: Failed to insert(Invalid handle)--" << " Error: " << GetLastError() << endl;
@@ -364,6 +366,8 @@ namespace HT {
             cout << "--Insert: Failed to insert(Element's payload length is too big)--" << endl;
             return FALSE;
         }
+
+        lock_guard<mutex>lock(ht_mutex);
 
         int next_index = hthandle->CurrentElements;
 
@@ -396,8 +400,6 @@ namespace HT {
 
     BOOL Delete(HTHANDLE* handle, const Element* element) {
 
-        lock_guard<mutex>lock(ht_mutex);
-
 
         cout << endl << "----------Deletion Started----------" << endl << endl;
         if (handle == NULL || handle->Addr == NULL) {
@@ -409,6 +411,8 @@ namespace HT {
             cout << "--Delete: Failed to delete an element(element was invalid)--" << endl;
             return FALSE;
         }
+
+        lock_guard<mutex>lock(ht_mutex);
 
 
         int index_to_delete = -1;
@@ -442,8 +446,6 @@ namespace HT {
     }
 
     Element* Get(const HTHANDLE* handle, const Element* element) {
-        lock_guard<mutex>lock(ht_mutex);
-
 
         if (handle == NULL || handle->Addr == NULL) {
             cout << "--Get: Failed to get an element(handle was invalid)--" << endl;
@@ -454,6 +456,7 @@ namespace HT {
             cout << "--Get: Failed to get an element(element was invalid)--" << endl;
             return NULL;
         }
+        lock_guard<mutex>lock(ht_mutex);
 
         size_t slot_size = handle->MaxKeyLength + handle->MaxPayloadLength;
         for (int i = 0; i < handle->CurrentElements; ++i) {
@@ -481,7 +484,6 @@ namespace HT {
     }
 
     BOOL Update(const HTHANDLE* handle, const Element* element, const void* newpayload, int newpayloadlength) {
-        lock_guard<mutex>lock(ht_mutex);
 
         if (handle == NULL || handle->Addr == NULL) {
             cout << "--Update: Failed to update an element(handle was invalid)--" << endl;
@@ -497,6 +499,8 @@ namespace HT {
             cout << "--Update: Failed to update an element(data to update were invalid)--" << endl;
             return FALSE;
         }
+
+        lock_guard<mutex>lock(ht_mutex);
 
         size_t slot_size = handle->MaxKeyLength + handle->MaxPayloadLength;
 
