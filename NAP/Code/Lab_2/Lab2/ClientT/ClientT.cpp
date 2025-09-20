@@ -100,7 +100,7 @@ int main(int argc, _TCHAR* argv[]) {
 				break;
 			}
 			else {
-				cout << "Recieved from server: " << in_buffer << endl;
+				cout << "Received from server: " << in_buffer << endl;
 			}
 
 			int iterator = i + 1;

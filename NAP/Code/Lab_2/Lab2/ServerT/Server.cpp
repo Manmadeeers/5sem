@@ -6,6 +6,7 @@
 #pragma comment(lib,"WS2_32.lib")
 //#define GET_FIRST_HELLO
 //#define GET_1000_MESSAGES
+//#define GET_IP_AND_PORT
 #define GET_AND_SEND
 
 using namespace std;
@@ -37,13 +38,12 @@ int main(int argc, _TCHAR* argv[]) {
 
 		cout << "--Server socket created" << endl;
 
-
 		//socket parameters
 		SOCKADDR_IN serv;
 		serv.sin_family = AF_INET;
 		serv.sin_port = htons(2000);
 		serv.sin_addr.S_un.S_addr = INADDR_ANY;
-		
+
 
 		if (bind(serverSocket, (LPSOCKADDR)&serv, sizeof(serv)) == SOCKET_ERROR) {
 			throw SetErrorMsgText("Socket Parameter Binding: ", WSAGetLastError());
@@ -55,6 +55,8 @@ int main(int argc, _TCHAR* argv[]) {
 		}
 
 		cout << "--Listening to a port" << endl;
+
+#ifdef GET_IP_AND_PORT
 
 		SOCKET clientSocket;
 		SOCKADDR_IN client;
@@ -69,18 +71,20 @@ int main(int argc, _TCHAR* argv[]) {
 		}
 
 		char ip_buffer[INET_ADDRSTRLEN];
-		if (inet_ntop(AF_INET,&client.sin_addr,ip_buffer,sizeof(ip_buffer))==nullptr) {
+		if (inet_ntop(AF_INET, &client.sin_addr, ip_buffer, sizeof(ip_buffer)) == nullptr) {
 			cerr << "Error converting IP address" << WSAGetLastError() << endl;
 		}
 		cout << "----------Client info----------" << endl;
-		cout<<"Client's IP address: " << ip_buffer << endl;
+		cout << "Client's IP address: " << ip_buffer << endl;
 		cout << "Client's port: " << ntohs(client.sin_port) << endl;
 
 
-		char in_buffer[50];
-		int in_buffer_length = 0;
+#endif // GET_IP_AND_PORT
 
-		string complete_message;
+
+		
+
+
 #ifdef GET_FIRST_HELLO
 		//--5: recv and print
 		cout << "----------Getting the first Hello----------" << endl;
@@ -138,36 +142,65 @@ int main(int argc, _TCHAR* argv[]) {
 
 #ifdef GET_AND_SEND
 		while (true) {
-			in_buffer_length = recv(clientSocket, in_buffer, sizeof(in_buffer), NULL);
-			if (in_buffer_length == SOCKET_ERROR) {
-				throw SetErrorMsgText("Failed to recv message from a client", WSAGetLastError());
-				break;
-			}
-			else if (in_buffer_length <=0) {
-				cout << "Got the final message. Client Disconnected." << endl;
-				break;
+			SOCKET clientSocket;
+			SOCKADDR_IN client;
+			memset(&client, 0, sizeof(client));
+			int Lclient = sizeof(client);
+
+			clientSocket = accept(serverSocket, (sockaddr*)&client, &Lclient);
+
+			if (clientSocket == INVALID_SOCKET) {
+				cerr << "Failed to accept connection: " << WSAGetLastError() << endl;
+				continue;
 			}
 
-			in_buffer[in_buffer_length] = '\0';
+			cout << "Client connected ("<<client.sin_port<<")" << endl;
 
-			cout << "Received from client: " << in_buffer << endl;
-			if (send(clientSocket, in_buffer, sizeof(in_buffer), NULL)==SOCKET_ERROR) {
-				throw SetErrorMsgText("Failed to send message bacl to client", WSAGetLastError());
+
+			char in_buffer[50];
+			int in_buffer_length = 0;
+
+			string complete_message;
+
+
+			while (true) {
+				in_buffer_length = recv(clientSocket, in_buffer, sizeof(in_buffer), NULL);
+				if (in_buffer_length == SOCKET_ERROR) {
+					throw SetErrorMsgText("Failed to recv message from a client", WSAGetLastError());
+					break;
+				}
+				else if (in_buffer_length <= 0) {
+					cout << "Got the final message. Client Disconnected." << endl;
+					break;
+				}
+
+				in_buffer[in_buffer_length] = '\0';
+
+				cout << "Received from client: " << in_buffer << endl;
+				if (send(clientSocket, in_buffer, sizeof(in_buffer), NULL) == SOCKET_ERROR) {
+					throw SetErrorMsgText("Failed to send message bacl to client", WSAGetLastError());
+				}
+				else {
+					cout << "Sent back to client: " << in_buffer << endl;
+				}
+
 			}
-			else {
-				cout << "Sent back to client: " << in_buffer << endl;
+
+			if (closesocket(clientSocket) == SOCKET_ERROR) {
+				throw SetErrorMsgText("Failed to close client socket", WSAGetLastError());
 			}
-			
+			cout << "Client disconnected ("<<client.sin_port<<")" << endl;
 		}
+
 #endif // GET_AND_SEND
 		
 		system("pause");
 
 		//--5: closure and cleanup
-		if (closesocket(clientSocket) == SOCKET_ERROR) {
-			throw SetErrorMsgText("Client Socket closure", WSAGetLastError());
-		}
-		cout << "Client socket closed" << endl;
+		//if (closesocket(clientSocket) == SOCKET_ERROR) {
+		//	throw SetErrorMsgText("Client Socket closure", WSAGetLastError());
+		//}
+		//cout << "Client socket closed" << endl;
 
 		if (closesocket(serverSocket) == SOCKET_ERROR) {
 			throw SetErrorMsgText("Socket Closure: ", WSAGetLastError());
