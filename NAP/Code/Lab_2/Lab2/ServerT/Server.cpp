@@ -5,8 +5,8 @@
 #include <cstring>
 #pragma comment(lib,"WS2_32.lib")
 //#define GET_FIRST_HELLO
-#define GET_1000_MESSAGES
-//#define GET_AND_SEND
+//#define GET_1000_MESSAGES
+#define GET_AND_SEND
 
 using namespace std;
 
@@ -138,10 +138,29 @@ int main(int argc, _TCHAR* argv[]) {
 
 #ifdef GET_AND_SEND
 		while (true) {
-			in_buffer_length = recv()
+			in_buffer_length = recv(clientSocket, in_buffer, sizeof(in_buffer), NULL);
+			if (in_buffer_length == SOCKET_ERROR) {
+				throw SetErrorMsgText("Failed to recv message from a client", WSAGetLastError());
+				break;
+			}
+			else if (in_buffer_length <=0) {
+				cout << "Got the final message. Client Disconnected." << endl;
+				break;
+			}
+
+			in_buffer[in_buffer_length] = '\0';
+
+			cout << "Received from client: " << in_buffer << endl;
+			if (send(clientSocket, in_buffer, sizeof(in_buffer), NULL)==SOCKET_ERROR) {
+				throw SetErrorMsgText("Failed to send message bacl to client", WSAGetLastError());
+			}
+			else {
+				cout << "Sent back to client: " << in_buffer << endl;
+			}
+			
 		}
 #endif // GET_AND_SEND
-
+		
 		system("pause");
 
 		//--5: closure and cleanup
@@ -162,6 +181,7 @@ int main(int argc, _TCHAR* argv[]) {
 
 		cout << "Cleanup executed" << endl;
 
+		
 	}
 	catch (string error_msg) {
 		cout << endl << error_msg << endl;

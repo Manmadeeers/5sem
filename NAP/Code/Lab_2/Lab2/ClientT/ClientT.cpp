@@ -6,8 +6,8 @@
 #include <string>
 #pragma comment(lib,"WS2_32.lib")
 //#define SEND_FIRST_HELLO
-#define SEND_1000_MESSAGES
-//#define SEND_AND_GET
+//#define SEND_1000_MESSAGES
+#define SEND_AND_GET
 using namespace std;
 
 
@@ -75,12 +75,56 @@ int main(int argc, _TCHAR* argv[]) {
 #ifdef SEND_AND_GET
 
 		int msg_amount;
-		cout << "Enter the amount of messages: ";
+		cout << "Enter the amount of messages to be transmitted: ";
 		cin >> msg_amount;
 
-		for (int i = 0; i < msg_amount; i++) {
 
+		clock_t start_time = clock();
+		string message;
+		for (int i = 0; i < msg_amount; i++) {
+			if (i == 0) {
+				message = "Hello from client" + to_string(i) + "\n";
+			}
+
+			if (send(clientSocket, message.c_str(), message.size(), NULL) == SOCKET_ERROR) {
+				cerr << "Failed to send a message: " << WSAGetLastError() << endl;
+				break;
+			}
+			else {
+				cout << "Message sent: " << message << endl;
+			}
+
+			char in_buffer[50];
+			if (recv(clientSocket, in_buffer, sizeof(in_buffer), NULL) == SOCKET_ERROR) {
+				cerr << "Failed to recv a message: " << WSAGetLastError() << endl;
+				break;
+			}
+			else {
+				cout << "Recieved from server: " << in_buffer << endl;
+			}
+
+			int iterator = i + 1;
+			string tmp = "";
+			message = "";
+			tmp += in_buffer;
+			message = "Hello from client" + to_string(iterator) + "\n";
 		}
+
+
+		string final_message = "";
+
+		if (send(clientSocket, final_message.c_str(), final_message.size(), NULL) == SOCKET_ERROR) {
+			cerr << "Failed to send the last message: " << WSAGetLastError() << endl;
+		}
+		else {
+			cout << "Last message sent. Disconnecting" << endl;
+		}
+
+		clock_t end_time = clock();
+
+		double time_duration = static_cast<double>(end_time - start_time);
+
+		cout << "Time taken for " << msg_amount << " messages: " << time_duration << endl;
 
 #endif // SEND_AND_GET
 
@@ -99,6 +143,8 @@ int main(int argc, _TCHAR* argv[]) {
 		}
 		cout << "Cleanup executed" << endl;
 
+
+		system("pause");
 
 
 	}
