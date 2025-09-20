@@ -1,5 +1,7 @@
-#include "OS10_1.h"
-#include <iostream>
+﻿#include <iostream>
+#include "OS_10_2.h"
+using namespace std;
+
 //#define CREATION_ENABLED
 //#define OPENING_ENABLED
 //#define INSERTION_ENABLED
@@ -7,7 +9,7 @@
 //#define CLOSURE_ENABLED
 //#define GET_ENABLED
 //#define UPDATE_ENABLED
-using namespace std;
+
 
 
 int main() {
@@ -30,7 +32,7 @@ int main() {
 
 #endif // CREATION_ENABLED
 
-		
+
 
 #ifdef OPENING_ENABLED
 		handle = HT::Open("Test.ht");
@@ -61,7 +63,7 @@ int main() {
 		HT::Insert(handle, new HT::Element("key9", 4, "payload9", 8));
 
 		cout << endl << "----------Insertion Ended----------" << endl;
-	
+
 #endif // INSERTION_ENABLED
 
 #ifdef DELETION_ENABLED
@@ -103,11 +105,11 @@ int main() {
 			cout << "--Failed to Close--" << endl;
 		}
 #endif // CLOSURE_ENABLED
-		
+
 	}
 	catch (exception ex) {
 		cout << ex.what() << endl;
-		
+
 	}
 
 
