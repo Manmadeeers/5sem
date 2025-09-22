@@ -37,12 +37,11 @@ const serverFunction = function (request, response) {
 
 const server = http.createServer(serverFunction);
 
-server.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
-});
+server.listen(PORT);
+ console.log(`Server running at http://localhost:${PORT}`);
 
 const changeState = () => {
-    rl.question(`Current state is "${appState}". Enter new state (norm, stop, idle, exit): `, (input) => {
+    rl.question(`${appState}--> `, (input) => {
 
         input = input.trim().toLowerCase();
 
@@ -56,13 +55,14 @@ const changeState = () => {
 
         } else if (['norm', 'stop', 'idle'].includes(input)) {
 
-            appState = input;
+            
 
-            console.log(`State changed to: ${appState}`);
+            console.log(`reg = ${appState}-->${input}`);
+            appState = input;
 
         } else {
 
-            console.log(`Invalid input: "${input}". State not changed.`);
+            console.log(`${appState}-->${input}. Invalid`);
 
         }
 
