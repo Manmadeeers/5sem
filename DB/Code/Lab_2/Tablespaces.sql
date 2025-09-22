@@ -63,6 +63,17 @@ password expire
 
 GRANT RL_FIACORE to FIACORE
 
+drop user FIACORE
+
+create tablespace FIA_QDATA
+    DATAFILE  'C:\app\Tablespaces\ts_FIA_QDATA.dbf'
+    SIZE 10m
+    OFFLINE
+
+alter tablespace FIA_QDATA ONLINE;
+
+alter user FIACORE quota 2m on FIA_QDATA;
+
 
     
     
