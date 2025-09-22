@@ -37,23 +37,10 @@ const server = http.createServer(serverFunction);
 server.listen(5000);
 
 process.stdin.setEncoding('utf-8');
-// prompt(app_state);
 process.stdin.on('readable', () => {
     let chunk = null;
     while ((chunk = process.stdin.read()) != null) {
-        rl.prompt(`${app_state}->`, (chunk) => {
-            chunk = chunk.trim();
-        })
-        if (chunk.trim("exit")) {
-            process.exit(0);
-        }
-        else if (chunk.trim("stop")) {
-            process.stdout.write(`reg=${app_state}-->${chunk}`);
-            app_state = "stop";
-            rl.question(`${app_state}->`, (chunk) => {
-                chunk = chunk.trim();
-            })
-        }
+
     }
 })
 console.log("Server running at http://localhost:5000");
