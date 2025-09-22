@@ -1,23 +1,61 @@
 var http = require('http');
+var url = require('url');
+var fs = require('fs');
 const PORT = 5000;
 
-const server = http.createServer();
-
-const processFact = (numToFact)=>{
-    if(numToFact<0){
-        return undefined;
+function factorial(n) {
+    if (isNaN(n)) {
+        return null;
     }
-    else if(numToFact===0){
+    if (n < 0) {
+        return null;
+    }
+    if (n == 0) {
         return 1;
     }
-    else{
-        return numToFact*processFact(numToFact-1);
+    return n * factorial(n - 1);
+}
+
+const serverFunction = function (request, response) {
+    const parsedUrl = url.parse(request.url, true);
+
+    const parsedNum = parseInt(parsedUrl.query.k);
+
+    if (request.method==="GET"&&parsedUrl.pathname==="/fact"&&!isNaN(parsedNum)) {
+        console.log(parsedNum);
+        const processedNum = factorial(parsedNum);
+        console.log(processedNum);
+        if (processedNum != null) {
+            response.writeHead(200, { 'content-type': 'application/json;charset=utf-8' });
+            response.end(JSON.stringify({
+                k: parsedNum,
+                fact: processedNum
+            }));
+        }
+        else{
+            response.writeHead(400,{'content-type':'application/json;charset=utf-8'});
+            response.end(JSON.stringify({
+                error:"Factoriated number was less then 0 or not a number"
+            }));
+        }
+
     }
-}   
+    else if(request.method==="GET"&&request.url==="/fact"){
+        let html = fs.readFileSync("./factorial.html");
 
-server.on('request',(request,response)=>{
+        response.writeHead(200,{'content-type':'text/html'});
+        response.end(html);
+    }
+    else{
+        response.writeHead(404,{'content-type':'text/html'});
+        response.end(
+            '<h1>404 Not Found</h1>'
+        );
+    }
+}
 
-})
+const server = http.createServer(serverFunction);
 
 server.listen(PORT);
+
 console.log("Server running at http://localhost:5000/fact");

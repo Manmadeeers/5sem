@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factorial in a loop</title>
+</head>
+<body>
+    <h1>Factorial in a loop</h1>
+    <div id="content">
+
+    </div>
+</body>
+<script>
+    document.getElementById('content').addEventListener('on-page-load',function(){
+        for(let i=0;i<20;i++){
+            fetch(`http://localhost:5000/fact?k=${i}`);
+        }
+    })
+</script>
+</html>
