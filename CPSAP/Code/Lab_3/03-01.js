@@ -2,11 +2,14 @@ var http = require('http');
 const { stdin } = require('process');
 var readline = require('readline');
 
+const PORT = 5000;
+
 const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
 })
-let app_state = "norm";
+
+let appState = "norm";
 
 const serverFunction = function (request, response) {
     if (request.url === "/") {
@@ -20,7 +23,7 @@ const serverFunction = function (request, response) {
                 <title>03-01</title>
             </head>
             <body>
-                <h1 id="state-display">${app_state}</h1>
+                <h1 id="state-display">${appState}</h1>
             </body>
         </html>`
         );
@@ -34,13 +37,38 @@ const serverFunction = function (request, response) {
 
 const server = http.createServer(serverFunction);
 
-server.listen(5000);
+server.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`);
+});
 
-process.stdin.setEncoding('utf-8');
-process.stdin.on('readable', () => {
-    let chunk = null;
-    while ((chunk = process.stdin.read()) != null) {
+const changeState = () => {
+    rl.question(`Current state is "${appState}". Enter new state (norm, stop, idle, exit): `, (input) => {
 
-    }
-})
-console.log("Server running at http://localhost:5000");
+        input = input.trim().toLowerCase();
+
+        if (input === 'exit') {
+
+            console.log('Exiting the application...');
+
+            rl.close();
+
+            process.exit(0);
+
+        } else if (['norm', 'stop', 'idle'].includes(input)) {
+
+            appState = input;
+
+            console.log(`State changed to: ${appState}`);
+
+        } else {
+
+            console.log(`Invalid input: "${input}". State not changed.`);
+
+        }
+
+        changeState();
+
+    });
+}
+
+changeState();  
