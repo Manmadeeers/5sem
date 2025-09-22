@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Factorial in a loop</title>
 </head>
+
 <body>
     <h1>Factorial in a loop</h1>
     <div id="content">
@@ -12,10 +14,24 @@
     </div>
 </body>
 <script>
-    document.getElementById('content').addEventListener('on-page-load',function(){
-        for(let i=0;i<20;i++){
-            fetch(`http://localhost:5000/fact?k=${i}`);
+
+    async function processFactorials() {
+        var content_container = document.getElementById('content');
+        const start_time = Date.now();
+        for (let i = 0; i < 20; i++) {
+            const response = await fetch(`/fact?k=${i}`);
+            const data = await response.json();
+            let passed_time = Date.now()-start_time;
+            if(response.ok){
+                content_container.innerHTML+=`<p>${i}.Result:${passed_time}-${data.k}/${data.fact}</p>`;
+            }
+            else{
+                content_container.innerHTML+=`${i}Error`;
+            }
         }
-    })
+    }
+
+    processFactorials();
 </script>
+
 </html>
