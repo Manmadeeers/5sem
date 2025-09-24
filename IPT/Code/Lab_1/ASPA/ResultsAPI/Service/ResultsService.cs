@@ -1,4 +1,6 @@
 ﻿using ResultsAPI.Models;
+using System.Text.Json.Serialization;
+using Newtonsoft.Json;
 
 namespace ResultsAPI.Service
 {
@@ -16,17 +18,28 @@ namespace ResultsAPI.Service
         private readonly string _filePath = "results.json";
         private readonly object _lock = new();
 
+        public ResultsService()
+        {
+            LoadResults();
+        }
 
         public void LoadResults()
         {
             if (File.Exists(_filePath))
             {
-
+                var json = File.ReadAllText(_filePath);
+                _results = JsonConvert.DeserializeObject<List<Result>>(json) ?? new List<Result>();
             }
             else
             {
                 _results = new List<Result>();
             }
+        }
+
+        public void SaveResults()
+        {
+            var json = JsonConvert.SerializeObject(_results, Formatting.Indented);
+            File.WriteAllText(_filePath, json);
         }
 
 
@@ -47,7 +60,7 @@ namespace ResultsAPI.Service
             lock (_lock)
             {
                 _results.Add(addedResult);
-                //save to JSON
+                SaveResults();
             }
 
             return await Task.FromResult(addedResult);
@@ -62,7 +75,7 @@ namespace ResultsAPI.Service
                 lock (_lock)
                 {
                     foundResult.Value = newValue;
-                    //save to JSON
+                    SaveResults();
                 }
             }
 
@@ -79,7 +92,7 @@ namespace ResultsAPI.Service
                 lock (_lock)
                 {
                     _results.Remove(foundResult);
-                    //save to JSON
+                    SaveResults();
                 }
 
                 return true;

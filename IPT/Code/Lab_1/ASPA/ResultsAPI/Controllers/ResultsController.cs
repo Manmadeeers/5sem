@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ResultsAPI.Models;
+using ResultsAPI.Service;
 
 namespace ResultsAPI.Controllers
 {
@@ -8,24 +9,63 @@ namespace ResultsAPI.Controllers
     [ApiController]
     public class ResultsController : ControllerBase
     {
-        public static readonly List<Result> Resulst = new List<Result>();
-
-
-        [HttpGet]
-        public ActionResult<IEnumerable<Result>> GetResults()
+        public readonly ResultsService _resultsService;
+        public ResultsController(ResultsService resultsService)
         {
-            return Ok(Resulst);
+            _resultsService = resultsService;
         }
 
-        [HttpGet("{id}")]
-        public ActionResult<Result> GetResult(int id)
+        [HttpGet]
+        public async Task<IActionResult> GetAllResults()
         {
-            var result = Resulst.FirstOrDefault(r => r.Key == id);
-            if(result is null)
+            var results = await _resultsService.GetAllResultsAsync();
+
+           return Ok(results);
+        }
+
+        [HttpGet("{k:int}")]
+        public async Task<IActionResult>GetResultByKey(int key)
+        {
+            var result = await _resultsService.GetByKeyAsync(key);
+
+            if (result == null)
             {
                 return NotFound();
             }
-            return Ok(result);
+            else
+            {
+                return Ok(result);
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult>AddResult([FromBody]string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return BadRequest();
+            }
+            var addResult = await _resultsService.AddSync(value);
+            return CreatedAtAction(nameof(GetResultByKey), new { Key = addResult.Key }, addResult);
+        }
+
+        [HttpPut("{key:int}")]
+        public async Task<IActionResult>UpdateResult(int key, [FromBody]string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return BadRequest();
+            }
+
+            var updatedResult = await _resultsService.UpdateAsync(key, value);
+            if(updatedResult == null)
+            {
+                return NotFound();
+            }
+            else
+            {
+                return Ok(updatedResult);
+            }
         }
     }
 }
