@@ -238,7 +238,8 @@ namespace HT {
             return FALSE;
         }
 
-        //lock_guard<mutex>lock(ht_mutex);
+        //not needed here if the snapshot is being executed during closure procedure
+        //lock_guard<mutex>lock(ht_mutex)
 
         hthandle->lastsnaptime = time(nullptr);
 
@@ -337,6 +338,7 @@ namespace HT {
         return TRUE;
     }
 
+    //TODO: Hash Table implementatin is required
     BOOL Insert(HTHANDLE* hthandle, const Element* element) {
 
         if (hthandle == NULL) {
