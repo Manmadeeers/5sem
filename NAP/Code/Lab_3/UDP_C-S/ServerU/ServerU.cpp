@@ -79,6 +79,7 @@ int main(int argc, _TCHAR* argv[]) {
 #ifdef SEND_AND_GET
 		
 		while (true) {
+
 			LinBuffer = recvfrom(serverSocket, inBuffer, sizeof(inBuffer), NULL, (sockaddr*)&clientParameters, &LClient);
 
 			if (LinBuffer == SOCKET_ERROR) {
@@ -94,12 +95,13 @@ int main(int argc, _TCHAR* argv[]) {
 
 			cout << "--sending the message back to client" << endl;
 
-			int sendResult = sendto(serverSocket, inBuffer, LinBuffer - 1, NULL, (sockaddr*)&clientParameters, LClient);
-			if (sendResult == SOCKET_ERROR) {
+
+			if (sendto(serverSocket, inBuffer, LinBuffer - 1, NULL, (sockaddr*)&clientParameters, LClient) == SOCKET_ERROR) {
 				throw SetErrorMsgText("Failed to send message back to client", WSAGetLastError());
 			}
 
 			cout << "--sent back to client (" << inBuffer << ")" << endl;
+
 		}
 
 #endif // SEND_AND_GET
