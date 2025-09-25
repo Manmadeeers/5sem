@@ -163,10 +163,12 @@ namespace HT {
 
     HTHANDLE* Open(const char FileName[512]) {
 
-
         cout << "----------Opening Started----------" << endl << endl;
+
         lock_guard<mutex>lock(ht_mutex);
+
         HTHANDLE* ht = new HTHANDLE();
+
         ht->File = CreateFileA(
             FileName,
             GENERIC_READ | GENERIC_WRITE,
@@ -176,6 +178,8 @@ namespace HT {
             FILE_ATTRIBUTE_NORMAL,
             NULL
         );
+
+
         if (ht->File == INVALID_HANDLE_VALUE) {
             cout << "--File Creation Failed(Open)--" << endl;
             delete ht;
@@ -184,6 +188,7 @@ namespace HT {
         else {
             cout << "--File Creation Successful(Open)--" << endl;
         }
+
         ht->FileMapping = CreateFileMappingA(
             ht->File,
             NULL,
@@ -192,6 +197,7 @@ namespace HT {
             0,
             "SharedHTMapping"
         );
+
         if (ht->FileMapping == NULL) {
             cout << "--File Mapping Failed(Open)--" << endl;
             CloseHandle(ht->File);
@@ -209,6 +215,7 @@ namespace HT {
             0,
             0
         );
+
         if (ht->Addr == NULL) {
             cout << "--Map View Of File Failed(Open)--" << endl;
             CloseHandle(ht->FileMapping);
@@ -219,6 +226,12 @@ namespace HT {
         else {
             cout << "--Map View Of File Successful(Open)--" << endl;
         }
+
+        memcpy(&ht->Capacity, ht->Addr, sizeof(ht->Capacity));
+
+        cout << "Opened handle capacity: " << ht->Capacity << endl;
+
+
         return ht;
     }
 

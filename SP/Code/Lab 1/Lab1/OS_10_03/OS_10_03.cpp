@@ -4,10 +4,10 @@ using namespace std;
 
 //#define CREATION_ENABLED
 #define OPENING_ENABLED
-#define INSERTION_ENABLED
+//#define INSERTION_ENABLED
 //#define DELETION_ENABLED
-//#define CLOSURE_ENABLED
-#define GET_ENABLED
+#define CLOSURE_ENABLED
+//#define GET_ENABLED
 //#define UPDATE_ENABLED
 
 int main() {
@@ -15,7 +15,7 @@ int main() {
 	HT::HTHANDLE* handle2 = nullptr;
 	try {
 #ifdef CREATION_ENABLED
-		handle1 = HT::Create(1000, 3, 10, 256, "Test1.ht");
+		handle1 = HT::Create(20, 3, 10, 256, "Test1.ht");
 
 		if (handle1 == NULL) {
 			cout << "--Failed To Create Or Open An HT-Storage--" << endl;
@@ -40,7 +40,7 @@ int main() {
 
 		}
 
-		handle2 = HT::Open("Test1.ht");
+		/*handle2 = HT::Open("Test1.ht");
 
 		if (handle2 == NULL) {
 
@@ -53,7 +53,7 @@ int main() {
 
 		}
 
-		cout << endl << "----------Opening Ended----------" << endl;
+		cout << endl << "----------Opening Ended----------" << endl;*/
 
 
 #endif // OPENING_ENABLED
@@ -70,9 +70,9 @@ int main() {
 
 
 
-		HT::Insert(handle2, new HT::Element("keyA", 3, "payloadA", 8));
+		/*HT::Insert(handle2, new HT::Element("keyA", 3, "payloadA", 8));
 
-		HT::Insert(handle2, new HT::Element("keyB", 3, "payloadB", 8));
+		HT::Insert(handle2, new HT::Element("keyB", 3, "payloadB", 8));*/
 
 		cout << endl << "----------Insertion Ended----------" << endl;
 
@@ -174,16 +174,16 @@ int main() {
 
 		}
 
-		if (HT::Close(handle2)) {
+		//if (HT::Close(handle2)) {
 
-			cout << "--Closed Storage 2 Successfully--" << endl;
+		//	cout << "--Closed Storage 2 Successfully--" << endl;
 
-		}
-		else {
+		//}
+		//else {
 
-			cout << "--Failed to Close Storage 2--" << endl;
+		//	cout << "--Failed to Close Storage 2--" << endl;
 
-		}
+		//}
 
 #endif // CLOSURE_ENABLED
 
