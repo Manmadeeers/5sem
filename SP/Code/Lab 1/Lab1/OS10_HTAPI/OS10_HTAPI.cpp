@@ -61,7 +61,6 @@ namespace HT {
         lastsnaptime(0),
         CurrentElements(0)
     {
-
     }
 
     HTHANDLE::HTHANDLE(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char FileName[512])
@@ -74,6 +73,9 @@ namespace HT {
 
         strcpy_s(this->FileName, 512, FileName);
 
+        for (int i = 0; i < Capacity; i++) {
+            this->hash_helper[i] = -1;
+        }
 
 
     }
@@ -83,7 +85,10 @@ namespace HT {
 
         HTHANDLE* ht = new HTHANDLE(Capacity, SecSnapshotInterval, MaxKeyLength, MaxPayloadLength, FileName);
         cout << "----------Creation Started----------" << endl << endl;
-        
+
+
+
+
         ht->File = CreateFileA(
             FileName,
             GENERIC_READ | GENERIC_WRITE,//access mode:read &writes
@@ -157,7 +162,7 @@ namespace HT {
 
 
     HTHANDLE* Open(const char FileName[512]) {
-        
+
 
         cout << "----------Opening Started----------" << endl << endl;
         lock_guard<mutex>lock(ht_mutex);
@@ -343,7 +348,7 @@ namespace HT {
     //using classical DJB2 algorithm
 
     int hashFunction(const void* key, int keyLength, int capacity) {
-        int hash = 5381; 
+        int hash = 5381;
 
 
         const char* str = static_cast<const char*>(key);
@@ -351,17 +356,17 @@ namespace HT {
         for (int i = 0; i < keyLength; ++i) {
 
 
-            hash = ((hash << 5) + hash) + str[i]; 
+            hash = ((hash << 5) + hash) + str[i];
 
         }
 
         cout << "--Hash: current Hash value: " << hash << endl;
 
 
-        return abs(hash % capacity)/100;
+        return abs(hash % capacity);
     }
 
-    
+
     BOOL Insert(HTHANDLE* hthandle, const Element* element) {
 
         if (hthandle == NULL) {
@@ -394,9 +399,25 @@ namespace HT {
 
         lock_guard<mutex>lock(ht_mutex);
 
-        int next_index = hthandle->CurrentElements;
+        //int next_index = hthandle->CurrentElements;
 
         int hash_index = hashFunction(element->key, element->keylength, hthandle->Capacity);
+
+        int iterator = 0;
+        while (true) {
+
+            if (iterator == hash_index && hthandle->hash_helper[iterator] == -1) {
+                hthandle->hash_helper[iterator] = hash_index;
+                break;
+            }
+
+            hash_index = (hash_index + 1) % hthandle->Capacity;
+            iterator = hash_index;
+            if (iterator == hthandle->Capacity) {
+                break;
+            }
+        }
+
         cout << "--Insert: hash index determined: " << hash_index << endl;
 
         size_t slot_size = hthandle->MaxKeyLength + hthandle->MaxPayloadLength;
