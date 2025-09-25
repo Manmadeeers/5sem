@@ -1,4 +1,4 @@
-﻿#include <WinSock2.h>
+﻿﻿#include <winSock2.h>
 #include <ws2tcpip.h>
 #include <tchar.h>
 #include <iostream>
@@ -134,7 +134,7 @@ int main(int argc, _TCHAR* argv[]) {
 
 
 		if (closesocket(clientSocket) == SOCKET_ERROR) {
-			cerr << "Failed to close a socket"<<WSAGetLastError() << endl;
+			cerr << "Failed to close a socket" << WSAGetLastError() << endl;
 		}
 		cout << "Socket closed" << endl;
 
@@ -151,6 +151,6 @@ int main(int argc, _TCHAR* argv[]) {
 	catch (char* msg) {
 		cout << msg << endl;
 	}
-	
+
 	return 0;
 }

@@ -26,12 +26,12 @@ int main(int argc, _TCHAR* argv[]) {
 	try {
 		//--1: start the server
 		if (WSAStartup(WSD_version, &WSD_pointer) != 0) {
-			throw SetErrorMsgText("Startup: " , WSAGetLastError());
+			throw SetErrorMsgText("Startup: ", WSAGetLastError());
 		}
 		cout << "--Server started" << endl;
 
 		//--2: create a server socket
-		serverSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP) ;
+		serverSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 		if (serverSocket == INVALID_SOCKET) {
 			throw SetErrorMsgText("Socket Creation: ", WSAGetLastError());
 		}
@@ -82,7 +82,7 @@ int main(int argc, _TCHAR* argv[]) {
 #endif // GET_IP_AND_PORT
 
 
-		
+
 
 
 #ifdef GET_FIRST_HELLO
@@ -154,7 +154,7 @@ int main(int argc, _TCHAR* argv[]) {
 				continue;
 			}
 
-			cout << "Client connected ("<<client.sin_port<<")" << endl;
+			cout << "Client connected (" << client.sin_port << ")" << endl;
 
 
 			char in_buffer[50];
@@ -189,11 +189,11 @@ int main(int argc, _TCHAR* argv[]) {
 			if (closesocket(clientSocket) == SOCKET_ERROR) {
 				throw SetErrorMsgText("Failed to close client socket", WSAGetLastError());
 			}
-			cout << "Client disconnected ("<<client.sin_port<<")" << endl;
+			cout << "Client disconnected (" << client.sin_port << ")" << endl;
 		}
 
 #endif // GET_AND_SEND
-		
+
 		system("pause");
 
 		//--5: closure and cleanup
@@ -214,7 +214,7 @@ int main(int argc, _TCHAR* argv[]) {
 
 		cout << "Cleanup executed" << endl;
 
-		
+
 	}
 	catch (string error_msg) {
 		cout << endl << error_msg << endl;
