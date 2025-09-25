@@ -83,7 +83,7 @@ namespace HT {
 
         HTHANDLE* ht = new HTHANDLE(Capacity, SecSnapshotInterval, MaxKeyLength, MaxPayloadLength, FileName);
         cout << "----------Creation Started----------" << endl << endl;
-
+        
         ht->File = CreateFileA(
             FileName,
             GENERIC_READ | GENERIC_WRITE,//access mode:read &writes

@@ -3,11 +3,11 @@
 using namespace std;
 
 //#define CREATION_ENABLED
-//#define OPENING_ENABLED
-//#define INSERTION_ENABLED
+#define OPENING_ENABLED
+#define INSERTION_ENABLED
 //#define DELETION_ENABLED
 //#define CLOSURE_ENABLED
-//#define GET_ENABLED
+#define GET_ENABLED
 //#define UPDATE_ENABLED
 
 int main() {
@@ -23,21 +23,6 @@ int main() {
 		else {
 			cout << "--Storage Created Successfully--" << endl;
 		}
-
-		handle2 = HT::Create(1000, 3, 10, 256, "Test2.ht");
-
-		if (handle2 == NULL) {
-			cout << "--Failed To Create Or Open An HT-Storage--" << endl;
-		}
-		else {
-			cout << "--Storage Created Successfully--" << endl;
-		}
-
-
-		cout << endl << "----------Creation Ended----------" << endl;
-
-
-		cout << endl << "----------Creation Ended----------" << endl;
 #endif // CREATION_ENABLED
 
 #ifdef OPENING_ENABLED
@@ -55,7 +40,7 @@ int main() {
 
 		}
 
-		handle2 = HT::Open("Test2.ht");
+		handle2 = HT::Open("Test1.ht");
 
 		if (handle2 == NULL) {
 

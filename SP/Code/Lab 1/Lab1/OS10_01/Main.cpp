@@ -16,7 +16,7 @@ int main() {
 
 
 #ifdef CREATION_ENABLED
-		handle = HT::Create(1000, 3, 10, 256, "Test.ht");
+		handle = HT::Create(40, 3, 10, 256, "Test.ht");
 
 		if (handle == NULL) {
 			cout << "--Failed To Create Or Open An HT-Storage--" << endl;
@@ -52,13 +52,13 @@ int main() {
 		HT::Insert(handle, new HT::Element("key1", 4, "PAYLOAD1", 8));
 
 		HT::Insert(handle, new HT::Element("key2", 4, "payload2", 8));
-		HT::Insert(handle, new HT::Element("key3", 4, "payload3", 8));
-		HT::Insert(handle, new HT::Element("key4", 4, "payload4", 8));
-		HT::Insert(handle, new HT::Element("key5", 4, "payload5", 8));
-		HT::Insert(handle, new HT::Element("key6", 4, "payload6", 8));
-		HT::Insert(handle, new HT::Element("key7", 4, "payload7", 8));
-		HT::Insert(handle, new HT::Element("key8", 4, "payload8", 8));
-		HT::Insert(handle, new HT::Element("key9", 4, "payload9", 8));
+		HT::Insert(handle, new HT::Element("key2", 4, "payload3", 8));
+		//HT::Insert(handle, new HT::Element("key4", 4, "payload4", 8));
+		//HT::Insert(handle, new HT::Element("key5", 4, "payload5", 8));
+		//HT::Insert(handle, new HT::Element("key6", 4, "payload6", 8));
+		//HT::Insert(handle, new HT::Element("key7", 4, "payload7", 8));
+		//HT::Insert(handle, new HT::Element("key8", 4, "payload8", 8));
+		//HT::Insert(handle, new HT::Element("key9", 4, "payload9", 8));
 
 		cout << endl << "----------Insertion Ended----------" << endl;
 	

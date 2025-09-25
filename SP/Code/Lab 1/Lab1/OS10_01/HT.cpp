@@ -5,6 +5,7 @@
 #include <cstring>
 #include <Windows.h>
 #include <cstdlib>
+#include <vector>
 
 using namespace std;
 
@@ -59,7 +60,6 @@ namespace HT {
         lastsnaptime(0),
         CurrentElements(0)
     {
-
     }
 
     HTHANDLE::HTHANDLE(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char FileName[512])
@@ -72,6 +72,9 @@ namespace HT {
 
         strcpy_s(this->FileName, 512, FileName);
 
+        for (int i = 0; i < Capacity; i++) {
+            this->hash_helper[i] = -1;
+        }
 
 
     }
@@ -82,6 +85,9 @@ namespace HT {
         HTHANDLE* ht = new HTHANDLE(Capacity, SecSnapshotInterval, MaxKeyLength, MaxPayloadLength, FileName);
         cout << "----------Creation Started----------" << endl << endl;
 
+
+
+      
         ht->File = CreateFileA(
             FileName,
             GENERIC_READ | GENERIC_WRITE,//access mode:read &writes
@@ -341,7 +347,7 @@ namespace HT {
     //using classical DJB2 algorithm
 
     int hashFunction(const void* key, int keyLength, int capacity) {
-        int hash = 51;
+        int hash = 5381;
 
 
         const char* str = static_cast<const char*>(key);
@@ -392,9 +398,25 @@ namespace HT {
 
         lock_guard<mutex>lock(ht_mutex);
 
-        int next_index = hthandle->CurrentElements;
+        //int next_index = hthandle->CurrentElements;
 
         int hash_index = hashFunction(element->key, element->keylength, hthandle->Capacity);
+
+        int iterator = 0;
+        while (true) {
+
+            if (iterator == hash_index && hthandle->hash_helper[iterator] == -1) {
+                hthandle->hash_helper[iterator] = hash_index;
+                break;
+            }
+
+            hash_index = (hash_index + 1) % hthandle->Capacity;
+            iterator = hash_index;
+            if (iterator == hthandle->Capacity) {
+                break;
+            }
+        }
+
         cout << "--Insert: hash index determined: " << hash_index << endl;
 
         size_t slot_size = hthandle->MaxKeyLength + hthandle->MaxPayloadLength;
