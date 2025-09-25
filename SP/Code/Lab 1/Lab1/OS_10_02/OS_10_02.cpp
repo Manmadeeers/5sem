@@ -2,9 +2,9 @@
 #include "OS_10_2.h"
 using namespace std;
 
-//#define CREATION_ENABLED
+#define CREATION_ENABLED
 //#define OPENING_ENABLED
-//#define INSERTION_ENABLED
+#define INSERTION_ENABLED
 //#define DELETION_ENABLED
 //#define CLOSURE_ENABLED
 //#define GET_ENABLED

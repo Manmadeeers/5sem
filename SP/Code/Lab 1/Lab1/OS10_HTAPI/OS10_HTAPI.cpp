@@ -6,6 +6,7 @@
 #include <thread>
 #include <cstring>
 #include <Windows.h>
+#include <cstdlib>
 
 using namespace std;
 
@@ -338,7 +339,29 @@ namespace HT {
         return TRUE;
     }
 
-    //TODO: Hash Table implementatin is required
+
+    //using classical DJB2 algorithm
+
+    int hashFunction(const void* key, int keyLength, int capacity) {
+        int hash = 5381; 
+
+
+        const char* str = static_cast<const char*>(key);
+
+        for (int i = 0; i < keyLength; ++i) {
+
+
+            hash = ((hash << 5) + hash) + str[i]; 
+
+        }
+
+        cout << "--Hash: current Hash value: " << hash << endl;
+
+
+        return abs(hash % capacity)/100;
+    }
+
+    
     BOOL Insert(HTHANDLE* hthandle, const Element* element) {
 
         if (hthandle == NULL) {
@@ -373,9 +396,12 @@ namespace HT {
 
         int next_index = hthandle->CurrentElements;
 
+        int hash_index = hashFunction(element->key, element->keylength, hthandle->Capacity);
+        cout << "--Insert: hash index determined: " << hash_index << endl;
+
         size_t slot_size = hthandle->MaxKeyLength + hthandle->MaxPayloadLength;
 
-        char* base = static_cast<char*>(hthandle->Addr) + hthandle->CurrentElements * slot_size;
+        char* base = static_cast<char*>(hthandle->Addr) + hash_index * slot_size;
 
         if (element->keylength != NULL) {
             memcpy(base, element->key, element->keylength);
