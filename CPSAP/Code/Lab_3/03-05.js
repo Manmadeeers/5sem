@@ -32,10 +32,10 @@ const serverFunction = function (request, response) {
     const parsedNum = parseInt(parsedUrl.query.k);
 
     if (request.method === "GET" && parsedUrl.pathname === "/fact" && !isNaN(parsedNum)) {
-        console.log(parsedNum);
+        //console.log(parsedNum);
         factorial(parsedNum,(processedNum)=>{
             if(processedNum!=null){
-                console.log(processedNum);
+                //console.log(processedNum);
                 response.writeHead(200,{'content-type':'application/json;charset=utf-8'});
                 response.end(JSON.stringify(
                     {
@@ -73,3 +73,7 @@ server.listen(PORT);
 
 
 console.log("Server running at http://localhost:5000/fact");
+
+//time passed in 1 folder: 454ms
+//time passed in 2 folders: 491ms(1st folder), 430ms(2nd folder)
+//time passed in 3 folders: 579ms(1st folder), 482ms(2nd folder), 486ms(3rd folder)
