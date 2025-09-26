@@ -1,4 +1,4 @@
-﻿﻿#include <winSock2.h>
+﻿#include <winsock2.h>
 #include <ws2tcpip.h>
 #include <tchar.h>
 #include <iostream>
@@ -39,7 +39,7 @@ int main(int argc, _TCHAR* argv[]) {
 		}
 
 #ifdef SEND_FIRST_HELLO
-		const char* message = "Hello from Client!";
+		const char* message = "Hello from Client!\n";
 
 		if (send(clientSocket, message, strlen(message), NULL) == SOCKET_ERROR) {
 			cerr << "Send error:" << WSAGetLastError() << endl;

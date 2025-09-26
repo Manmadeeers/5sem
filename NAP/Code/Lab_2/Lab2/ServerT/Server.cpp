@@ -4,9 +4,9 @@
 #include <iostream>
 #include <cstring>
 #pragma comment(lib,"WS2_32.lib")
+//#define GET_IP_AND_PORT
 //#define GET_FIRST_HELLO
 //#define GET_1000_MESSAGES
-//#define GET_IP_AND_PORT
 #define GET_AND_SEND
 
 using namespace std;
@@ -56,6 +56,10 @@ int main(int argc, _TCHAR* argv[]) {
 
 		cout << "--Listening to a port" << endl;
 
+		char in_buffer[50];
+		int in_buffer_length = 0;
+		string complete_message;
+
 #ifdef GET_IP_AND_PORT
 
 		SOCKET clientSocket;
@@ -94,14 +98,9 @@ int main(int argc, _TCHAR* argv[]) {
 		}
 		else {
 			in_buffer[in_buffer_length] = '\0';
-			complete_message += in_buffer;
+		
 
-			size_t pos;
-			while ((pos = complete_message.find('\n') != string::npos)) {
-				string msg = complete_message.substr(0, pos);
-				cout << "Got from client: " << msg << endl;
-				complete_message.erase(0, pos + 1);
-			}
+			cout << "got from client: " << in_buffer << endl;
 
 
 		}
@@ -142,29 +141,25 @@ int main(int argc, _TCHAR* argv[]) {
 
 #ifdef GET_AND_SEND
 		while (true) {
-			SOCKET clientSocket;
-			SOCKADDR_IN client;
-			memset(&client, 0, sizeof(client));
-			int Lclient = sizeof(client);
+			SOCKET clientSocketGS;
+			SOCKADDR_IN clientGS;
+			memset(&clientGS, 0, sizeof(clientGS));
+			int LclientGS = sizeof(clientGS);
 
-			clientSocket = accept(serverSocket, (sockaddr*)&client, &Lclient);
+			clientSocketGS = accept(serverSocket, (sockaddr*)&clientGS, &LclientGS);
 
-			if (clientSocket == INVALID_SOCKET) {
+			if (clientSocketGS == INVALID_SOCKET) {
 				cerr << "Failed to accept connection: " << WSAGetLastError() << endl;
 				continue;
 			}
 
-			cout << "Client connected (" << client.sin_port << ")" << endl;
+			cout << "Client connected (" << clientGS.sin_port << ")" << endl;
 
-
-			char in_buffer[50];
-			int in_buffer_length = 0;
-
-			string complete_message;
 
 
 			while (true) {
-				in_buffer_length = recv(clientSocket, in_buffer, sizeof(in_buffer), NULL);
+
+				in_buffer_length = recv(clientSocketGS, in_buffer, sizeof(in_buffer), NULL);
 				if (in_buffer_length == SOCKET_ERROR) {
 					throw SetErrorMsgText("Failed to recv message from a client", WSAGetLastError());
 					break;
@@ -177,7 +172,7 @@ int main(int argc, _TCHAR* argv[]) {
 				in_buffer[in_buffer_length] = '\0';
 
 				cout << "Received from client: " << in_buffer << endl;
-				if (send(clientSocket, in_buffer, sizeof(in_buffer), NULL) == SOCKET_ERROR) {
+				if (send(clientSocketGS, in_buffer, sizeof(in_buffer), NULL) == SOCKET_ERROR) {
 					throw SetErrorMsgText("Failed to send message bacl to client", WSAGetLastError());
 				}
 				else {
@@ -186,10 +181,10 @@ int main(int argc, _TCHAR* argv[]) {
 
 			}
 
-			if (closesocket(clientSocket) == SOCKET_ERROR) {
+			if (closesocket(clientSocketGS) == SOCKET_ERROR) {
 				throw SetErrorMsgText("Failed to close client socket", WSAGetLastError());
 			}
-			cout << "Client disconnected (" << client.sin_port << ")" << endl;
+			cout << "Client disconnected (" << clientGS.sin_port << ")" << endl;
 		}
 
 #endif // GET_AND_SEND
