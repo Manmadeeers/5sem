@@ -6,6 +6,7 @@
 #include <Windows.h>
 #include <cstdlib>
 #include <vector>
+#include <string>
 
 using namespace std;
 
@@ -85,15 +86,14 @@ namespace HT {
         HTHANDLE* ht = new HTHANDLE(Capacity, SecSnapshotInterval, MaxKeyLength, MaxPayloadLength, FileName);
         cout << "----------Creation Started----------" << endl << endl;
 
-
-
+     
       
         ht->File = CreateFileA(
             FileName,
             GENERIC_READ | GENERIC_WRITE,//access mode:read &writes
             0, //sharing between processes: No sharing
             NULL, //security attributes: Default security attributes    
-            OPEN_ALWAYS, //how to open: Open if exists, else create
+            CREATE_ALWAYS, //how to open: Open if exists, else create
             FILE_ATTRIBUTE_NORMAL,//file attribute:normal
             NULL // No template file
         );
@@ -112,7 +112,17 @@ namespace HT {
             cout << "File error: " << GetLastError() << endl;
         }
 
-        int storage_size = ht->Capacity * (ht->MaxKeyLength + ht->MaxPayloadLength);
+     
+        int slot_size = (ht->MaxKeyLength + ht->MaxPayloadLength);
+        cout << "Slot size: " << slot_size << endl;
+
+        int metadata_offset = 3 * sizeof(int);
+        cout << "Metadata offset: " << metadata_offset << endl;
+
+        cout << "Storage capacity: " << ht->Capacity << endl;
+        int storage_size = metadata_offset + (ht->Capacity * slot_size);
+        cout << "Storage size: " << storage_size << endl;
+        
 
         ht->FileMapping = CreateFileMappingA(
             ht->File, // Handle to the file
@@ -136,7 +146,7 @@ namespace HT {
 
 
         ht->Addr = MapViewOfFile(
-            ht->FileMapping,//handle to file mappint
+            ht->FileMapping,//handle to file mapping
             FILE_MAP_ALL_ACCESS, //access mode: all access
             0, // Offset high: from the top of the file
             0, // Offset low: from the bottom of the file
@@ -153,7 +163,16 @@ namespace HT {
         else {
             cout << "--MapViewOfFile successful(Create)--" << endl;
         }
+        
 
+        memcpy(ht->Addr, &Capacity, sizeof(int));               
+
+        memcpy(static_cast<char*>(ht->Addr) + sizeof(int), &MaxKeyLength, sizeof(int));
+
+        memcpy(static_cast<char*>(ht->Addr) + 2 * sizeof(int), &MaxPayloadLength, sizeof(int));
+
+
+        ht->Addr = static_cast<char*>(ht->Addr) + metadata_offset;
 
 
         return ht;
@@ -218,6 +237,46 @@ namespace HT {
         else {
             cout << "--Map View Of File Successful(Open)--" << endl;
         }
+
+        memcpy(&ht->Capacity, ht->Addr, sizeof(int));
+        memcpy(&ht->MaxKeyLength, static_cast<char*>(ht->Addr) + sizeof(int), sizeof(int));
+        memcpy(&ht->MaxPayloadLength, static_cast<char*>(ht->Addr) + 2 * sizeof(int), sizeof(int));
+
+        cout << "Current ht->Addr: " << ht->Addr << endl;
+
+        int slot_size = ht->MaxKeyLength + ht->MaxPayloadLength;
+        cout << "Computed slot size: " << slot_size << endl;
+
+        int metadata_offset = 3 * sizeof(int);
+
+        ht->Addr = static_cast<char*>(ht->Addr) + metadata_offset;
+        cout << "Computed ht->Addr: " << ht->Addr << endl;
+
+        int total_mem = slot_size * ht->Capacity;
+        cout << "Total mem: " << total_mem << endl;
+
+        char* base = static_cast<char*>(ht->Addr);
+        for (int i = 0; i < ht->Capacity; ++i) {
+            char* current_slot = base + (i * slot_size);
+            if (memcmp(current_slot, "", ht->MaxPayloadLength) == 0) {
+                ht->hash_helper[i] = -1;
+            }
+            else {
+                ht->hash_helper[i] = i;
+            }
+        }
+      /*  for (int i = 0; i < ht->Capacity; ++i) {
+            char* base = static_cast<char*>(ht->Addr)+ (i * slot_size);
+            if (memcmp(base, "", ht->MaxKeyLength) != 0) {
+                ht->hash_helper[i] = -1;
+            }
+            else {
+                ht->hash_helper[i] = i;
+            }
+        }*/
+
+        cout << "Opened HT storage has " << ht->Capacity << " capacity, " << ht->MaxKeyLength << " Max key length, " << ht->MaxPayloadLength << " max payload length" << endl;
+
         return ht;
     }
 
@@ -398,11 +457,12 @@ namespace HT {
 
         lock_guard<mutex>lock(ht_mutex);
 
-        //int next_index = hthandle->CurrentElements;
+        int offset = 3 * sizeof(int);
 
         int hash_index = hashFunction(element->key, element->keylength, hthandle->Capacity);
 
         int iterator = 0;
+        cout << "finding place..." << endl;
         while (true) {
 
             if (iterator == hash_index && hthandle->hash_helper[iterator] == -1) {
@@ -416,12 +476,14 @@ namespace HT {
                 break;
             }
         }
+        cout << "place found." << hash_index << endl;
 
         cout << "--Insert: hash index determined: " << hash_index << endl;
 
         size_t slot_size = hthandle->MaxKeyLength + hthandle->MaxPayloadLength;
 
-        char* base = static_cast<char*>(hthandle->Addr) + hash_index * slot_size;
+
+        char* base = static_cast<char*>(hthandle->Addr)+offset + hash_index * slot_size;
 
         if (element->keylength != NULL) {
             memcpy(base, element->key, element->keylength);
@@ -462,11 +524,11 @@ namespace HT {
 
         lock_guard<mutex>lock(ht_mutex);
 
-
+       
         int index_to_delete = -1;
 
         for (int i = 0; i < handle->CurrentElements; ++i) {
-            char* storage_location = static_cast<char*>(handle->Addr) + (i * (handle->MaxKeyLength + handle->MaxPayloadLength));
+            char* storage_location = static_cast<char*>(handle->Addr)+ (i * (handle->MaxKeyLength + handle->MaxPayloadLength));
 
             if (memcmp(storage_location, element->key, element->keylength) == 0) {
                 index_to_delete = i;
@@ -505,11 +567,12 @@ namespace HT {
             return NULL;
         }
         lock_guard<mutex>lock(ht_mutex);
-
+        int offset = 3 * sizeof(int);
+        
         size_t slot_size = handle->MaxKeyLength + handle->MaxPayloadLength;
         for (int i = 0; i < handle->CurrentElements; ++i) {
 
-            char* base = static_cast<char*>(handle->Addr) + (i * slot_size);
+            char* base = static_cast<char*>(handle->Addr)+offset + (i * slot_size);
 
             if (memcmp(base, element->key, element->keylength) == 0) {
                 Element* found = new Element(
@@ -549,7 +612,7 @@ namespace HT {
         }
 
         lock_guard<mutex>lock(ht_mutex);
-
+       
         size_t slot_size = handle->MaxKeyLength + handle->MaxPayloadLength;
 
         for (int i = 0; i < handle->CurrentElements; ++i) {

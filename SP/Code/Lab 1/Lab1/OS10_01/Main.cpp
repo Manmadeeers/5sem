@@ -1,10 +1,10 @@
 #include "OS10_1.h"
 #include <iostream>
-#define CREATION_ENABLED
-//#define OPENING_ENABLED
-#define INSERTION_ENABLED
+//#define CREATION_ENABLED
+#define OPENING_ENABLED
+//#define INSERTION_ENABLED
 //#define DELETION_ENABLED
-#define CLOSURE_ENABLED
+//#define CLOSURE_ENABLED
 //#define GET_ENABLED
 //#define UPDATE_ENABLED
 using namespace std;
@@ -70,7 +70,7 @@ int main() {
 #endif // DELETION_ENABLED
 #ifdef GET_ENABLED
 		cout << endl << "----------Get Started----------" << endl << endl;
-		HT::Element* got_element = HT::Get(handle, new HT::Element("key7", 4, "payload7", 8));
+		HT::Element* got_element = HT::Get(handle, new HT::Element("key1", 4));
 		if (got_element != NULL) {
 			cout << "--Get executed successful--" << endl;
 			HT::Print(got_element);
