@@ -1,36 +1,34 @@
 var http = require('http');
 var fs = require('fs');
 var url = require('url');
-var events = require('events');
-var util = require('util');
 var data_module = require('./Db_module');
 const PORT = 5000;
 
 var db = new data_module.DB();
 
-db.on('GET', (request, response) => {
+db.on('GET', async(request, response) => {
     console.log("DB.GET triggered");
     response.writeHead(200,{'content-type':'application/json;charset=utf-8'});
     response.end(JSON.stringify(db.get()))
 });
 
-db.on('POST', (request, response) => {
-    console.log("DB.POST triggered");
-    request.on('data',data=>{
-        let dat = JSON.parse(data);
-        db.post(dat);
-        response.end(JSON.stringify(dat));
-    });
+// db.on('POST', (request, response) => {
+//     console.log("DB.POST triggered");
+//     request.on('data',data=>{
+//         let dat = JSON.parse(data);
+//         db.post(dat);
+//         response.end(JSON.stringify(dat));
+//     });
 
-});
-db.on('DELETE',(request,response)=>{
-    console.log("DB.PUT triggered");
-    request.on('data',data=>{
-        let parsed = JSON.parse(data);
-        db.put(parsed);
-        response.end(JSON.stringify(db.get()));
-    });
-});
+// });
+// db.on('DELETE',(request,response)=>{
+//     console.log("DB.PUT triggered");
+//     request.on('data',data=>{
+//         let parsed = JSON.parse(data);
+//         db.put(parsed);
+//         response.end(JSON.stringify(db.get()));
+//     });
+// });
 
 
 
