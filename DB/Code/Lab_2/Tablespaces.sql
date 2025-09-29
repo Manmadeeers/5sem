@@ -1,5 +1,5 @@
 create tablespace ts_FIA
-    DATAFILE  'C:\app\Tablespaces\ts_FIA.dbf'
+    DATAFILE  'C:\app\Tablespaces\ts_FIA1.dbf'
     SIZE 7m
     AUTOEXTEND ON NEXT 5m
     MAXSIZE 20m
@@ -9,7 +9,7 @@ drop tablespace ts_FIA;
     
 
 create temporary tablespace ts_FIA_temp
-    TEMPFILE 'C:\app\Tablespaces\ts_FIA_temp.dbf'
+    TEMPFILE 'C:\app\Tablespaces\ts_FIA_temp1.dbf'
     SIZE 5m
     AUTOEXTEND ON NEXT 5m
     MAXSIZE 30m
@@ -22,6 +22,9 @@ select * from dba_tablespaces;
 
 select * from dba_data_files;
 
+select * from dba_temp_files;
+
+
 create role RL_FIACORE
 
 GRANT CREATE SESSION,
@@ -32,6 +35,7 @@ GRANT CREATE SESSION,
     DROP ANY VIEW,
     CREATE PROCEDURE to RL_FIACORE
 
+drop role RL_FIACORE
 
 select * from dba_roles where role like 'RL_%';
 
@@ -47,7 +51,9 @@ create profile PF_FIACORE LIMIT
         CONNECT_TIME 180
         IDLE_TIME 30
         
-        
+     
+drop profile PF_FIACORE cascade;
+
 select * from dba_profiles where profile like 'PF_FIACORE';
 
 select * from dba_profiles where profile='DEFAULT';
@@ -63,7 +69,7 @@ password expire
 
 GRANT RL_FIACORE to FIACORE
 
-drop user FIACORE
+drop  user FIACORE cascade
 
 create tablespace FIA_QDATA
     DATAFILE  'C:\app\Tablespaces\ts_FIA_QDATA.dbf'
@@ -71,6 +77,8 @@ create tablespace FIA_QDATA
     OFFLINE
 
 alter tablespace FIA_QDATA ONLINE;
+
+drop tablespace FIA_QDATA including contents and datafiles;
 
 alter user FIACORE quota 2m on FIA_QDATA;
 
