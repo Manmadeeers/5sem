@@ -32,6 +32,7 @@ namespace ResultsAPI.Service
             }
             else
             {
+                File.Create(_filePath);
                 _results = new List<Result>();
             }
         }
