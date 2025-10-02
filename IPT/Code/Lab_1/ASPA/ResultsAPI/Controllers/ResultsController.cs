@@ -5,8 +5,8 @@ using ResultsAPI.Service;
 
 namespace ResultsAPI.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/[controller]")]
     public class ResultsController : ControllerBase
     {
         public readonly ResultsService _resultsService;
@@ -65,6 +65,20 @@ namespace ResultsAPI.Controllers
             else
             {
                 return Ok(updatedResult);
+            }
+        }
+
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult>DeleteResult(int id)
+        {
+            var deletionResult = await _resultsService.DeleteAsync(id);
+            if (!deletionResult)
+            {
+                return NotFound();
+            }
+            else
+            {
+                return Ok();
             }
         }
     }
