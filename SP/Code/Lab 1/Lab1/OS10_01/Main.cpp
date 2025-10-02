@@ -2,9 +2,9 @@
 #include <iostream>
 //#define CREATION_ENABLED
 #define OPENING_ENABLED
-//#define INSERTION_ENABLED
+#define INSERTION_ENABLED
 //#define DELETION_ENABLED
-//#define CLOSURE_ENABLED
+#define CLOSURE_ENABLED
 //#define GET_ENABLED
 //#define UPDATE_ENABLED
 using namespace std;
@@ -40,7 +40,6 @@ int main() {
 		else {
 			cout << "--Existing HT-Storage opened successfully--" << endl;
 		}
-
 		cout << endl << "----------Opening Ended----------" << endl;
 #endif // OPENING_ENABLED
 

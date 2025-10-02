@@ -172,7 +172,7 @@ namespace HT {
         memcpy(static_cast<char*>(ht->Addr) + 2 * sizeof(int), &MaxPayloadLength, sizeof(int));
 
 
-        ht->Addr = static_cast<char*>(ht->Addr) + metadata_offset;
+        //ht->Addr = static_cast<char*>(ht->Addr) + metadata_offset;
 
 
         return ht;
@@ -180,9 +180,8 @@ namespace HT {
 
 
     HTHANDLE* Open(const char FileName[512]) {
-
-
         cout << "----------Opening Started----------" << endl << endl;
+
         lock_guard<mutex>lock(ht_mutex);
         HTHANDLE* ht = new HTHANDLE();
         ht->File = CreateFileA(
@@ -249,31 +248,12 @@ namespace HT {
 
         int metadata_offset = 3 * sizeof(int);
 
-        ht->Addr = static_cast<char*>(ht->Addr) + metadata_offset;
+       /* ht->Addr = static_cast<char*>(ht->Addr) + metadata_offset;*/
         cout << "Computed ht->Addr: " << ht->Addr << endl;
 
         int total_mem = slot_size * ht->Capacity;
         cout << "Total mem: " << total_mem << endl;
 
-        char* base = static_cast<char*>(ht->Addr);
-        for (int i = 0; i < ht->Capacity; ++i) {
-            char* current_slot = base + (i * slot_size);
-            if (memcmp(current_slot, "", ht->MaxPayloadLength) == 0) {
-                ht->hash_helper[i] = -1;
-            }
-            else {
-                ht->hash_helper[i] = i;
-            }
-        }
-      /*  for (int i = 0; i < ht->Capacity; ++i) {
-            char* base = static_cast<char*>(ht->Addr)+ (i * slot_size);
-            if (memcmp(base, "", ht->MaxKeyLength) != 0) {
-                ht->hash_helper[i] = -1;
-            }
-            else {
-                ht->hash_helper[i] = i;
-            }
-        }*/
 
         cout << "Opened HT storage has " << ht->Capacity << " capacity, " << ht->MaxKeyLength << " Max key length, " << ht->MaxPayloadLength << " max payload length" << endl;
 
@@ -454,57 +434,58 @@ namespace HT {
             cout << "--Insert: Failed to insert(Element's payload length is too big)--" << endl;
             return FALSE;
         }
+        if (element->keylength == NULL) {
+            cout << "--Insert: Failed to insert(key length was NULL)" << endl;
+            return FALSE;
+        }
+        if (element->payloadlength == NULL) {
+            cout << "--Insert: Failed to insert(payload length was NULL)" << endl;
+            return FALSE;
+        }
 
-        lock_guard<mutex>lock(ht_mutex);
+        lock_guard<mutex> lock(ht_mutex);
 
-        int offset = 3 * sizeof(int);
-
+        const int metadata_offset = 3 * sizeof(int);
+        const int slot_size = hthandle->MaxKeyLength + hthandle->MaxPayloadLength;
         int hash_index = hashFunction(element->key, element->keylength, hthandle->Capacity);
 
-        int iterator = 0;
-        cout << "finding place..." << endl;
-        while (true) {
+        cout << "--Insert: initial hash index: " << hash_index << endl;
 
-            if (iterator == hash_index && hthandle->hash_helper[iterator] == -1) {
-                hthandle->hash_helper[iterator] = hash_index;
-                break;
+        char* base = static_cast<char*>(hthandle->Addr) + metadata_offset;
+
+        
+        for (int probe = 0; probe < hthandle->Capacity; ++probe) {
+            char* slot_key = base + (hash_index * slot_size);
+            
+            bool is_empty = true;
+
+            for (int k = 0; k < hthandle->MaxKeyLength; ++k) {
+                if (slot_key[k] != 0) { is_empty = false; break; }
+            }
+
+            if (is_empty) {
+
+                memcpy(slot_key, element->key, element->keylength);
+                if (element->keylength < hthandle->MaxKeyLength) {
+                    memset(slot_key + element->keylength, 0, hthandle->MaxKeyLength - element->keylength);
+                }
+
+                char* payload_area = slot_key + hthandle->MaxKeyLength;
+                memcpy(payload_area, element->payload, element->payloadlength);
+                if (element->payloadlength < hthandle->MaxPayloadLength) {
+                    memset(payload_area + element->payloadlength, 0, hthandle->MaxPayloadLength - element->payloadlength);
+                }
+
+                hthandle->CurrentElements++;
+                cout << "--Insert: inserted at index " << hash_index << endl;
+                return TRUE;
             }
 
             hash_index = (hash_index + 1) % hthandle->Capacity;
-            iterator = hash_index;
-            if (iterator == hthandle->Capacity) {
-                break;
-            }
-        }
-        cout << "place found." << hash_index << endl;
-
-        cout << "--Insert: hash index determined: " << hash_index << endl;
-
-        size_t slot_size = hthandle->MaxKeyLength + hthandle->MaxPayloadLength;
-
-
-        char* base = static_cast<char*>(hthandle->Addr)+offset + hash_index * slot_size;
-
-        if (element->keylength != NULL) {
-            memcpy(base, element->key, element->keylength);
-            memset(base + element->keylength, 0, hthandle->MaxKeyLength - element->keylength);
-        }
-        else {
-            cout << "--Insert: Failed to insert(key length was NULL)" << endl;
         }
 
-
-        if (element->payloadlength != NULL) {
-            memcpy(base + hthandle->MaxKeyLength, element->payload, element->payloadlength);
-            memset(base + hthandle->MaxKeyLength + element->payloadlength, 0, hthandle->MaxPayloadLength - element->payloadlength);
-        }
-        else {
-            cout << "--Insert: Failed to insert(payload length was NULL)" << endl;
-        }
-
-        hthandle->CurrentElements++;
-        cout << "--Insert: Element inserted successfully--" << endl;
-        return TRUE;
+        cout << "--Insert: no free slot found--" << endl;
+        return FALSE;
     }
 
 
