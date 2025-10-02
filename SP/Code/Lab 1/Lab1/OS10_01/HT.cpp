@@ -73,9 +73,6 @@ namespace HT {
 
         strcpy_s(this->FileName, 512, FileName);
 
-        for (int i = 0; i < Capacity; i++) {
-            this->hash_helper[i] = -1;
-        }
 
 
     }
@@ -498,42 +495,57 @@ namespace HT {
             return FALSE;
         }
 
-        if (element == NULL || element->keylength == NULL || element->payloadlength == NULL) {
+        if (element == NULL || element->keylength == NULL) {
             cout << "--Delete: Failed to delete an element(element was invalid)--" << endl;
             return FALSE;
         }
 
-        lock_guard<mutex>lock(ht_mutex);
+        std::lock_guard<std::mutex> lock(ht_mutex);
 
-       
+        const size_t slot_size = handle->MaxKeyLength + handle->MaxPayloadLength;
+        const int metadata_offset = 3 * sizeof(int);
+        char* base = static_cast<char*>(handle->Addr) + metadata_offset;
+
         int index_to_delete = -1;
 
-        for (int i = 0; i < handle->CurrentElements; ++i) {
-            char* storage_location = static_cast<char*>(handle->Addr)+ (i * (handle->MaxKeyLength + handle->MaxPayloadLength));
+        for (int i = 0; i < handle->Capacity; ++i) {
+            char* current_slot = base + (i * slot_size);
 
-            if (memcmp(storage_location, element->key, element->keylength) == 0) {
+            bool slot_empty = true;
+            for (int k = 0; k < handle->MaxKeyLength; ++k) {
+                if (current_slot[k] != 0) { 
+                    slot_empty = false; 
+                    break; 
+                }
+            }
+            if (slot_empty) {
+                continue;
+            } 
+
+            if (element->keylength <= handle->MaxKeyLength && memcmp(current_slot, element->key, element->keylength) == 0) {
                 index_to_delete = i;
                 break;
             }
         }
 
         if (index_to_delete == -1) {
-            cout << "--Delete: Failed to delete an element(element not found)--" << endl;
+            cout << "--Delete: Failed to delete an element (element not found)--" << endl;
             return FALSE;
         }
 
         for (int i = index_to_delete + 1; i < handle->CurrentElements; ++i) {
-            char* src_location = static_cast<char*>(handle->Addr) + (i * (handle->MaxKeyLength + handle->MaxPayloadLength));
-            char* dest_location = static_cast<char*>(handle->Addr) + ((i - 1) * (handle->MaxKeyLength + handle->MaxPayloadLength));
-            memcpy(dest_location, src_location, handle->MaxKeyLength + handle->MaxPayloadLength);
+            char* src_location = base + (i * slot_size);
+            char* dest_location = base + ((i - 1) * slot_size);
+            memcpy(dest_location, src_location, slot_size);
         }
 
 
-        handle->CurrentElements -= 1;
-        cout << "Delete: Successfully deleted an element with key: " << static_cast<const char*>(element->key) << "--" << endl;
-        cout << "----------Deletion Ended----------" << endl;
-        return TRUE;
+        handle->CurrentElements--;
 
+        cout << "Delete: Successfully deleted an element with key: " << static_cast<const char*>(element->key) << endl;
+        cout << "----------Deletion Ended----------" << endl;
+
+        return TRUE;
     }
 
     Element* Get(const HTHANDLE* handle, const Element* element) {
@@ -543,23 +555,37 @@ namespace HT {
             return NULL;
         }
 
-        if (element == NULL || element->keylength == NULL || element->payloadlength == NULL) {
+        if (element == NULL || element->keylength == NULL) {
             cout << "--Get: Failed to get an element(element was invalid)--" << endl;
             return NULL;
         }
         lock_guard<mutex>lock(ht_mutex);
         int offset = 3 * sizeof(int);
-        
         size_t slot_size = handle->MaxKeyLength + handle->MaxPayloadLength;
-        for (int i = 0; i < handle->CurrentElements; ++i) {
+        char* base = static_cast<char*>(handle->Addr) + offset;
 
-            char* base = static_cast<char*>(handle->Addr)+offset + (i * slot_size);
+        for (int i = 0; i < handle->Capacity; ++i) {
 
-            if (memcmp(base, element->key, element->keylength) == 0) {
+            char* current_slot = base + (i * slot_size);
+
+            bool is_empty = true;
+
+            for (int j = 0; j < handle->MaxKeyLength; ++j) {
+                if (current_slot[j] != 0) {
+                    is_empty = false;
+                    break;
+                }
+            }
+
+            if (is_empty) {
+                continue;
+            }
+
+            if (memcmp(current_slot, element->key, element->keylength) == 0) {
                 Element* found = new Element(
-                    base,
+                    current_slot,
                     element->keylength,
-                    base + handle->MaxKeyLength,
+                    current_slot + handle->MaxKeyLength,
                     handle->MaxPayloadLength
                 );
 
@@ -582,7 +608,7 @@ namespace HT {
             return FALSE;
         }
 
-        if (element == NULL || element->keylength == NULL || element->payloadlength == NULL) {
+        if (element == NULL || element->keylength == NULL) {
             cout << "--Update: Failed to update an element(element was invalid)--" << endl;
             return FALSE;
         }
@@ -595,13 +621,26 @@ namespace HT {
         lock_guard<mutex>lock(ht_mutex);
        
         size_t slot_size = handle->MaxKeyLength + handle->MaxPayloadLength;
+        int metadata_offset = 3 * sizeof(int);
+        char* base = static_cast<char*>(handle->Addr) + metadata_offset;
 
-        for (int i = 0; i < handle->CurrentElements; ++i) {
+        for (int i = 0; i < handle->Capacity; ++i) {
+            char* current_slot = base + (i * slot_size);
 
-            char* base = static_cast<char*>(handle->Addr) + (i * slot_size);
+            bool is_empty = true;
+            for (int j = 0; j < handle->MaxKeyLength; ++j) {
+                if (current_slot[j] != 0) {
+                    is_empty = false;
+                    break;
+                }
+            }
 
-            if (memcmp(base, element->key, element->keylength) == 0) {
-                memcpy(base + handle->MaxKeyLength, newpayload, newpayloadlength);
+            if (is_empty) {
+                continue;
+            }
+
+            if (memcmp(current_slot, element->key, element->keylength) == 0) {
+                memcpy(current_slot + handle->MaxKeyLength, newpayload, newpayloadlength);
                 cout << "--Update: Element updated--" << endl;
                 return TRUE;
             }

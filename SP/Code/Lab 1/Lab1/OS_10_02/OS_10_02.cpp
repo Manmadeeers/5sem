@@ -18,7 +18,7 @@ int main() {
 
 
 #ifdef CREATION_ENABLED
-		handle = HT::Create(1000, 3, 10, 256, "Test.ht");
+		handle = HT::Create(40, 3, 10, 256, "Test.ht");
 
 		if (handle == NULL) {
 			cout << "--Failed To Create Or Open An HT-Storage--" << endl;
@@ -67,12 +67,12 @@ int main() {
 #endif // INSERTION_ENABLED
 
 #ifdef DELETION_ENABLED
-		HT::Delete(handle, new HT::Element("key", 3, "payload", 7));
+		HT::Delete(handle, new HT::Element("key", 3));
 
 #endif // DELETION_ENABLED
 #ifdef GET_ENABLED
 		cout << endl << "----------Get Started----------" << endl << endl;
-		HT::Element* got_element = HT::Get(handle, new HT::Element("key7", 4, "payload7", 8));
+		HT::Element* got_element = HT::Get(handle, new HT::Element("key7", 4));
 		if (got_element != NULL) {
 			cout << "--Get executed successful--" << endl;
 			HT::Print(got_element);
@@ -85,7 +85,7 @@ int main() {
 #endif // GET_ENABLED
 #ifdef UPDATE_ENABLED	
 		cout << endl << "----------Update Started----------" << endl << endl;
-		if (HT::Update(handle, new HT::Element("key1", 4, "payload1", 8), "updPayload", 10)) {
+		if (HT::Update(handle, new HT::Element("key1", 4), "updPayload", 10)) {
 			cout << "--Element updated successfully--" << endl;
 		}
 		else {

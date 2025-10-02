@@ -4,18 +4,19 @@ using namespace std;
 
 //#define CREATION_ENABLED
 #define OPENING_ENABLED
-//#define INSERTION_ENABLED
-//#define DELETION_ENABLED
+#define INSERTION_ENABLED
+#define DELETION_ENABLED
 #define CLOSURE_ENABLED
-//#define GET_ENABLED
-//#define UPDATE_ENABLED
+#define GET_ENABLED
+#define UPDATE_ENABLED
 
 int main() {
 	HT::HTHANDLE* handle1 = nullptr;
 	HT::HTHANDLE* handle2 = nullptr;
 	try {
+
 #ifdef CREATION_ENABLED
-		handle1 = HT::Create(20, 3, 10, 256, "Test1.ht");
+		handle1 = HT::Create(20, 3, 10, 256, "TestMutual.ht");
 
 		if (handle1 == NULL) {
 			cout << "--Failed To Create Or Open An HT-Storage--" << endl;
@@ -27,11 +28,12 @@ int main() {
 
 #ifdef OPENING_ENABLED
 
-		handle1 = HT::Open("Test1.ht");
+		handle1 = HT::Open("TestMutual.ht");
+		handle2 = HT::Open("TestMutual.ht");
 
 		if (handle1 == NULL) {
 
-			cout << "--Failed to open existing HT_Storage 1--" << endl;
+			cout << "--Failed to open existing HT_Storage1--" << endl;
 
 		}
 		else {
@@ -40,20 +42,12 @@ int main() {
 
 		}
 
-		/*handle2 = HT::Open("Test1.ht");
-
 		if (handle2 == NULL) {
-
-			cout << "--Failed to open existing HT_Storage 2--" << endl;
-
+			cout << "--Failed to open existing HT_Storage2--" << endl;
 		}
 		else {
-
-			cout << "--Existing HT-Storage 2 opened successfully--" << endl;
-
+			cout << "--Existing HT_Storage2 opened successfully" << endl;
 		}
-
-		cout << endl << "----------Opening Ended----------" << endl;*/
 
 
 #endif // OPENING_ENABLED
@@ -63,16 +57,19 @@ int main() {
 		cout << endl << "----------Insertion Started----------" << endl << endl;
 
 
+		cout << "--Inserting to the first openning" << endl;
 
 		HT::Insert(handle1, new HT::Element("key1", 4, "payload1", 8));
 
 		HT::Insert(handle1, new HT::Element("key2", 4, "payload2", 8));
+		cout << "--First ended" << endl;
 
 
+		cout << endl << "--Inserting to the second opening" << endl;
+		HT::Insert(handle2, new HT::Element("keyA", 4, "payloadA", 8));
 
-		/*HT::Insert(handle2, new HT::Element("keyA", 3, "payloadA", 8));
-
-		HT::Insert(handle2, new HT::Element("keyB", 3, "payloadB", 8));*/
+		HT::Insert(handle2, new HT::Element("keyB", 4, "payloadB", 8));
+		cout << "--Second ended" << endl;
 
 		cout << endl << "----------Insertion Ended----------" << endl;
 
@@ -80,9 +77,11 @@ int main() {
 
 #ifdef DELETION_ENABLED
 
-		HT::Delete(handle1, new HT::Element("key1", 4, "payload1", 8));
+		cout << "Deleting from the first opening" << endl;
+		HT::Delete(handle1, new HT::Element("key1", 4));
 
-		HT::Delete(handle2, new HT::Element("keyA", 4, "payloadA", 8));
+		cout << "Deleting from the second opening" << endl;
+		HT::Delete(handle2, new HT::Element("keyA", 4));
 
 #endif // DELETION_ENABLED
 
@@ -91,7 +90,7 @@ int main() {
 		cout << endl << "----------Get Started----------" << endl << endl;
 
 
-		HT::Element* got_element1 = HT::Get(handle1, new HT::Element("key2", 4, "payload2", 8));
+		HT::Element* got_element1 = HT::Get(handle1, new HT::Element("key2", 4));
 
 		if (got_element1 != NULL) {
 
@@ -108,7 +107,7 @@ int main() {
 
 		}
 
-		HT::Element* got_element2 = HT::Get(handle2, new HT::Element("keyB", 3, "payloadB", 8));
+		HT::Element* got_element2 = HT::Get(handle2, new HT::Element("keyB", 4));
 
 		if (got_element2 != NULL) {
 
@@ -135,7 +134,7 @@ int main() {
 #ifdef UPDATE_ENABLED
 		cout << endl << "----------Update Started----------" << endl << endl;
 
-		if (HT::Update(handle1, new HT::Element("key2", 4, "payload2", 8), "updatedPayload", 14)) {
+		if (HT::Update(handle1, new HT::Element("key2", 4), "updatedPayload", 14)) {
 
 			cout << "--Element in Storage 1 updated successfully--" << endl;
 
@@ -146,7 +145,7 @@ int main() {
 
 		}
 
-		if (HT::Update(handle2, new HT::Element("keyB", 3, "payloadB", 8), "updatedPayloadForB", 19)) {
+		if (HT::Update(handle2, new HT::Element("keyB", 4), "updatedPayloadForB", 19)) {
 
 			cout << "--Element in Storage 2 updated successfully--" << endl;
 
@@ -174,16 +173,18 @@ int main() {
 
 		}
 
-		//if (HT::Close(handle2)) {
+		if (HT::Close(handle2)) {
 
-		//	cout << "--Closed Storage 2 Successfully--" << endl;
+			cout << "--Closed Storage 1 Successfully--" << endl;
 
-		//}
-		//else {
+		}
+		else {
 
-		//	cout << "--Failed to Close Storage 2--" << endl;
+			cout << "--Failed to Close Storage 1--" << endl;
 
-		//}
+		}
+
+
 
 #endif // CLOSURE_ENABLED
 

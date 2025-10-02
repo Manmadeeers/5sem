@@ -1,112 +1,111 @@
 ﻿#include <iostream>
-#include "OS_10_2.h"
 #include <cassert>
+#include "OS_10_2.h"
+
 using namespace std;
 
-void testCreate() {
-
-    HT::HTHANDLE* handle = HT::Create(1000, 3, 10, 256, "Test.ht");
-
-    assert(handle != NULL);
-
-    cout << "Create Test Passed" << endl;
-
-    HT::Close(handle);
-
+HT::Element* makeElem(const char* key, int keylen, const char* payload, int payloadlen) {
+    return new HT::Element(key, keylen, payload, payloadlen);
 }
 
-void testOpen() {
+void testCreateOpenLifecycle() {
+    HT::HTHANDLE* h1 = HT::Create(1000, 3, 10, 256, "Test.ht");
+    assert(h1 != NULL);
+    cout << "Lifecycle: Create passed" << endl;
+    HT::Close(h1);
 
-    HT::HTHANDLE* handle = HT::Open("Test.ht");
+    HT::HTHANDLE* h2 = HT::Open("Test.ht");
+    assert(h2 != NULL);
+    cout << "Lifecycle: Open passed" << endl;
+    HT::Close(h2);
 
-    assert(handle != NULL);
-
-    cout << "Open Test Passed" << endl;
-
-    HT::Close(handle);
+    HT::HTHANDLE* h3 = HT::Create(1000, 3, 10, 256, "Test.ht");
+    assert(h3 != NULL);
+    cout << "Lifecycle: Re-create passed" << endl;
+    HT::Close(h3);
 }
 
+void testInsertEdgeCases() {
+    HT::HTHANDLE* h = HT::Create(2, 3, 10, 256, "Test2.ht");
+    assert(h != NULL);
 
-void testInsert() {
+    HT::Insert(h, new HT::Element("k1", 2, "p1", 2));
+    HT::Insert(h, new HT::Element("k1", 2, "p2", 2));
 
-    HT::HTHANDLE* handle = HT::Create(1000, 3, 10, 256, "Test.ht");
+    assert(h->CurrentElements == 2);
 
-    HT::Insert(handle, new HT::Element("key1", 4, "payload1", 8));
+    bool ok = HT::Insert(h, new HT::Element("k2", 2, "pp", 2));
+    if (ok) {
+        assert(false && "Insert should have failed due to capacity");
+    }
 
-    HT::Insert(handle, new HT::Element("key2", 4, "payload2", 8));
-
-    assert(handle->CurrentElements == 2);
-
-    cout << "Insert Test Passed" << endl;
-
-    HT::Close(handle);
+    HT::Close(h);
 }
 
+void testGetUpdateDeleteFlow() {
+    HT::HTHANDLE* h = HT::Create(3, 3, 6, 16, "Test3.ht");
+    assert(h != NULL);
 
-void testDelete() {
+    HT::Insert(h, new HT::Element("key", 3, "val1", 4));
+    HT::Insert(h, new HT::Element("K2", 2, "val2", 4));
 
-    HT::HTHANDLE* handle = HT::Create(1000, 3, 10, 256, "Test.ht");
+    HT::Element* e = HT::Get(h, new HT::Element("key", 3, "val1", 4));
+    assert(e != NULL);
+    assert(memcmp(e->key, "key", 3) == 0);
+    delete e;
 
-    HT::Insert(handle, new HT::Element("key1", 4, "payload1", 8));
+    HT::Element* absent = HT::Get(h, new HT::Element("abs", 3, "zzz", 3));
+    assert(absent == NULL);
 
-    HT::Delete(handle, new HT::Element("key1", 4, "payload1", 8));
+    bool up = HT::Update(h, new HT::Element("key", 3, "val1", 4), "newP", 4);
+    assert(up);
 
-    assert(handle->CurrentElements == 0);
+    bool up2 = HT::Update(h, new HT::Element("nope", 4, "x", 1), "doesnt", 6);
+    cout << "Update non-existent result: " << (up2 ? "TRUE" : "FALSE") << endl;
 
-    cout << "Delete Test Passed" << endl;
+    bool del = HT::Delete(h, new HT::Element("key", 3, "", 0));
+    assert(del);
 
-    HT::Close(handle);
+    bool del2 = HT::Delete(h, new HT::Element("key", 3, "", 0));
+    cout << "Second delete result (should be FALSE): " << (del2 ? "TRUE" : "FALSE") << endl;
 
+    HT::Close(h);
 }
 
-void testGet() {
+void testOpenPersistence() {
+    HT::HTHANDLE* h = HT::Create(5, 3, 10, 256, "Persist.ht");
+    HT::Insert(h, new HT::Element("alpha", 5, "payload", 7));
 
-    HT::HTHANDLE* handle = HT::Create(1000, 3, 10, 256, "Test.ht");
+    HT::Close(h);
 
-    HT::Insert(handle, new HT::Element("key1", 4, "payload1", 8));
+    HT::HTHANDLE* h2 = HT::Open("Persist.ht");
+    assert(h2 != NULL);
 
-    HT::Element* retrieved = HT::Get(handle, new HT::Element("key1", 4, "payload1", 8));
+    HT::Element* e = HT::Get(h2, new HT::Element("alpha", 5, "payload", 7));
+    assert(e != NULL);
+    delete e;
 
-    assert(retrieved != NULL);
-
-    assert(memcmp(retrieved->key, "key1", 4) == 0);
-
-    delete retrieved;
-
-    cout << "Get Test Passed" << endl;
-
-    HT::Close(handle);
-
+    HT::Close(h2);
 }
 
-void testUpdate() {
+void testGetKeyOnlyBehavior() {
+    HT::HTHANDLE* h = HT::Create(3, 3, 10, 256, "Test4.ht");
+    HT::Insert(h, new HT::Element("abc", 3, "zzz", 3));
 
-    HT::HTHANDLE* handle = HT::Create(1000, 3, 10, 256, "Test.ht");
+    HT::Element* g = HT::Get(h, new HT::Element("abc", 3, "", 0));
+    assert(g != NULL);
+    delete g;
 
-    HT::Insert(handle, new HT::Element("key1", 4, "payload1", 8));
-
-    bool success = HT::Update(handle, new HT::Element("key1", 4, "payload1", 8), "updatedPayload", 13);
-
-    assert(success);
-
-    cout << "Update Test Passed" << endl;
-
-    HT::Close(handle);
-
+    HT::Close(h);
 }
 
 int main() {
+    testCreateOpenLifecycle();
+    testInsertEdgeCases();
+    testGetUpdateDeleteFlow();
+    testOpenPersistence();
+    testGetKeyOnlyBehavior();
 
-    testCreate();
-
-    testOpen();
-
-    testInsert();
-
-    testDelete();
-
-    testGet();
-
-    testUpdate();
-	return 0;
+    cout << "All test suites completed." << endl;
+    return 0;
 }
