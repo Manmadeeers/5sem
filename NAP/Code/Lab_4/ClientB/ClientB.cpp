@@ -7,80 +7,90 @@
 #pragma comment(lib,"WS2_32.lib")
 using namespace std;
 
-bool GetServer(char* call, short port, struct sockaddr* from, int* flen,SOCKET socket) {
+bool GetServer(char* call, struct sockaddr* from, int* flen,SOCKET*socket) {
 	char buffer[50] = "";
-	if (sendto(socket,call,strlen(call)+1,NULL,from,*flen)==SOCKET_ERROR) {
-		throw SetErrorMsgText("Failed to send a message", WSAGetLastError());
-	}
-	int rcv_length = recvfrom(socket, buffer, sizeof(buffer), NULL, from, flen);
-	if (rcv_length == SOCKET_ERROR) {
 
+	if (sendto(*socket, call, strlen(call) + 1, NULL, from, *flen) == SOCKET_ERROR) {
+		throw SetErrorMsgText("Failed to send message to server", WSAGetLastError());
+	}
+	cout << "--Message sent to server: " << call << endl;
+	if (recvfrom(*socket, buffer, sizeof(buffer), NULL, from, flen) == SOCKET_ERROR) {
 		int err = WSAGetLastError();
 		if (err == WSAETIMEDOUT) {
+			cout << "--Connection timed out" << endl;
 			return false;
 		}
-		else {
-			throw SetErrorMsgText("Failed to receive a message", WSAGetLastError());
-		}
-		
+		throw SetErrorMsgText("Failed to receive message from server", WSAGetLastError());
 	}
-	cout << "Got from server: " << buffer << endl;
 
-	if (strncmp(call, buffer, strlen(buffer)) == 0) {
+	cout << "--Received message from server: " << buffer << endl;
+
+	if (strcmp(buffer, call) == 0) {
 		return true;
 	}
-
 	return false;
-
 }
-
 
 int _tmain(int argc, TCHAR* argv[]) {
 
+	int WSD_version = MAKEWORD(2,0);
+	WSADATA WSD_pointer;
+
 	try {
 
-		WSADATA WSD_pointer;
-		int WSD_version = MAKEWORD(2, 0);
-
 		if (WSAStartup(WSD_version, &WSD_pointer) != 0) {
-			throw SetErrorMsgText("Failed to start", WSAGetLastError());
+			throw SetErrorMsgText("Failed to startup", WSAGetLastError());
 		}
 		cout << "--Client started" << endl;
 
+
 		SOCKET client_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-
 		if (client_socket == INVALID_SOCKET) {
-			throw SetErrorMsgText("Failed to create a client socket", WSAGetLastError());
+			throw SetErrorMsgText("Failed to create a socket", WSAGetLastError());
 		}
+		cout << "--Socket created" << endl;
 
-		cout << "--Client socket created" << endl;
 		int optval = 1;
 
 		if (setsockopt(client_socket, SOL_SOCKET, SO_BROADCAST, (char*)&optval, sizeof(int)) == SOCKET_ERROR) {
-			throw SetErrorMsgText("Failed to set client socket options", WSAGetLastError());
+			throw SetErrorMsgText("Failed to set socket options", WSAGetLastError());
 		}
-
-		cout << "--Socket options set" << endl;
+		cout << "--Socket options set to broadcast mode" << endl;
 
 		SOCKADDR_IN serv;
 		serv.sin_family = AF_INET;
-		serv.sin_port = htons(2000);
 		serv.sin_addr.S_un.S_addr = INADDR_BROADCAST;
-		int Lserv = sizeof(serv);
+		serv.sin_port = htons(2000);
+		int serv_size = sizeof(serv);
 
 		char out_buffer[50] = "Hello";
-		char in_buffer[50] = "";
 
-		int out_buffer_length;
-		int in_buffer_length;
+		if (GetServer(out_buffer, (sockaddr*)&serv, &serv_size, &client_socket)) {
+			cout << "Got response from server!" << endl;
+			cout << "Server IP: " << serv.sin_addr.S_un.S_addr << endl;
+			cout << "Server port: " << serv.sin_port << endl;
+		}
+		else {
+			cout << "Something went wrong" << endl;
+		}
 
-		GetServer(out_buffer,)
+		
+		if (closesocket(client_socket) == SOCKET_ERROR) {
+			throw SetErrorMsgText("Failed to close a socket", WSAGetLastError());
+		}
+		cout << "--Socket closed" << endl;
 
+
+		if (WSACleanup() == SOCKET_ERROR) {
+			throw SetErrorMsgText("Failed to cleanup", WSAGetLastError());
+		}
+		cout << "Cleanup executed" << endl;
 
 	}
 	catch (string message) {
-		cout << "Error: " << message << endl;
+		cerr << "Error: " << message << endl;
 	}
 
+	system("pause");
 	return 0;
 }

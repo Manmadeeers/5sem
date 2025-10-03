@@ -3,7 +3,7 @@
 
 string SetErrorMsgText(string text, int code) {
 	char code_chr = static_cast<char>(code);
-	return text + GetErrorMsgText(code) + "(" + code_chr + ")";
+	return (string)text + GetErrorMsgText(code) + "(" + code_chr + ")";
 }
 
 string GetErrorMsgText(int code) {
