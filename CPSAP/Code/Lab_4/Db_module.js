@@ -2,24 +2,35 @@ var util = require('util');
 var events = require('events');
 
 var db_data = [
-    {id:1,name:"CPSAP"},
-    {id:2,name:"OS"},
-    {id:3,name:"SP"},
-    {id:4,name:"NAP"},
-    {id:5,name:"CGB"},
-    {id:6,name:"CMS"}
+    {id:1,name:"Name1",bday:"03-10-2025"},
+    {id:2,name:"Name2",bday:"02-10-2025"},
+    {id:3,name:"Name3",bday:"01-10-2025"}
 ];
 
 
 function DB(){
-    this.get = ()=>{return db_data;};
-    this.post = (data_piece)=>{db_data.push(data_piece);};
-    this.post = (to_update)=>{
-        const index = db_data.findIndex(item=>item.id==to_update.id);
-        if(index!=-1){
-            db_data[index] = {...db_data[index],...to_update.name};
-        }
+    this.select = ()=>{
+        return db_data;
     };
+    this.insert = (data_piece)=>{
+        db_data.push(data_piece);
+    };
+    this.update= (to_update)=>{
+        const index = db_data.findIndex(item=>item.id==to_update.id);
+        if(index===-1){
+           return false;
+        }
+        db_data[index] = to_update;
+        return true;
+    };
+    this.delete = (id)=>{
+        const index = db_data.findIndex(item=>item.id===parseInt(id));
+        if(index===-1){
+            return false;
+        }
+        const deletedRow = data.splice(index,1)[0];
+        return true;
+    }
 }
 
 util.inherits(DB,events.EventEmitter);

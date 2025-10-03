@@ -9,18 +9,32 @@ var db = new data_module.DB();
 db.on('GET', async(request, response) => {
     console.log("DB.GET triggered");
     response.writeHead(200,{'content-type':'application/json;charset=utf-8'});
-    response.end(JSON.stringify(db.get()))
+    response.end(JSON.stringify(db.select()))
 });
 
-// db.on('POST', (request, response) => {
-//     console.log("DB.POST triggered");
-//     request.on('data',data=>{
-//         let dat = JSON.parse(data);
-//         db.post(dat);
-//         response.end(JSON.stringify(dat));
-//     });
 
-// });
+db.on('POST', async (request, response) => {
+    console.log("DB.POST triggered");
+    request.on('data',data=>{
+        let dat = JSON.parse(data);
+        db.insert(dat);
+        response.writeHead(200,{'content-type':'application/json;charset=utf-8'});
+        response.end(JSON.stringify(dat));
+    });
+});
+
+
+db.on('PUT',async(request,response)=>{
+    console.log("DB.PUT triggered");
+    request.on('data',data=>{
+        let dat = JSON.parse(data);
+        db.update(dat);
+        response.writeHead(200,{'content-type':'application/json;charset=utf-8'});
+        response.end(JSON.stringify(db.select()));
+    })
+})
+
+
 // db.on('DELETE',(request,response)=>{
 //     console.log("DB.PUT triggered");
 //     request.on('data',data=>{
