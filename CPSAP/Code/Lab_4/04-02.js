@@ -53,6 +53,11 @@ const server = http.createServer(function (request,response){
     if(url.parse(request.url).pathname==="/api/db"){
         db.emit(request.method,request,response);
     }
+    else if(request.url==="/"){
+        let page = fs.readFileSync('./index.html');
+        response.writeHead(200,{'content-type':'text/html;charset=utf-8'});
+        response.end(page);
+    }
     else{
         response.writeHead(404,{'content-type':'text/html'});
         response.end(
@@ -64,5 +69,4 @@ const server = http.createServer(function (request,response){
 server.listen(PORT);
 
 
-console.log("Server running at http://localhost:5000/api/db");
-
+console.log("Server running at http://localhost:5000/");

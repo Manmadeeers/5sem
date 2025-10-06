@@ -24,12 +24,13 @@ function DB(){
         return true;
     };
     this.delete = (id)=>{
-        const index = db_data.findIndex(item=>item.id===parseInt(id));
+        console.log(`Transmitted id: ${parseInt(id)}`);
+        const index=db_data.findIndex(el=>el.id==id)
         if(index===-1){
             return false;
         }
-        const deletedRow = data.splice(index,1)[0];
-        return true;
+        const deletedRow =db_data.splice(index,1)[0];
+        return deletedRow;
     }
 }
 
