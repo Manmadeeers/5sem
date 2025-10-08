@@ -1,9 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using ResultAPI.Models;
-using ResultAPI.Services;
+using BSTU.Results.Collection.Models;
+using BSTU.Results.Collection.Services;
 
-
-namespace ResultAPI.Controllers
+namespace ASPA_0010_1.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]

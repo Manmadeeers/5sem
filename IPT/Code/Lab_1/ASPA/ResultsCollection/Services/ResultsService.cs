@@ -1,12 +1,18 @@
-﻿using ResultAPI.Models;
+﻿using BSTU.Results.Collection.Models;
 using System.Text.Json;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System;
+using System.Linq;
 
-namespace ResultAPI.Services
+namespace BSTU.Results.Collection.Services
 {
     public class ResultsService
     {
         private readonly string _filePath = Path.Combine(Directory.GetCurrentDirectory(), "results.json");
-        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1,1);
+        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
         public ResultsService()
         {
             if (!File.Exists(_filePath))
@@ -18,7 +24,7 @@ namespace ResultAPI.Services
         private async Task SaveResultsAsync(List<Result> results)
         {
             var json = JsonSerializer.Serialize(results);
-            await File.WriteAllTextAsync(_filePath,json);
+            await File.WriteAllTextAsync(_filePath, json);
         }
 
         public async Task<List<Result>> GetAllAsync()
@@ -29,7 +35,7 @@ namespace ResultAPI.Services
                 var json = await File.ReadAllTextAsync(_filePath);
                 return JsonSerializer.Deserialize<List<Result>>(json) ?? new List<Result>();
             }
-            catch(Exception ex)
+            catch (System.Exception ex)
             {
                 Console.WriteLine(ex.ToString());
                 return null;
@@ -43,7 +49,7 @@ namespace ResultAPI.Services
         public async Task<Result> GetResultAsync(int key)
         {
             var results = await GetAllAsync();
-            if(results == null)
+            if (results == null)
             {
                 return null;
             }
@@ -64,7 +70,7 @@ namespace ResultAPI.Services
                 }
                 return false;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
                 return false;
@@ -73,7 +79,7 @@ namespace ResultAPI.Services
             {
                 _semaphore.Release();
             }
-            
+
         }
 
         public async Task<bool> UpdateAsync(int key, string updValue)
@@ -91,7 +97,7 @@ namespace ResultAPI.Services
                 }
                 return false;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
                 return false;
@@ -100,10 +106,10 @@ namespace ResultAPI.Services
             {
                 _semaphore.Release();
             }
-           
+
         }
 
-        public async Task<bool>DeleteAsync(int key)
+        public async Task<bool> DeleteAsync(int key)
         {
             await _semaphore.WaitAsync();
             try
@@ -118,7 +124,7 @@ namespace ResultAPI.Services
                 }
                 return false;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
                 return false;
@@ -127,7 +133,7 @@ namespace ResultAPI.Services
             {
                 _semaphore.Release();
             }
-           
+
         }
     }
 }
