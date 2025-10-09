@@ -282,9 +282,7 @@ namespace HT {
         //not needed here if the snapshot is being executed during closure procedure
         //lock_guard<mutex>lock(ht_mutex)
 
-        OVERLAPPED ol = { 0 };
-        ol.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-
+       
         hthandle->lastsnaptime = time(nullptr);
 
         HANDLE HTSnapshot = CreateFileA(
@@ -294,7 +292,7 @@ namespace HT {
             0,
             NULL,
             CREATE_ALWAYS,
-            FILE_ATTRIBUTE_NORMAL|FILE_FLAG_OVERLAPPED,
+            FILE_ATTRIBUTE_NORMAL,
             NULL
         );
 
@@ -341,7 +339,6 @@ namespace HT {
         }
 
         CloseHandle(HTSnapshot);
-        CloseHandle(ol.hEvent);
         return TRUE;
         cout << endl << "----------End----------" << endl;
 
