@@ -4,7 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
 	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	<PackageId>BSTU.Results.Collection</PackageId>
-	<Version>1.0.1</Version>
+	<Version>1.0.4</Version>
 	<Authors>Manmad</Authors>
 	<Description>A library for managing results in a JSON file.</Description>
   </PropertyGroup>

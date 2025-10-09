@@ -18,7 +18,7 @@ namespace ResultAPI.Controllers
         [HttpGet]
         public async Task<ActionResult<List<Result>>> Get()
         {
-            var results = await _resultsService.GetAllAsync();
+            var results = _resultsService.GetAllSync();
             if (results == null)
             {
                 return NotFound();
@@ -28,7 +28,7 @@ namespace ResultAPI.Controllers
         [HttpGet("{key:int}")]
         public async Task<ActionResult<Result>> Get(int key)
         {
-            var result = await _resultsService.GetResultAsync(key);
+            var result = _resultsService.GetResultSync(key);
             if (result != null)
             {
                 return result;
@@ -39,7 +39,7 @@ namespace ResultAPI.Controllers
         [HttpPost]
         public async Task<ActionResult<Result>> Post([FromBody]Result result)
         {
-            if(await _resultsService.AddAsync(result))
+            if(await _resultsService.AddSync(result))
             {
                 return CreatedAtAction(nameof(Get), result);
             }
@@ -50,7 +50,7 @@ namespace ResultAPI.Controllers
         [HttpPut("{key:int}")]
         public async Task<ActionResult<Result>>Put(int key, [FromBody]string value)
         {
-            if(await _resultsService.UpdateAsync(key, value))
+            if(await _resultsService.UpdateSync(key, value))
             {
                 return Ok();
             }
@@ -60,7 +60,7 @@ namespace ResultAPI.Controllers
         [HttpDelete("{key:int}")]
         public async Task<ActionResult<Result>>Delete(int key)
         {
-            if(await _resultsService.DeleteAsync(key))
+            if(await _resultsService.DeleteSync(key))
             {
                 return Ok();
             }

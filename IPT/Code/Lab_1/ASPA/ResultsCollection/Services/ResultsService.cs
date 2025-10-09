@@ -12,7 +12,7 @@ namespace BSTU.Results.Collection.Services
     public class ResultsService
     {
         private readonly string _filePath = Path.Combine(Directory.GetCurrentDirectory(), "results.json");
-        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+        private readonly object _lockObject = new object();
         public ResultsService()
         {
             if (!File.Exists(_filePath))
@@ -21,119 +21,89 @@ namespace BSTU.Results.Collection.Services
             }
         }
 
-        private async Task SaveResultsAsync(List<Result> results)
+        private void SaveResultsSync(List<Result> results)
         {
             var json = JsonSerializer.Serialize(results);
-            await File.WriteAllTextAsync(_filePath, json);
+            File.WriteAllText(_filePath, json);
         }
 
-        public async Task<List<Result>> GetAllAsync()
+        public List<Result> GetAllSync()
         {
-            await _semaphore.WaitAsync();
-            try
+            lock (_lockObject)
             {
-                var json = await File.ReadAllTextAsync(_filePath);
+                var json = File.ReadAllText(_filePath);
+
                 return JsonSerializer.Deserialize<List<Result>>(json) ?? new List<Result>();
             }
-            catch (System.Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-                return null;
-            }
-            finally
-            {
-                _semaphore.Release();
-            }
+
+
         }
 
-        public async Task<Result> GetResultAsync(int key)
+        public Result GetResultSync(int key)
         {
-            var results = await GetAllAsync();
-            if (results == null)
+            lock (_lockObject)
             {
-                return null;
+                var results = GetAllSync();
+                if (results == null)
+                {
+                    return null;
+                }
+                return results.FirstOrDefault(r => r.Key == key);
             }
-            return results.FirstOrDefault(r => r.Key == key);
+
         }
 
-        public async Task<bool> AddAsync(Result result)
+        public bool AddSync(Result result)
         {
-            await _semaphore.WaitAsync();
-            try
+            lock (_lockObject)
             {
-                var results = await GetAllAsync();
+                var results = GetAllSync();
                 if (results.FirstOrDefault(r => r.Key == result.Key) == null)
                 {
                     results.Add(result);
-                    await SaveResultsAsync(results);
+                    SaveResultsSync(results);
                     return true;
                 }
                 return false;
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-                return false;
-            }
-            finally
-            {
-                _semaphore.Release();
-            }
+
 
         }
 
-        public async Task<bool> UpdateAsync(int key, string updValue)
+        public bool UpdateSync(int key, string updValue)
         {
-            await _semaphore.WaitAsync();
-            try
+            lock (_lockObject)
             {
-                var results = await GetAllAsync();
+                var results = GetAllSync();
                 var resultToUpdate = results.FirstOrDefault(r => r.Key == key);
                 if (resultToUpdate != null)
                 {
                     resultToUpdate.Value = updValue;
-                    await SaveResultsAsync(results);
+                    SaveResultsSync(results);
                     return true;
                 }
                 return false;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-                return false;
-            }
-            finally
-            {
-                _semaphore.Release();
+
             }
 
         }
 
-        public async Task<bool> DeleteAsync(int key)
+        public bool DeleteSync(int key)
         {
-            await _semaphore.WaitAsync();
-            try
+            lock (_lockObject)
             {
-                var results = await GetAllAsync();
+                var results = GetAllSync();
                 var resultToDelete = results.FirstOrDefault(r => r.Key == key);
                 if (resultToDelete != null)
                 {
                     results.Remove(resultToDelete);
-                    await SaveResultsAsync(results);
+                    SaveResultsSync(results);
                     return true;
                 }
                 return false;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-                return false;
-            }
-            finally
-            {
-                _semaphore.Release();
             }
 
         }
     }
 }
+

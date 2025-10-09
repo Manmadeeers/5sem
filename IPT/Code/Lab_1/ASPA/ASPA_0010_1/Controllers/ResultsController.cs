@@ -15,9 +15,9 @@ namespace ASPA_0010_1.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<Result>>> Get()
+        public ActionResult<List<Result>> Get()
         {
-            var results = await _resultsService.GetAllAsync();
+            var results =  _resultsService.GetAllSync();
             if (results == null)
             {
                 return NotFound();
@@ -25,9 +25,9 @@ namespace ASPA_0010_1.Controllers
             return Ok(results);
         }
         [HttpGet("{key:int}")]
-        public async Task<ActionResult<Result>> Get(int key)
+        public ActionResult<Result> Get(int key)
         {
-            var result = await _resultsService.GetResultAsync(key);
+            var result = _resultsService.GetResultSync(key);
             if (result != null)
             {
                 return result;
@@ -36,9 +36,9 @@ namespace ASPA_0010_1.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<Result>> Post([FromBody]Result result)
+        public ActionResult Post([FromBody]Result result)
         {
-            if(await _resultsService.AddAsync(result))
+            if(_resultsService.AddSync(result))
             {
                 return CreatedAtAction(nameof(Get), result);
             }
@@ -47,9 +47,9 @@ namespace ASPA_0010_1.Controllers
         }
 
         [HttpPut("{key:int}")]
-        public async Task<ActionResult<Result>>Put(int key, [FromBody]string value)
+        public ActionResult Put([FromQuery]int key, [FromBody]string value)
         {
-            if(await _resultsService.UpdateAsync(key, value))
+            if( _resultsService.UpdateSync(key, value))
             {
                 return Ok();
             }
@@ -57,9 +57,9 @@ namespace ASPA_0010_1.Controllers
         }
 
         [HttpDelete("{key:int}")]
-        public async Task<ActionResult<Result>>Delete(int key)
+        public ActionResult Delete(int key)
         {
-            if(await _resultsService.DeleteAsync(key))
+            if( _resultsService.DeleteSync(key))
             {
                 return Ok();
             }
