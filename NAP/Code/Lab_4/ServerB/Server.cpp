@@ -9,12 +9,72 @@
 
 using namespace std;
 
-bool GetRequestFromClient(SOCKET* socket,char* name, struct sockaddr* from, int* flen) {
+void SendCheckMessage(SOCKET* socket, char* name) {
+	SOCKADDR_IN to{};
+
+	to.sin_family = AF_INET;
+	to.sin_port = htons(2000); 
+	to.sin_addr.s_addr = INADDR_BROADCAST;
+
+	int sent_check_length = sendto(*socket, name, strlen(name)+1, NULL, (sockaddr*)&to, sizeof(to));
+	if (sent_check_length == SOCKET_ERROR) {
+		throw SetErrorMsgText(to_string(WSAGetLastError()), WSAGetLastError());
+	}
+
+	char check_buffer[50];
+	int check_buffer_length;
+
+	SOCKADDR_IN from{};
+	int lfrom = sizeof(from);
+
+	char local_ip[INET_ADDRSTRLEN];
 	
 
+	check_buffer_length = recvfrom(*socket, check_buffer, sizeof(check_buffer), NULL, (sockaddr*)&from, &lfrom);
+
+	if (check_buffer_length == SOCKET_ERROR) {
+		throw SetErrorMsgText("Failed to receive check message from client", WSAGetLastError());
+	}
+
+	check_buffer[check_buffer_length] = '\0';
+
+	char ip_buffer[INET_ADDRSTRLEN];
+	inet_ntop(AF_INET, &(from.sin_addr), ip_buffer, sizeof(ip_buffer));
+
+	char local_buffer[INET_ADDRSTRLEN];
+	SOCKADDR_IN local_addr;
+	int local_len = sizeof(local_addr);
+
+	inet_ntop(AF_INET, &(local_addr.sin_addr), local_buffer, sizeof(local_buffer));
+
+	
+	getsockname(*socket, (sockaddr*)&local_addr, &local_len);
+
+	cout << "This server ip: " << local_buffer << endl;
+	cout << "Another server ip: " << ip_buffer << endl;
+
+	if (strcmp(check_buffer, name) == 0) {
+
+		if (strcmp(ip_buffer,local_buffer) != 0) {
+			cout << "----------WARNING----------" << endl;
+			cout << "Server with the similar callsign found in the local network!" << endl;
+			cout << "IP: " << ip_buffer << endl;
+			cout << "----------WARNING----------" << endl;
+		}
+
+	}
+	else {
+		cout << "No servers with similar call sign in local network" << endl;
+	}
+}
+
+bool GetRequestFromClient(SOCKET* socket,char* name, struct sockaddr* from, int* flen) {
+	
+	cout << "Recvfrom and wait" << endl;
 	while (true) {
 		char buffer[50];
 		int buffer_length;
+
 
 		buffer_length = recvfrom(*socket, buffer, sizeof(buffer), NULL, from, flen);
 		if (buffer_length == SOCKET_ERROR) {
@@ -25,6 +85,7 @@ bool GetRequestFromClient(SOCKET* socket,char* name, struct sockaddr* from, int*
 				throw SetErrorMsgText("Failed to receive a message", WSAGetLastError());
 			}
 		}
+		cout << "Received from client: " << buffer << endl;
 
 		if (strncmp(name, buffer, buffer_length) == 0) {
 			return true;
@@ -79,6 +140,15 @@ int _tmain(int arc, TCHAR* argv[]) {
 
 		char in_buffer[50] = "Hello";
 
+		int optval = 1;
+
+		if (setsockopt(server_socket, SOL_SOCKET, SO_BROADCAST, (char*)&optval, sizeof(int)) == SOCKET_ERROR) {
+			throw SetErrorMsgText("Failed to set socket options", WSAGetLastError());
+		}
+		cout << "--Socket options set to broadcast mode" << endl;
+
+		SendCheckMessage(&server_socket, server_callsign);
+
 		while (true) {
 			if (GetRequestFromClient(&server_socket, server_callsign, (sockaddr*)&client, &client_length)) {
 				PutAnswerToClient(in_buffer, (sockaddr*)&client, &client_length, &server_socket);
@@ -90,6 +160,9 @@ int _tmain(int arc, TCHAR* argv[]) {
 		}
 		cout << "--Server socket closed" << endl;
 
+		if (closesocket(client_socket) == SOCKET_ERROR) {
+
+		}
 
 		if (WSACleanup() == SOCKET_ERROR) {
 			throw SetErrorMsgText("Failed to cleanup", WSAGetLastError());
