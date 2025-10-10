@@ -21,6 +21,11 @@ void SendCheckMessage(SOCKET* socket, char* name) {
 		throw SetErrorMsgText(to_string(WSAGetLastError()), WSAGetLastError());
 	}
 
+	if (sent_check_length == 0) {
+		cout << "No servers with the similar callsignes in local network" << endl;
+		return;
+	}
+
 	char check_buffer[50];
 	int check_buffer_length;
 
