@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>04-02</title>
+</head>
+
+<body>
+    <h1>Event emitter 2</h1>
+    <div id="show-all">
+
+    </div>
+    <button onclick="Get()">Get</button>
+    <div id="form-container" style="margin-top: 50px;">
+        <div class="row">
+            <label>Id:</label>
+            <input type="number" id="id-getter" min="1">
+        </div>
+        <div class="row">
+            <label>Name:</label>
+            <input type="text" id="name-getter">
+        </div>
+        <div class="row">
+            <lable>Birthday:</lable>
+            <input type="date" id="bday-getter">
+        </div>
+        <div class="row">
+            <button onclick="Post()">POST</button>
+        </div>
+    </div>
+    <div id="put-container" style="margin-top: 50px;">
+        <div class="row">
+            <label>Id:</label>
+            <input type="number" id="put-id-getter" min="1">
+        </div>
+        <div class="row">
+            <label>Name:</label>
+            <input type="text" id="put-name-getter">
+        </div>
+        <div class="row">
+            <lable>Birthday:</lable>
+            <input type="date" id="put-bday-getter">
+        </div>
+        <div class="row">
+            <button onclick="Put()">PUT</button>
+        </div>
+    </div>
+    <div id="delete-container" style="margin-top: 50px;">
+        <div class="row">
+            <label>Id:</label>
+            <input type="number" id="delete-id-getter" min="1">
+        </div>
+        <div class="row">
+            <button onclick="Delete()">DELETE</button>
+        </div>
+    </div>
+</body>
+<script>
+    function Get() {
+        var resultContainert = document.getElementById('show-all');
+        console.log('GET pressed');
+        fetch("http://localhost:5000/api/db", {
+            method: "GET",
+            mode: "no-cors",
+            headers: { 'content-type': 'application/json;charset=utf-8', 'accept': 'application/json' }
+        })
+            .then(response => { return response.json(); })
+            .then((data) => {
+                resultContainert.innerHTML = '';
+                data.forEach(element => {
+                    resultContainert.innerHTML += `<p>${element.id}: ${element.name} ${element.bday}</p>`;
+
+                });
+            })
+    }
+
+</script>
+
+<script>
+    function Post() {
+        let ID = document.getElementById('id-getter');
+        let NAME = document.getElementById('name-getter');
+        let BDAY = document.getElementById('bday-getter');
+        console.log('POST pressed');
+        fetch("http://localhost:5000/api/db", {
+            method: "POST",
+            mode: "no-cors",
+            headers: { 'content-type': 'application/json;charset=utf-8', 'accept': 'application/json' },
+            body: JSON.stringify({ id: ID.value, name: NAME.value, bday: BDAY.value })
+        })
+            .then(response => { return response.json() })
+            .then((data) => {
+                console.log(`Data posted: ${data}`);
+                ID.value = "";
+            })
+            .catch(err => { console.log(`POST ERROR: ${err}`) })
+    }
+
+</script>
+<script>
+    function Put() {
+        let PID = document.getElementById('put-id-getter');
+        let PNAME = document.getElementById('put-name-getter');
+        let PBDAY = document.getElementById('put-bday-getter');
+        console.log('PUT pressed');
+        fetch("http://localhost:5000/api/db", {
+            method: "PUT",
+            headers: { 'content-type': 'appliation/json;charset=utf-8', 'accept': 'application/json' },
+            body: JSON.stringify({ id: PID.value, name: PNAME.value, bday: PBDAY.value })
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error. Code: ${response.status}`);
+                }
+                console.log("PUT response OK")
+                return response.json();
+            })
+            .then((pdata) => {
+                console.log(`Updated data: ${pdata}`);
+
+            })
+            .catch(err => {
+                console.log(`PUT ERROR: ${err}`);
+            })
+    }
+</script>
+
+<script>
+        function Delete() {
+            let DID = document.getElementById('delete-id-getter');
+            if(!DID){
+                console.error('ID is not present');
+                return;
+            }
+
+            console.log('DELETE pressed');
+            fetch(`http://localhost:5000/api/db?id=${parseInt(DID.value)}`, {
+                method: "DELETE",
+                headers: { 'content-type': 'application/json;charset=utf-8','accept':'application/json;charset=utf-8' },
+            })
+                .then(response => { 
+                if(!response.ok){
+                    throw new Error(`Delete respone was not OK ${response.status}`);
+                }
+                    return response.json();
+                 })
+                .then((data) => {
+                    console.log(`Deleted: ${data}`);
+                })
+                .catch((err) => {
+                    console.log(`DELETE ERROR: ${err}`);
+                })
+        }
+</script>
+
+</html>
