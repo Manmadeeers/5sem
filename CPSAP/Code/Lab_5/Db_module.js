@@ -7,8 +7,11 @@ var db_data = [
     {id:3,name:"Name3",bday:"01-10-2025"}
 ];
 
+let commitCount = 0;
 
 function DB(){
+
+
     this.select = ()=>{
         return db_data;
     };
@@ -31,6 +34,11 @@ function DB(){
         }
         const deletedRow =db_data.splice(index,1)[0];
         return deletedRow;
+    }
+    this.commit = ()=>{
+        //console.log(`commit number ${commitCount} executed`);
+        commitCount++;
+        return commitCount;
     }
 }
 
