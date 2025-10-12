@@ -43,7 +43,7 @@ db.on('DELETE',async(request,response)=>{
         response.writeHead(400,{'content-type':'text/html;charset=utf-8'});
         response.end('<h1>400 Bad request</h1>')
     }
-    const deletedRow = await db.delete(id);
+    const deletedRow = db.delete(id);
     response.writeHead(200,{'content-type':'application/json;charset=utf-8'});
     response.end(JSON.stringify(deletedRow));
 });
