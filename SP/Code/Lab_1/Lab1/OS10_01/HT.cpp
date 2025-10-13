@@ -7,6 +7,9 @@
 #include <cstdlib>
 #include <vector>
 #include <string>
+#include <future>
+
+#define METADATA_OFFSET 4*sizeof(int)+sizeof(time_t)
 
 using namespace std;
 
@@ -72,7 +75,7 @@ namespace HT {
     {
 
         strcpy_s(this->FileName, 512, FileName);
-
+        this->CurrentElements = 0;
 
 
     }
@@ -81,7 +84,7 @@ namespace HT {
         lock_guard<mutex>lock(ht_mutex);
 
         HTHANDLE* ht = new HTHANDLE(Capacity, SecSnapshotInterval, MaxKeyLength, MaxPayloadLength, FileName);
-        cout << "----------Creation Started----------" << endl << endl;
+        std::cout << "----------Creation Started----------" << std::endl << std::endl;
 
      
       
@@ -96,29 +99,28 @@ namespace HT {
         );
 
         if (ht->File == INVALID_HANDLE_VALUE) {
-            cout << "--File Creation Failed(Create)-- Error: " << GetLastError() << endl;
+            std::cout << "--File Creation Failed(Create)-- Error: " << GetLastError() << std::endl;
             delete ht;
             return NULL;
         }
         else {
-            cout << "--File Creation Successful(Create)--" << endl;
+            std::cout << "--File Creation Successful(Create)--" << std::endl;
         }
 
         DWORD fileSize = GetFileSize(ht->File, NULL);
         if (fileSize == INVALID_FILE_SIZE) {
-            cout << "File error: " << GetLastError() << endl;
+            std::cout << "File error: " << GetLastError() << std::endl;
         }
 
      
         int slot_size = (ht->MaxKeyLength + ht->MaxPayloadLength);
-        cout << "Slot size: " << slot_size << endl;
+        std::cout << "Slot size: " << slot_size << std::endl;
 
-        int metadata_offset = 3 * sizeof(int);
-        cout << "Metadata offset: " << metadata_offset << endl;
+        std::cout << "Metadata offset: " << METADATA_OFFSET << std::endl;
 
-        cout << "Storage capacity: " << ht->Capacity << endl;
-        int storage_size = metadata_offset + (ht->Capacity * slot_size);
-        cout << "Storage size: " << storage_size << endl;
+        std::cout << "Storage capacity: " << ht->Capacity << std::endl;
+        int storage_size = METADATA_OFFSET + (ht->Capacity * slot_size);
+        std::cout << "Storage size: " << storage_size << std::endl;
         
 
         ht->FileMapping = CreateFileMappingA(
@@ -132,13 +134,13 @@ namespace HT {
 
         if (ht->FileMapping == NULL) {
             DWORD error = GetLastError();
-            cout << "--File Mapping Failed(Create)-- Error: " << error << endl;
+            std::cout << "--File Mapping Failed(Create)-- Error: " << error << std::endl;
             CloseHandle(ht->File);
             delete ht;
             return NULL;
         }
         else {
-            cout << "--File Mapping Successful(Create)--" << endl;
+            std::cout << "--File Mapping Successful(Create)--" << std::endl;
         }
 
 
@@ -151,14 +153,14 @@ namespace HT {
         );
 
         if (ht->Addr == NULL) {
-            cout << "--Failed to Map View Of File(Create)-- Error: " << GetLastError() << endl;
+            std::cout << "--Failed to Map View Of File(Create)-- Error: " << GetLastError() << std::endl;
             CloseHandle(ht->FileMapping);
             CloseHandle(ht->File);
             delete ht;
             return NULL;
         }
         else {
-            cout << "--MapViewOfFile successful(Create)--" << endl;
+            std::cout << "--MapViewOfFile successful(Create)--" << std::endl;
         }
         
 
@@ -167,9 +169,10 @@ namespace HT {
         memcpy(static_cast<char*>(ht->Addr) + sizeof(int), &MaxKeyLength, sizeof(int));
 
         memcpy(static_cast<char*>(ht->Addr) + 2 * sizeof(int), &MaxPayloadLength, sizeof(int));
+        
+        memcpy(static_cast<char*>(ht->Addr) + 3 * sizeof(int), &ht->CurrentElements, sizeof(int));
 
-
-        //ht->Addr = static_cast<char*>(ht->Addr) + metadata_offset;
+       
 
 
         return ht;
@@ -177,7 +180,7 @@ namespace HT {
 
 
     HTHANDLE* Open(const char FileName[512]) {
-        cout << "----------Opening Started----------" << endl << endl;
+        std::cout << "----------Opening Started----------" << std::endl << std::endl;
 
         lock_guard<mutex>lock(ht_mutex);
         HTHANDLE* ht = new HTHANDLE();
@@ -191,12 +194,12 @@ namespace HT {
             NULL
         );
         if (ht->File == INVALID_HANDLE_VALUE) {
-            cout << "--File Creation Failed(Open)--" << endl;
+            std::cout << "--File Creation Failed(Open)--" << std::endl;
             delete ht;
             return NULL;
         }
         else {
-            cout << "--File Creation Successful(Open)--" << endl;
+            std::cout << "--File Creation Successful(Open)--" << std::endl;
         }
         ht->FileMapping = CreateFileMappingA(
             ht->File,
@@ -207,13 +210,13 @@ namespace HT {
             "SharedHTMapping"
         );
         if (ht->FileMapping == NULL) {
-            cout << "--File Mapping Failed(Open)--" << endl;
+            std::cout << "--File Mapping Failed(Open)--" << std::endl;
             CloseHandle(ht->File);
             delete ht;
             return NULL;
         }
         else {
-            cout << "--File Mapping Successful(Open)--" << endl;
+            std::cout << "--File Mapping Successful(Open)--" << std::endl;
         }
 
         ht->Addr = MapViewOfFile(
@@ -224,35 +227,64 @@ namespace HT {
             0
         );
         if (ht->Addr == NULL) {
-            cout << "--Map View Of File Failed(Open)--" << endl;
+            std::cout << "--Map View Of File Failed(Open)--" << std::endl;
             CloseHandle(ht->FileMapping);
             CloseHandle(ht->File);
             delete ht;
             return NULL;
         }
         else {
-            cout << "--Map View Of File Successful(Open)--" << endl;
+            std::cout << "--Map View Of File Successful(Open)--" << std::endl;
         }
 
         memcpy(&ht->Capacity, ht->Addr, sizeof(int));
         memcpy(&ht->MaxKeyLength, static_cast<char*>(ht->Addr) + sizeof(int), sizeof(int));
         memcpy(&ht->MaxPayloadLength, static_cast<char*>(ht->Addr) + 2 * sizeof(int), sizeof(int));
+        memcpy(&ht->CurrentElements, static_cast<char*>(ht->Addr) + 3 * sizeof(int), sizeof(int));
+        memcpy(&ht->lastsnaptime, static_cast<char*>(ht->Addr) + 4 * sizeof(int), sizeof(time_t));
 
-        cout << "Current ht->Addr: " << ht->Addr << endl;
+        std::cout << "Current ht->Addr: " << ht->Addr << std::endl;
 
         int slot_size = ht->MaxKeyLength + ht->MaxPayloadLength;
-        cout << "Computed slot size: " << slot_size << endl;
+        std::cout << "Computed slot size: " << slot_size << std::endl;
 
-        int metadata_offset = 3 * sizeof(int);
 
-       /* ht->Addr = static_cast<char*>(ht->Addr) + metadata_offset;*/
-        cout << "Computed ht->Addr: " << ht->Addr << endl;
+        char* base = static_cast<char*>(ht->Addr) + METADATA_OFFSET;
+
+        //counting previously inserted elements
+        for (int i = 0; i < ht->Capacity; ++i) {
+
+            char* current_slot = base + (i * slot_size);
+
+            bool is_empty = true;
+
+            for (int j = 0; j < ht->MaxKeyLength; ++j) {
+                if (current_slot[j] != 0) {
+                    is_empty = false;
+                    ht->CurrentElements++;
+                    break;
+                }
+            }
+
+            if (is_empty) {
+                continue;
+            }
+
+        }
+
+        std::cout << "Current elements: " << ht->CurrentElements << std::endl;
+
+        std::cout << "Snapshot interval in seconds: " << ht->SecSnapshotInterval << std::endl;
+
+        std::cout << "Last snap time: " << ht->lastsnaptime << std::endl;
+
+        std::cout << "Computed ht->Addr: " << ht->Addr << std::endl;
 
         int total_mem = slot_size * ht->Capacity;
-        cout << "Total mem: " << total_mem << endl;
+        std::cout << "Total mem: " << total_mem << std::endl;
 
 
-        cout << "Opened HT storage has " << ht->Capacity << " capacity, " << ht->MaxKeyLength << " Max key length, " << ht->MaxPayloadLength << " max payload length" << endl;
+        std::cout << "Opened HT storage has " << ht->Capacity << " capacity, " << ht->MaxKeyLength << " Max key length, " << ht->MaxPayloadLength << " max payload length" << std::endl;
 
         return ht;
     }
@@ -271,23 +303,17 @@ namespace HT {
     }
 
     BOOL Snap(HTHANDLE* hthandle) {
-
-        cout << endl << "----------Snap----------" << endl;
+        std::cout << std::endl << "----------Snap----------" << std::endl;
 
         if (!hthandle) {
-            cout << "--Snap:Failed to open the handle--" << "Error: " << GetLastError() << endl;
+            std::cout << "--Snap: Failed to open the handle-- Error: " << GetLastError() << std::endl;
             return FALSE;
         }
 
-        //not needed here if the snapshot is being executed during closure procedure
-        //lock_guard<mutex>lock(ht_mutex)
-
-       
         hthandle->lastsnaptime = time(nullptr);
 
         HANDLE HTSnapshot = CreateFileA(
             CreateSnapshotFileName(hthandle),
-            //"Snapshotfile.htsnap",
             GENERIC_READ | GENERIC_WRITE,
             0,
             NULL,
@@ -296,22 +322,19 @@ namespace HT {
             NULL
         );
 
-
         if (HTSnapshot == INVALID_HANDLE_VALUE) {
-            cout << "--Snap:Failed to create a snapshot file--" << "Error: " << GetLastError() << endl;
+            std::cout << "--Snap: Failed to create a snapshot file-- Error: " << GetLastError() << std::endl;
             return FALSE;
         }
         else {
-            cout << "--Snap:Snapshot file created--" << endl;
+            std::cout << "--Snap: Snapshot file created--" << std::endl;
         }
 
         SIZE_T data_size = hthandle->CurrentElements * (hthandle->MaxKeyLength + hthandle->MaxPayloadLength);
-        cout << "--Data size to write: " << data_size << "--" << endl;
-
-        cout << "--Buffer size: " << sizeof(hthandle->Addr) << "--" << endl;
+        std::cout << "--Data size to write: " << data_size << "--" << std::endl;
+        std::cout << "--Buffer size: " << sizeof(hthandle->Addr) << "--" << std::endl;
 
         DWORD bytesWritten;
-
         BOOL writeResult = WriteFile(
             HTSnapshot,
             hthandle->Addr,
@@ -321,62 +344,70 @@ namespace HT {
         );
 
         if (!writeResult) {
-            DWORD writeEror = GetLastError();
-            cout << "--Snap:Failed to execute a snapshot(WriteFile error)--" << " Error: " << writeEror << endl;
-            cout << endl << "----------End----------" << endl;
+            DWORD writeError = GetLastError();
+            std::cout << "--Snap: Failed to execute a snapshot (WriteFile error)-- Error: " << writeError << std::endl;
+            std::cout << std::endl << "----------End----------" << std::endl;
             CloseHandle(HTSnapshot);
             return FALSE;
         }
         else if (bytesWritten != data_size) {
             DWORD bytesError = GetLastError();
-            cout << "--Snap:failed to execute a snapshot(Bytes loss)--" << " Error: " << bytesError << endl;
-            cout << endl << "----------End----------" << endl;
+            std::cout << "--Snap: Failed to execute a snapshot (Bytes loss)-- Error: " << bytesError << std::endl;
+            std::cout << std::endl << "----------End----------" << std::endl;
             CloseHandle(HTSnapshot);
             return FALSE;
         }
         else {
-            cout << "--Snap: Snapshot Executed--" << endl;
+            std::cout << "--Snap: Snapshot Executed--" << std::endl;
         }
+
+        //write down metadata after the last snapshot
+        memcpy(static_cast<char*>(hthandle->Addr) + 4 * sizeof(int), &hthandle->lastsnaptime, sizeof(time_t));
 
         CloseHandle(HTSnapshot);
         return TRUE;
-        cout << endl << "----------End----------" << endl;
-
     }
 
     BOOL Close(HTHANDLE* hthandle) {
 
         if (!hthandle) {
-            cout << "--Close:Failed To Close(Invalid handle)--" << " Error: " << GetLastError() << endl;
+            std::cout << "--Close:Failed To Close(Invalid handle)--" << " Error: " << GetLastError() << std::endl;
             return FALSE;
         }
 
         lock_guard<mutex>lock(ht_mutex);
 
-        if (Snap(hthandle)) {
-            cout << "--Close:Snapshot taken--" << endl;
+        //snapshot execution now asynchronous. PROTO
+        std::future<BOOL> snapshot_result = std::async(Snap, hthandle);
+
+        if (snapshot_result.get()) {
+            std::cout << "--Close:Snapshot taken--" << std::endl;
         }
         else {
-            cout << "--Closing:Failed To Take a Snapshot--" << " Error: " << GetLastError() << endl;
+            std::cout << "--Closing:Failed To Take a Snapshot--" << " Error: " << GetLastError() << std::endl;
             return FALSE;
         }
 
+       
+
         if (hthandle->Addr != NULL) {
             UnmapViewOfFile(hthandle->Addr);
-            cout << "--Close: Unmapped View Of File--" << endl;
+            std::cout << "--Close: Unmapped View Of File--" << std::endl;
         }
         if (hthandle->FileMapping != NULL) {
             CloseHandle(hthandle->FileMapping);
-            cout << "--Close: File Mapping Handle Closed--" << endl;
+            std::cout << "--Close: File Mapping Handle Closed--" << std::endl;
         }
         if (hthandle->File != NULL) {
             BOOL result = CloseHandle(hthandle->File);
             if (!result) {
-                cout << "--Close:Failed To Close The File Handle--" << GetLastError() << endl;
+                std::cout << "--Close:Failed To Close The File Handle--" << GetLastError() << std::endl;
                 return FALSE;
             }
         }
-        cout << "--Close:File Handle Closed Successfully--" << endl;
+
+        std::cout << "Current elements check before close: " << hthandle->CurrentElements << std::endl;
+        std::cout << "--Close:File Handle Closed Successfully--" << std::endl;
         return TRUE;
     }
 
@@ -396,7 +427,7 @@ namespace HT {
 
         }
 
-        cout << "--Hash: current Hash value: " << hash << endl;
+        std::cout << "--Hash: current Hash value: " << hash << std::endl;
 
 
         return abs(hash % capacity);
@@ -406,50 +437,49 @@ namespace HT {
     BOOL Insert(HTHANDLE* hthandle, const Element* element) {
 
         if (hthandle == NULL) {
-            cout << "--Insert: Failed to insert(Invalid handle)--" << " Error: " << GetLastError() << endl;
+            std::cout << "--Insert: Failed to insert(Invalid handle)--" << " Error: " << GetLastError() << std::endl;
             return FALSE;
         }
         else if (element == NULL) {
-            cout << "--Insert: Failed to insert(Invalid element)--" << " Error: " << GetLastError() << endl;
+            std::cout << "--Insert: Failed to insert(Invalid element)--" << " Error: " << GetLastError() << std::endl;
             return FALSE;
         }
         else if (hthandle->Addr == NULL) {
-            cout << "--Insert: Failed to insert(Address was null)" << endl;
+            std::cout << "--Insert: Failed to insert(Address was null)" << std::endl;
             return FALSE;
         }
 
         if (hthandle->CurrentElements >= hthandle->Capacity) {
-            cout << "--Insert: Failed to insert(attempted to exceed the handle capacity)--" << endl;
+            std::cout << "--Insert: Failed to insert(attempted to exceed the handle capacity)--" << std::endl;
             return FALSE;
         }
 
         if (element->keylength > hthandle->MaxKeyLength) {
-            cout << "--Insert: Failed to insert(Element's key length is too big)--" << endl;
+            std::cout << "--Insert: Failed to insert(Element's key length is too big)--" << std::endl;
             return FALSE;
         }
 
         if (element->payloadlength > hthandle->MaxPayloadLength) {
-            cout << "--Insert: Failed to insert(Element's payload length is too big)--" << endl;
+            std::cout << "--Insert: Failed to insert(Element's payload length is too big)--" << std::endl;
             return FALSE;
         }
         if (element->keylength == NULL) {
-            cout << "--Insert: Failed to insert(key length was NULL)" << endl;
+            std::cout << "--Insert: Failed to insert(key length was NULL)" << std::endl;
             return FALSE;
         }
         if (element->payloadlength == NULL) {
-            cout << "--Insert: Failed to insert(payload length was NULL)" << endl;
+            std::cout << "--Insert: Failed to insert(payload length was NULL)" << std::endl;
             return FALSE;
         }
 
         lock_guard<mutex> lock(ht_mutex);
 
-        const int metadata_offset = 3 * sizeof(int);
         const int slot_size = hthandle->MaxKeyLength + hthandle->MaxPayloadLength;
         int hash_index = hashFunction(element->key, element->keylength, hthandle->Capacity);
 
-        cout << "--Insert: initial hash index: " << hash_index << endl;
+        std::cout << "--Insert: initial hash index: " << hash_index << std::endl;
 
-        char* base = static_cast<char*>(hthandle->Addr) + metadata_offset;
+        char* base = static_cast<char*>(hthandle->Addr) + METADATA_OFFSET;
 
         
         for (int probe = 0; probe < hthandle->Capacity; ++probe) {
@@ -475,14 +505,14 @@ namespace HT {
                 }
 
                 hthandle->CurrentElements++;
-                cout << "--Insert: inserted at index " << hash_index << endl;
+                std::cout << "--Insert: inserted at index " << hash_index << std::endl;
                 return TRUE;
             }
 
             hash_index = (hash_index + 1) % hthandle->Capacity;
         }
 
-        cout << "--Insert: no free slot found--" << endl;
+        std::cout << "--Insert: no free slot found--" << std::endl;
         return FALSE;
     }
 
@@ -490,22 +520,22 @@ namespace HT {
     BOOL Delete(HTHANDLE* handle, const Element* element) {
 
 
-        cout << endl << "----------Deletion Started----------" << endl << endl;
+        std::cout << std::endl << "----------Deletion Started----------" << std::endl << std::endl;
         if (handle == NULL || handle->Addr == NULL) {
-            cout << "--Delete: Failed to delete an element(handle was invalid)--" << endl;
+            std::cout << "--Delete: Failed to delete an element(handle was invalid)--" << std::endl;
             return FALSE;
         }
 
         if (element == NULL || element->keylength == NULL) {
-            cout << "--Delete: Failed to delete an element(element was invalid)--" << endl;
+            std::cout << "--Delete: Failed to delete an element(element was invalid)--" << std::endl;
             return FALSE;
         }
 
         std::lock_guard<std::mutex> lock(ht_mutex);
 
         const size_t slot_size = handle->MaxKeyLength + handle->MaxPayloadLength;
-        const int metadata_offset = 3 * sizeof(int);
-        char* base = static_cast<char*>(handle->Addr) + metadata_offset;
+
+        char* base = static_cast<char*>(handle->Addr) + METADATA_OFFSET;
 
         int index_to_delete = -1;
 
@@ -530,7 +560,7 @@ namespace HT {
         }
 
         if (index_to_delete == -1) {
-            cout << "--Delete: Failed to delete an element (element not found)--" << endl;
+            std::cout << "--Delete: Failed to delete an element (element not found)--" << std::endl;
             return FALSE;
         }
 
@@ -543,8 +573,8 @@ namespace HT {
 
         handle->CurrentElements--;
 
-        cout << "Delete: Successfully deleted an element with key: " << static_cast<const char*>(element->key) << endl;
-        cout << "----------Deletion Ended----------" << endl;
+        std::cout << "Delete: Successfully deleted an element with key: " << static_cast<const char*>(element->key) << std::endl;
+        std::cout << "----------Deletion Ended----------" << std::endl;
 
         return TRUE;
     }
@@ -552,18 +582,19 @@ namespace HT {
     Element* Get(const HTHANDLE* handle, const Element* element) {
 
         if (handle == NULL || handle->Addr == NULL) {
-            cout << "--Get: Failed to get an element(handle was invalid)--" << endl;
+            std::cout << "--Get: Failed to get an element(handle was invalid)--" << std::endl;
             return NULL;
         }
 
         if (element == NULL || element->keylength == NULL) {
-            cout << "--Get: Failed to get an element(element was invalid)--" << endl;
+            std::cout << "--Get: Failed to get an element(element was invalid)--" << std::endl;
             return NULL;
         }
         lock_guard<mutex>lock(ht_mutex);
-        int offset = 3 * sizeof(int);
+       
+
         size_t slot_size = handle->MaxKeyLength + handle->MaxPayloadLength;
-        char* base = static_cast<char*>(handle->Addr) + offset;
+        char* base = static_cast<char*>(handle->Addr) + METADATA_OFFSET;
 
         for (int i = 0; i < handle->Capacity; ++i) {
 
@@ -593,37 +624,36 @@ namespace HT {
                 return found;
             }
         }
-        cout << "--Get: Element not found--" << endl;
+        std::cout << "--Get: Element not found--" << std::endl;
         return NULL;
     }
 
 
     void Print(const Element* element) {
-        cout << "Key: " << static_cast<const char*>(element->key) << " Payload: " << static_cast<const char*>(element->payload) << endl;
+        std::cout << "Key: " << static_cast<const char*>(element->key) << " Payload: " << static_cast<const char*>(element->payload) << std::endl;
     }
 
     BOOL Update(const HTHANDLE* handle, const Element* element, const void* newpayload, int newpayloadlength) {
 
         if (handle == NULL || handle->Addr == NULL) {
-            cout << "--Update: Failed to update an element(handle was invalid)--" << endl;
+            std::cout << "--Update: Failed to update an element(handle was invalid)--" << std::endl;
             return FALSE;
         }
 
         if (element == NULL || element->keylength == NULL) {
-            cout << "--Update: Failed to update an element(element was invalid)--" << endl;
+            std::cout << "--Update: Failed to update an element(element was invalid)--" << std::endl;
             return FALSE;
         }
 
         if (newpayload == NULL || newpayloadlength == NULL || newpayloadlength > handle->MaxPayloadLength) {
-            cout << "--Update: Failed to update an element(data to update were invalid)--" << endl;
+            std::cout << "--Update: Failed to update an element(data to update were invalid)--" << std::endl;
             return FALSE;
         }
 
         lock_guard<mutex>lock(ht_mutex);
        
         size_t slot_size = handle->MaxKeyLength + handle->MaxPayloadLength;
-        int metadata_offset = 3 * sizeof(int);
-        char* base = static_cast<char*>(handle->Addr) + metadata_offset;
+        char* base = static_cast<char*>(handle->Addr) + METADATA_OFFSET;
 
         for (int i = 0; i < handle->Capacity; ++i) {
             char* current_slot = base + (i * slot_size);
@@ -642,12 +672,12 @@ namespace HT {
 
             if (memcmp(current_slot, element->key, element->keylength) == 0) {
                 memcpy(current_slot + handle->MaxKeyLength, newpayload, newpayloadlength);
-                cout << "--Update: Element updated--" << endl;
+                std::cout << "--Update: Element updated--" << std::endl;
                 return TRUE;
             }
         }
 
-        cout << "--Update: Failed to update(element not found)--" << endl;
+        std::cout << "--Update: Failed to update(element not found)--" << std::endl;
         return FALSE;
 
 

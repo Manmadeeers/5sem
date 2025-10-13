@@ -17,7 +17,6 @@ namespace HT    // HT API
 	//          Close  - выполнить Snap и закрыть HT-хранилище для использования
 	//          GetLastError - получить сообщение о последней ошибке
 
-	//int* hash_helper = new int[0];
 
 	struct HTHANDLE    // блок управления HT
 	{
@@ -33,8 +32,7 @@ namespace HT    // HT API
 		LPVOID  Addr;                   // Addr != NULL, если mapview выполнен  
 		char    LastErrorMessage[512];  // сообщение об последней ошибке или 0x00  
 		time_t  lastsnaptime;			// дата последнего snap'a (time())  
-		int CurrentElements=0;            //Added: the number of elements in a storage
-		int* hash_helper = new int[Capacity];
+		int CurrentElements;            //Added: the number of elements in a storage
 	};
 
 	struct Element   // элемент 

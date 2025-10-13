@@ -1,13 +1,15 @@
-#include "OS10_1.h"
+﻿#include "OS_10_2.h"
 #include <iostream>
-//#define CREATION_ENABLED
-#define OPENING_ENABLED
-//#define INSERTION_ENABLED
+using namespace std;
+
+#define CREATION_ENABLED
+//#define OPENING_ENABLED
+#define INSERTION_ENABLED
 //#define DELETION_ENABLED
 #define CLOSURE_ENABLED
-#define GET_ENABLED
-#define UPDATE_ENABLED
-using namespace std;
+//#define GET_ENABLED
+//#define UPDATE_ENABLED
+
 
 
 int main() {
@@ -30,7 +32,7 @@ int main() {
 
 #endif // CREATION_ENABLED
 
-		
+
 
 #ifdef OPENING_ENABLED
 		handle = HT::Open("Test.ht");
@@ -40,6 +42,7 @@ int main() {
 		else {
 			cout << "--Existing HT-Storage opened successfully--" << endl;
 		}
+
 		cout << endl << "----------Opening Ended----------" << endl;
 #endif // OPENING_ENABLED
 
@@ -47,18 +50,20 @@ int main() {
 #ifdef INSERTION_ENABLED
 		cout << endl << "----------Insertion Started----------" << endl << endl;
 		HT::Insert(handle, new HT::Element("key", 3, "payload", 7));
+
 		HT::Insert(handle, new HT::Element("key1", 4, "PAYLOAD1", 8));
+
 		HT::Insert(handle, new HT::Element("key2", 4, "payload2", 8));
-		HT::Insert(handle, new HT::Element("key2", 4, "payload3", 8));
-		//HT::Insert(handle, new HT::Element("key4", 4, "payload4", 8));
-		//HT::Insert(handle, new HT::Element("key5", 4, "payload5", 8));
-		//HT::Insert(handle, new HT::Element("key6", 4, "payload6", 8));
-		//HT::Insert(handle, new HT::Element("key7", 4, "payload7", 8));
-		//HT::Insert(handle, new HT::Element("key8", 4, "payload8", 8));
-		//HT::Insert(handle, new HT::Element("key9", 4, "payload9", 8));
+		HT::Insert(handle, new HT::Element("key3", 4, "payload3", 8));
+		HT::Insert(handle, new HT::Element("key4", 4, "payload4", 8));
+		HT::Insert(handle, new HT::Element("key5", 4, "payload5", 8));
+		HT::Insert(handle, new HT::Element("key6", 4, "payload6", 8));
+		HT::Insert(handle, new HT::Element("key7", 4, "payload7", 8));
+		HT::Insert(handle, new HT::Element("key8", 4, "payload8", 8));
+		HT::Insert(handle, new HT::Element("key9", 4, "payload9", 8));
 
 		cout << endl << "----------Insertion Ended----------" << endl;
-	
+
 #endif // INSERTION_ENABLED
 
 #ifdef DELETION_ENABLED
@@ -67,7 +72,7 @@ int main() {
 #endif // DELETION_ENABLED
 #ifdef GET_ENABLED
 		cout << endl << "----------Get Started----------" << endl << endl;
-		HT::Element* got_element = HT::Get(handle, new HT::Element("key1", 4));
+		HT::Element* got_element = HT::Get(handle, new HT::Element("key7", 4));
 		if (got_element != NULL) {
 			cout << "--Get executed successful--" << endl;
 			HT::Print(got_element);
@@ -100,11 +105,11 @@ int main() {
 			cout << "--Failed to Close--" << endl;
 		}
 #endif // CLOSURE_ENABLED
-		
+
 	}
 	catch (exception ex) {
 		cout << ex.what() << endl;
-		
+
 	}
 
 
