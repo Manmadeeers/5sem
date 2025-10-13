@@ -3,7 +3,6 @@ var fs = require('fs');
 var url = require('url');
 var rline = require('readline');
 var data_module = require('../Lab_4/Db_module');
-const { json } = require('stream/consumers');
 const PORT = 5000;
 
 const rl = rline.createInterface({
