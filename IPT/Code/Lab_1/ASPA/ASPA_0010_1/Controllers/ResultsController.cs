@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using ASPA_0010_1.Models;
+using BSTU.Results.Authenticate.Services;
 using BSTU.Results.Collection.Models;
 using BSTU.Results.Collection.Services;
-using BSTU.Results.Authenticate.Services;
-using ASPA_0010_1.Models;
+using Microsoft.AspNet.Identity.EntityFramework;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace ASPA_0010_1.Controllers
 {

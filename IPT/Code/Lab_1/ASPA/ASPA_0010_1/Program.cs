@@ -1,48 +1,115 @@
 using BSTU.Results.Collection.Services;
-using Microsoft.AspNetCore.Hosting.Builder;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.OpenApi.Models;
-
-
-
-var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
-builder.Services.AddTransient<ResultsService>();
-builder.Services.AddControllersWithViews();
-builder.Services.AddSwaggerGen(options =>
+using BSTU.Results.Authenticate.Services;
+using Microsoft.AspNetCore.Identity;
+using ASPA_0010_1.DbContext;
+using Microsoft.EntityFrameworkCore;
+internal class Program
 {
-    options.SwaggerDoc("v1.0.4", new OpenApiInfo { Title = "ResultsAPI", Version = "v1.0.4" });
-});
-builder.Services.AddEndpointsApiExplorer();
+    private static async Task Main(string[] args)
+    {
+        var builder = WebApplication.CreateBuilder(args);
+
+        builder.Services.AddDbContext<AppDbContext>(options => options.UseInMemoryDatabase("AuthDb"));
 
 
-var app = builder.Build();
+        builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+        {
+            options.Password.RequireDigit = false;
+            options.Password.RequireLowercase = false;
+            options.Password.RequireUppercase = false;
+            options.Password.RequiredLength = 4;
+            options.Password.RequireNonAlphanumeric = false;
+        }).
+        AddEntityFrameworkStores<AppDbContext>()
+        .AddDefaultTokenProviders();
 
-// Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
+        builder.Services.AddTransient<ResultsService>();
+        builder.Services.AddScoped<AuthenticationService>();
 
+        builder.Services.AddControllersWithViews();
+
+        builder.Services.AddAuthorization(options =>
+        {
+            options.AddPolicy("RequireReader", policy => policy.RequireRole("READER"));
+            options.AddPolicy("RequireWriter", policy => policy.RequireRole("WRITER"));
+        });
+
+        builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddSwaggerGen();
+
+
+        using WebApplication app = builder.Build();
+
+        if (!app.Environment.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
+            });
+         
+
+        }
+        else
+        {
+            app.UseExceptionHandler("/Home/Error");
+            app.UseHsts();
+        }
+
+
+        using (var scope = app.Services.CreateScope())
+        {
+            var services = scope.ServiceProvider;
+            var roles = services.GetRequiredService<RoleManager<IdentityRole>>();
+            var users = services.GetRequiredService<UserManager<IdentityUser>>();
+
+            if (!await roles.RoleExistsAsync("READER"))
+            {
+                IdentityRole role = new IdentityRole("READER");
+                await roles.CreateAsync(role);
+            }
+            if (!await roles.RoleExistsAsync("writer"))
+            {
+                IdentityRole role = new IdentityRole("writer");
+                await roles.CreateAsync(role);
+            }
+
+            var readerUser = await users.FindByNameAsync("reader");
+            if (readerUser == null)
+            {
+                readerUser = new IdentityUser("reader");
+                await users.CreateAsync(readerUser, "12345");
+                await users.AddToRoleAsync(readerUser, "READER");
+            }
+
+            var writerUser = await users.FindByNameAsync("writer");
+            if (writerUser == null)
+            {
+                writerUser = new IdentityUser("writer");
+                await users.CreateAsync(writerUser, "12345");
+                await users.AddToRoleAsync(writerUser, "writer");
+            }
+
+        }
+
+        app.UseHttpsRedirection();
+        app.UseStaticFiles();
+
+        app.UseRouting();
+
+
+        app.UseSwagger();
+        app.UseSwaggerUI(c =>
+        {
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "ResultsAPI v1.0.4");
+            c.RoutePrefix = string.Empty;
+        });
+        app.UseAuthorization();
+
+        app.MapControllerRoute(
+            name: "default",
+            pattern: "{controller=Home}/{action=Index}/{id?}");
+
+        app.Run();
+    }
 }
-
-
-app.UseHttpsRedirection();
-app.UseStaticFiles();
-
-app.UseRouting();
-app.UseSwagger();
-app.UseSwaggerUI(c =>
-{
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "ResultsAPI v1.0.4");
-    c.RoutePrefix = string.Empty;
-});
-app.UseAuthorization();
-
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
-
-app.Run();
