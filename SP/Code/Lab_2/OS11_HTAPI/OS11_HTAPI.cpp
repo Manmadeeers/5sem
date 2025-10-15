@@ -1,15 +1,7 @@
-#include "OS10_1.h"
-#include <iostream>
-#include <mutex>
-#include <thread>
-#include <cstring>
-#include <Windows.h>
-#include <cstdlib>
-#include <vector>
-#include <string>
-#include <future>
+#include "OS_11DLL.h"
 
-#define METADATA_OFFSET 4*sizeof(int)+sizeof(time_t)
+
+
 
 using namespace std;
 
@@ -86,8 +78,8 @@ namespace HT {
         HTHANDLE* ht = new HTHANDLE(Capacity, SecSnapshotInterval, MaxKeyLength, MaxPayloadLength, FileName);
         std::cout << "----------Creation Started----------" << std::endl << std::endl;
 
-     
-      
+
+
         ht->File = CreateFileA(
             FileName,
             GENERIC_READ | GENERIC_WRITE,//access mode:read &writes
@@ -112,7 +104,7 @@ namespace HT {
             std::cout << "File error: " << GetLastError() << std::endl;
         }
 
-     
+
         int slot_size = (ht->MaxKeyLength + ht->MaxPayloadLength);
         std::cout << "Slot size: " << slot_size << std::endl;
 
@@ -121,7 +113,7 @@ namespace HT {
         std::cout << "Storage capacity: " << ht->Capacity << std::endl;
         int storage_size = METADATA_OFFSET + (ht->Capacity * slot_size);
         std::cout << "Storage size: " << storage_size << std::endl;
-        
+
 
         ht->FileMapping = CreateFileMappingA(
             ht->File, // Handle to the file
@@ -162,17 +154,17 @@ namespace HT {
         else {
             std::cout << "--MapViewOfFile successful(Create)--" << std::endl;
         }
-        
 
-        memcpy(ht->Addr, &Capacity, sizeof(int));               
+
+        memcpy(ht->Addr, &Capacity, sizeof(int));
 
         memcpy(static_cast<char*>(ht->Addr) + sizeof(int), &MaxKeyLength, sizeof(int));
 
         memcpy(static_cast<char*>(ht->Addr) + 2 * sizeof(int), &MaxPayloadLength, sizeof(int));
-        
+
         memcpy(static_cast<char*>(ht->Addr) + 3 * sizeof(int), &ht->CurrentElements, sizeof(int));
 
-       
+
 
 
         return ht;
@@ -388,7 +380,7 @@ namespace HT {
             return FALSE;
         }
 
-       
+
 
         if (hthandle->Addr != NULL) {
             UnmapViewOfFile(hthandle->Addr);
@@ -481,10 +473,10 @@ namespace HT {
 
         char* base = static_cast<char*>(hthandle->Addr) + METADATA_OFFSET;
 
-        
+
         for (int probe = 0; probe < hthandle->Capacity; ++probe) {
             char* slot_key = base + (hash_index * slot_size);
-            
+
             bool is_empty = true;
 
             for (int k = 0; k < hthandle->MaxKeyLength; ++k) {
@@ -544,14 +536,14 @@ namespace HT {
 
             bool slot_empty = true;
             for (int k = 0; k < handle->MaxKeyLength; ++k) {
-                if (current_slot[k] != 0) { 
-                    slot_empty = false; 
-                    break; 
+                if (current_slot[k] != 0) {
+                    slot_empty = false;
+                    break;
                 }
             }
             if (slot_empty) {
                 continue;
-            } 
+            }
 
             if (element->keylength <= handle->MaxKeyLength && memcmp(current_slot, element->key, element->keylength) == 0) {
                 index_to_delete = i;
@@ -591,7 +583,7 @@ namespace HT {
             return NULL;
         }
         lock_guard<mutex>lock(ht_mutex);
-       
+
 
         size_t slot_size = handle->MaxKeyLength + handle->MaxPayloadLength;
         char* base = static_cast<char*>(handle->Addr) + METADATA_OFFSET;
@@ -651,7 +643,7 @@ namespace HT {
         }
 
         lock_guard<mutex>lock(ht_mutex);
-       
+
         size_t slot_size = handle->MaxKeyLength + handle->MaxPayloadLength;
         char* base = static_cast<char*>(handle->Addr) + METADATA_OFFSET;
 
