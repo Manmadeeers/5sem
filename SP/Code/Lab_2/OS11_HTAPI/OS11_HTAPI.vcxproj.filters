@@ -18,13 +18,10 @@
     <ClInclude Include="framework.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="pch.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
     <ClInclude Include="OS_11DLL.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="OS10_1.h">
+    <ClInclude Include="pch.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,14 +1,27 @@
+//OS11 HTAPI functions implementation
+#include "pch.h"
 #include "OS_11DLL.h"
+#include <Windows.h>
+#include <iostream>
+#include <mutex>
+#include <thread>
+#include <cstring>
+#include <cstdlib>
+#include <vector>
+#include <string>
+#include <future>
 
-
-
+#define METADATA_OFFSET 4*sizeof(int)+sizeof(time_t)
+#define MUTEX_NAME "MultiProcessMutex"
 
 using namespace std;
 
 
 namespace HT {
 
-    std::mutex ht_mutex;
+    std::mutex ht_mutex;//for multi-thread access
+    
+    HANDLE mutex_handle;//for multi-process access
 
     //default constructor
     Element::Element() :
@@ -75,6 +88,8 @@ namespace HT {
     HTHANDLE* Create(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char FileName[512]) {
         lock_guard<mutex>lock(ht_mutex);
 
+        mutex_handle = CreateMutexA(NULL, FALSE, MUTEX_NAME);
+
         HTHANDLE* ht = new HTHANDLE(Capacity, SecSnapshotInterval, MaxKeyLength, MaxPayloadLength, FileName);
         std::cout << "----------Creation Started----------" << std::endl << std::endl;
 
@@ -86,7 +101,7 @@ namespace HT {
             0, //sharing between processes: No sharing
             NULL, //security attributes: Default security attributes    
             CREATE_ALWAYS, //how to open: Open if exists, else create
-            FILE_ATTRIBUTE_NORMAL,//file attribute:normal
+            FILE_ATTRIBUTE_NORMAL|FILE_FLAG_OVERLAPPED,//file attribute:normal and overlapped for multi-process access
             NULL // No template file
         );
 
@@ -156,6 +171,8 @@ namespace HT {
         }
 
 
+     
+
         memcpy(ht->Addr, &Capacity, sizeof(int));
 
         memcpy(static_cast<char*>(ht->Addr) + sizeof(int), &MaxKeyLength, sizeof(int));
@@ -175,6 +192,9 @@ namespace HT {
         std::cout << "----------Opening Started----------" << std::endl << std::endl;
 
         lock_guard<mutex>lock(ht_mutex);
+        mutex_handle = OpenMutexA(SYNCHRONIZE, FALSE, MUTEX_NAME);
+   
+
         HTHANDLE* ht = new HTHANDLE();
         ht->File = CreateFileA(
             FileName,
@@ -229,11 +249,13 @@ namespace HT {
             std::cout << "--Map View Of File Successful(Open)--" << std::endl;
         }
 
+
         memcpy(&ht->Capacity, ht->Addr, sizeof(int));
         memcpy(&ht->MaxKeyLength, static_cast<char*>(ht->Addr) + sizeof(int), sizeof(int));
         memcpy(&ht->MaxPayloadLength, static_cast<char*>(ht->Addr) + 2 * sizeof(int), sizeof(int));
         memcpy(&ht->CurrentElements, static_cast<char*>(ht->Addr) + 3 * sizeof(int), sizeof(int));
         memcpy(&ht->lastsnaptime, static_cast<char*>(ht->Addr) + 4 * sizeof(int), sizeof(time_t));
+
 
         std::cout << "Current ht->Addr: " << ht->Addr << std::endl;
 
@@ -310,7 +332,7 @@ namespace HT {
             0,
             NULL,
             CREATE_ALWAYS,
-            FILE_ATTRIBUTE_NORMAL,
+            FILE_ATTRIBUTE_NORMAL|FILE_FLAG_OVERLAPPED,
             NULL
         );
 
@@ -370,6 +392,7 @@ namespace HT {
         lock_guard<mutex>lock(ht_mutex);
 
         //snapshot execution now asynchronous. a little bit of a krutch
+
         std::future<BOOL> snapshot_result = std::async(Snap, hthandle);
 
         if (snapshot_result.get()) {
@@ -396,6 +419,12 @@ namespace HT {
                 std::cout << "--Close:Failed To Close The File Handle--" << GetLastError() << std::endl;
                 return FALSE;
             }
+        }
+
+        BOOL mutex_closure_result = CloseHandle(mutex_handle);
+        if (!mutex_closure_result) {
+            std::cout << "--Close:Failed to close mutex handle--" << GetLastError() << std::endl;
+            return FALSE;
         }
 
         std::cout << "Current elements check before close: " << hthandle->CurrentElements << std::endl;
