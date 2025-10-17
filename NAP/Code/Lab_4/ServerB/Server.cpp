@@ -22,7 +22,7 @@ void SendCheckMessage(SOCKET* socket, char* name) {
 	}
 
 	if (sent_check_length == 0) {
-		cout << "No servers with the similar callsignes in local network" << endl;
+		cout << "No servers with the similar callsigns in local network" << endl;
 		return;
 	}
 
