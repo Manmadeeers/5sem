@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OS11_HTAPI", "OS11_HTAPI\OS
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DLL_TEST", "DLL_TEST\DLL_TEST.vcxproj", "{73F2E883-D09B-4580-A785-3991F5A9AF03}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OS11_CREATE", "OS11_CREATE\OS11_CREATE.vcxproj", "{F7DB7D95-0578-49EE-BBA4-72E0C0B6A806}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -31,6 +33,14 @@ Global
 		{73F2E883-D09B-4580-A785-3991F5A9AF03}.Release|x64.Build.0 = Release|x64
 		{73F2E883-D09B-4580-A785-3991F5A9AF03}.Release|x86.ActiveCfg = Release|Win32
 		{73F2E883-D09B-4580-A785-3991F5A9AF03}.Release|x86.Build.0 = Release|Win32
+		{F7DB7D95-0578-49EE-BBA4-72E0C0B6A806}.Debug|x64.ActiveCfg = Debug|x64
+		{F7DB7D95-0578-49EE-BBA4-72E0C0B6A806}.Debug|x64.Build.0 = Debug|x64
+		{F7DB7D95-0578-49EE-BBA4-72E0C0B6A806}.Debug|x86.ActiveCfg = Debug|Win32
+		{F7DB7D95-0578-49EE-BBA4-72E0C0B6A806}.Debug|x86.Build.0 = Debug|Win32
+		{F7DB7D95-0578-49EE-BBA4-72E0C0B6A806}.Release|x64.ActiveCfg = Release|x64
+		{F7DB7D95-0578-49EE-BBA4-72E0C0B6A806}.Release|x64.Build.0 = Release|x64
+		{F7DB7D95-0578-49EE-BBA4-72E0C0B6A806}.Release|x86.ActiveCfg = Release|Win32
+		{F7DB7D95-0578-49EE-BBA4-72E0C0B6A806}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
