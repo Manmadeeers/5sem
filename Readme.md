@@ -7,9 +7,10 @@
   <li>💾: DB - Data Bases</li>
   <li>💻: NAP - Network Applications Programming</li>
   <li>🐧: OS - Operating Systems</li>
-  <li>🔨: SP - Sytem Programming</li>
+  <li>🔨: SP - System Programming</li>
   <li>💻: IPT - Internet Programming Technologies</li>
 </ul>
+
 
 
 
