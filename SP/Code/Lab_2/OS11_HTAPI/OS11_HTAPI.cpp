@@ -179,8 +179,9 @@ namespace HT {
 
         memcpy(static_cast<char*>(ht->Addr) + 2 * sizeof(int), &MaxPayloadLength, sizeof(int));
 
-        memcpy(static_cast<char*>(ht->Addr) + 3 * sizeof(int), &ht->CurrentElements, sizeof(int));
+        memcpy(static_cast<char*>(ht->Addr) + 3 * sizeof(int), &ht->SecSnapshotInterval, sizeof(int));
 
+        
 
 
 
@@ -207,6 +208,7 @@ namespace HT {
         );
         if (ht->File == INVALID_HANDLE_VALUE) {
             std::cout << "--File Creation Failed(Open)--" << std::endl;
+            std::cout << "Transmitted filename: " << FileName << std::endl;
             delete ht;
             return NULL;
         }
@@ -253,7 +255,7 @@ namespace HT {
         memcpy(&ht->Capacity, ht->Addr, sizeof(int));
         memcpy(&ht->MaxKeyLength, static_cast<char*>(ht->Addr) + sizeof(int), sizeof(int));
         memcpy(&ht->MaxPayloadLength, static_cast<char*>(ht->Addr) + 2 * sizeof(int), sizeof(int));
-        memcpy(&ht->CurrentElements, static_cast<char*>(ht->Addr) + 3 * sizeof(int), sizeof(int));
+        memcpy(&ht->SecSnapshotInterval, static_cast<char*>(ht->Addr) + 3 * sizeof(int), sizeof(int));
         memcpy(&ht->lastsnaptime, static_cast<char*>(ht->Addr) + 4 * sizeof(int), sizeof(time_t));
 
 
@@ -348,6 +350,11 @@ namespace HT {
         std::cout << "--Data size to write: " << data_size << "--" << std::endl;
         std::cout << "--Buffer size: " << sizeof(hthandle->Addr) << "--" << std::endl;
 
+        if (data_size == 0) {
+            std::cout << "Snapshot Executed. Nothing to snap" << std::endl;
+            return TRUE;
+        }
+
         DWORD bytesWritten;
         BOOL writeResult = WriteFile(
             HTSnapshot,
@@ -357,6 +364,7 @@ namespace HT {
             NULL
         );
 
+        std::cout << "Bytes written: " << bytesWritten << std::endl;
         if (!writeResult) {
             DWORD writeError = GetLastError();
             std::cout << "--Snap: Failed to execute a snapshot (WriteFile error)-- Error: " << writeError << std::endl;
@@ -421,9 +429,9 @@ namespace HT {
             }
         }
 
-        BOOL mutex_closure_result = CloseHandle(mutex_handle);
-        if (!mutex_closure_result) {
-            std::cout << "--Close:Failed to close mutex handle--" << GetLastError() << std::endl;
+        BOOL mutex_result = CloseHandle(mutex_handle);
+        if (!mutex_result) {
+            std::cout << "--Close:Failed to close mutex handle--"<<"Error code: " << GetLastError() << std::endl;
             return FALSE;
         }
 
@@ -455,7 +463,7 @@ namespace HT {
     }
 
 
-    BOOL Insert(HTHANDLE* hthandle, const Element* element) {
+    BOOL Insert(HTHANDLE* hthandle,  Element* element) {
 
         if (hthandle == NULL) {
             std::cout << "--Insert: Failed to insert(Invalid handle)--" << " Error: " << GetLastError() << std::endl;

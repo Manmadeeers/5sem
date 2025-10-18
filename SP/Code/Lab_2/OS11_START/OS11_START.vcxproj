@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{f7db7d95-0578-49ee-bba4-72e0c0b6a806}</ProjectGuid>
-    <RootNamespace>OS11CREATE</RootNamespace>
+    <ProjectGuid>{b105b781-d1b2-4e5b-afac-2ca88f4c9a1b}</ProjectGuid>
+    <RootNamespace>OS11START</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -126,7 +126,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="OS11_CREATE.cpp" />
+    <ClCompile Include="OS11_START.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,6 +1,7 @@
 #pragma once
 #include "pch.h"
 #include <Windows.h>
+#define _CRT_SECURE_NO_WARNINGS
 
 
 namespace HT {
@@ -22,20 +23,22 @@ namespace HT {
 		int CurrentElements;            //Added: the number of elements in a storage
 	};
 
-	struct Element   // элемент 
-	{
-		Element();
-		Element(const void* key, int keylength);                                             // for Get
-		Element(const void* key, int keylength, const void* payload, int  payloadlength);    // for Insert
-		Element(Element* oldelement, const void* newpayload, int  newpayloadlength);         // for update
-		const void* key;                 // значение ключа 
-		int             keylength;           // рахмер ключа
-		const void* payload;             // данные 
-		int             payloadlength;       // размер данных
-	};
+	
 
-
+	
 	extern "C" {
+		__declspec(dllexport) struct Element   // элемент 
+		{
+			Element();
+			Element(const void* key, int keylength);                                             // for Get
+			Element(const void* key, int keylength, const void* payload, int  payloadlength);    // for Insert
+			Element(Element* oldelement, const void* newpayload, int  newpayloadlength);         // for update
+			const void* key;                 // значение ключа 
+			int             keylength;           // рахмер ключа
+			const void* payload;             // данные 
+			int             payloadlength;       // размер данных
+		};
+
 		__declspec(dllexport)	HTHANDLE* Create   //  создать HT             
 		(
 			int	  Capacity,					   // емкость хранилища
@@ -60,7 +63,7 @@ namespace HT {
 			HTHANDLE* hthandle           // управление HT (File, FileMapping)
 		);	//  == TRUE успешное завершение   
 
-		__declspec(dllexport) BOOL Insert(HTHANDLE* hthandle, const Element* element);
+		__declspec(dllexport) BOOL Insert(HTHANDLE* hthandle,  Element* element);
 
 		__declspec(dllexport) BOOL Delete      // удалить элемент в хранилище
 		(
