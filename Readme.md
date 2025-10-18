@@ -6,10 +6,12 @@
   <li>🖥️: CPSAP - Cross Platform Server Application Programming</li>
   <li>💾: DB - Data Bases</li>
   <li>💻: NAP - Network Applications Programming</li>
-  <li>🐧: OS - Operation Systems</li>
-  <li>🔨: SP - Sytem Programming</li>
+  <li>🐧: OS - Operating Systems</li>
+  <li>🔨: SP - System Programming</li>
   <li>💻: IPT - Internet Programming Technologies</li>
 </ul>
+
+
 
 
 
