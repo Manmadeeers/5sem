@@ -12,7 +12,7 @@
 #include <future>
 
 #define METADATA_OFFSET 4*sizeof(int)+sizeof(time_t)
-#define MUTEX_NAME "MultiProcessMutex"
+#define MUTEX_NAME "Global\\MultiProcessMutex"
 
 using namespace std;
 
@@ -20,8 +20,6 @@ using namespace std;
 namespace HT {
 
     std::mutex ht_mutex;//for multi-thread access
-    
-    HANDLE mutex_handle;//for multi-process access
 
     //default constructor
     Element::Element() :
@@ -88,7 +86,7 @@ namespace HT {
     HTHANDLE* Create(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char FileName[512]) {
         lock_guard<mutex>lock(ht_mutex);
 
-        mutex_handle = CreateMutexA(NULL, FALSE, MUTEX_NAME);
+      
 
         HTHANDLE* ht = new HTHANDLE(Capacity, SecSnapshotInterval, MaxKeyLength, MaxPayloadLength, FileName);
         std::cout << "----------Creation Started----------" << std::endl << std::endl;
@@ -193,7 +191,6 @@ namespace HT {
         std::cout << "----------Opening Started----------" << std::endl << std::endl;
 
         lock_guard<mutex>lock(ht_mutex);
-        mutex_handle = OpenMutexA(SYNCHRONIZE, FALSE, MUTEX_NAME);
    
 
         HTHANDLE* ht = new HTHANDLE();
@@ -427,12 +424,6 @@ namespace HT {
                 std::cout << "--Close:Failed To Close The File Handle--" << GetLastError() << std::endl;
                 return FALSE;
             }
-        }
-
-        BOOL mutex_result = CloseHandle(mutex_handle);
-        if (!mutex_result) {
-            std::cout << "--Close:Failed to close mutex handle--"<<"Error code: " << GetLastError() << std::endl;
-            return FALSE;
         }
 
         std::cout << "Current elements check before close: " << hthandle->CurrentElements << std::endl;

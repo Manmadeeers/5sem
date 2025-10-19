@@ -21,6 +21,7 @@ namespace HT {
 		char    LastErrorMessage[512];  // сообщение об последней ошибке или 0x00  
 		time_t  lastsnaptime;			// дата последнего snap'a (time())  
 		int CurrentElements;            //Added: the number of elements in a storage
+		HANDLE mutex_handle             //Added: mutex handle for multi-process access
 	};
 
 	
