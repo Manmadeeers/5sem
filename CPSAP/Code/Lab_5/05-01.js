@@ -2,7 +2,7 @@ var http = require('http');
 var fs = require('fs');
 var url = require('url');
 var rline = require('readline');
-var data_module = require('../Lab_4/Db_module');
+var data_module = require('./DB_module');
 const PORT = 5000;
 
 const rl = rline.createInterface({
@@ -77,9 +77,6 @@ const server = http.createServer(function (request, response) {
     }
     else if (url.parse(request.url).pathname === "/api/ss") {
         response.writeHead(200, { 'content-type': 'application/json;charset=utf-8' });
-        // if(serverStats.time_finish==null){
-        //     collectStatistics(0);
-        // }
         collectStatistics(0);
         response.end(JSON.stringify(serverStats));
     }
@@ -97,8 +94,8 @@ const server = http.createServer(function (request, response) {
 });
 
 server.listen(PORT);
-console.log("Server running at http://localhost:5000/");
-console.log("Server statistics available at http://localhost:5000/api/ss");
+console.log(`Server running at http://localhost:${PORT}/`);
+console.log(`Server statistics available at http://localhost:${PORT}/api/ss`);
 
 let stopTimeout;
 const stopServer = (delay) => {
