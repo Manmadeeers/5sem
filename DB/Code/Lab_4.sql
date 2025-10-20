@@ -138,7 +138,7 @@ select * from v$log;
 
 --14: Determine whether logfiles are being archived or not EX
 
-select * from v$datbase;
+select * from v$database;
 
 select * from v$instance;
 
@@ -155,7 +155,7 @@ select * from gv$archived_log;
 --ALTER DATABASE OPEN;
 
 select NAME, log_mode from v$database;
-select instance_name,archiver, archive_state from v$instance;
+select instance_name,archiver, active_state from v$instance;
 
 --17: Create an archive file manually EX
 

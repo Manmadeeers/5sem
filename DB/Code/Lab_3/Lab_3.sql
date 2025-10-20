@@ -10,6 +10,7 @@ select * from v$instance;
 select *  from dba_registry;
 
 ------------------------get installed components list--------------------------------------
+drop pluggable database FIA_PDB including datafiles;
 
 create pluggable database FIA_PDB 
     ADMIN USER root identified by 1111  
@@ -18,11 +19,13 @@ create pluggable database FIA_PDB
     
     
     alter pluggable database FIA_PDB open;
+    alter pluggable database FIA_PDB close;
     
     
 ------------------create a new PDB --------------------------------------------
 
 select * from dba_pdbs;
+
 
 ------------------------Get all pdbs --------------------------------------
 
@@ -32,7 +35,7 @@ select * from dba_data_files;
 
 
 create tablespace ts_FIA
-datafile 'ts_FIA.dbf'
+datafile 'ts_FIA1.dbf'
 size 10m
 autoextend on next 5m
 maxsize 20m;
@@ -45,9 +48,12 @@ maxsize 30m;
 
 alter tablespace TS_FIA_TEMP
 drop datafile '/opt/oracle/oradata/FIA/TS_FIA_TEMP.dbf';
+
 SELECT name, bytes FROM v$tempfile;
 
 
+
+drop profile PF_FIACORE cascade;
 
 create profile PF_FIACORE limit
 PASSWORD_LIFE_TIME 180
@@ -73,10 +79,12 @@ grant
     
     
     create user U1_FIA_PDB identified by 12345
-    default tablespace ts_FIA quota unlimited on ts_FIA
+    default tablespace TS_FIA quota unlimited on TS_FIA
     temporary tablespace TS_FIA_TEMP
     account unlock;
     
+    
+    select * from dba_tablespaces;
     
     grant RL_FIACORE to U1_FIA_PDB;
 --------connect to FIA_PDB using sqldev, create tablespaces , roles, profiles, tables ---------------------------------------------------
