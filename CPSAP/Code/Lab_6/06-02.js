@@ -1,14 +1,17 @@
 var http = require('http');
 var fs = require('fs');
-var sendmail = require('sendmail')({ 
-    silent: false,
-    smtpPort:1025,
-    smtpHost:"127.0.0.1",
- });
+var nodemailer = require('nodemailer');
 var url = require('url');
-const { resourceUsage, send } = require('process');
 var querystring = require('querystring');
 const PORT = 5000;
+
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: 'philmade6@gmail.com',
+        pass: 'qrro xauj awnt zgsp'
+    }
+});
 
 
 
@@ -28,36 +31,47 @@ const serverFunction = function (request, response) {
 
         console.log(`Retrieved content: ${content}`);
 
-        let mail_from;
-        let mail_to;
-        let mail_message;
+        let reply_flag = false;
         request.on('end', () => {
             const { from, to, message } = querystring.parse(content);
-            mail_from = from;
+
             console.log(`Retrieved from: ${from}`);
-            mail_to = to;
+
             console.log(`Retrieved to: ${to}`);
-            mail_message = message;
+
             console.log(`Retrieved message: ${message}`);
 
-
-            sendmail({
+            const mailOptions = {
                 from: from,
                 to: to,
-                subject: "Lab6 sendmail message",
-                html: `<p>${message}</p>`,
-            }, function (err, reply) {
-                if(err){
-                    console.log("Error occured:", err);
+                subject: 'Lab6 sendmail message',
+                text: message
+            }
+
+            transporter.sendMail(mailOptions, (err, info) => {
+                if (err) {
+                    console.log("Error occured: ",err);
                     response.writeHead(500,{'content-type':'text/html;charset=utf-8'});
-                    response.end("<h1>500 Internal Server Error</h1>");
+                    response.end(
+                        "<h1>500 Failed to send an email</h1>"+
+                        `${err}`
+                    );
                 }
-                if(reply){
-                    console.log("Got a reply",reply);
+                if(info){
+                    console.log("Mail successfully sent");
                     response.writeHead(200,{'content-type':'text/html;charset=utf-8'});
-                    response.end("<h1>200 Email Successfully sent</h1>");
+                    response.end(
+                        "<h1>200 Mail successfully sent</h1>"+
+                        `Accepted: ${info.accepted}`+
+                        `Envelope: ${info.envelope}`+
+                        `Message ID: ${info.messageId}`+
+                        `Pending: ${info.pending}`+
+                        `Rejected: ${info.rejected}`+
+                        `Response${info.response}`
+                    );
                 }
-            });
+
+            })
         });
 
     }
