@@ -5,13 +5,7 @@ var url = require('url');
 var querystring = require('querystring');
 const PORT = 5000;
 
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: 'philmade6@gmail.com',
-        pass: 'qrro xauj awnt zgsp'
-    }
-});
+
 
 
 
@@ -31,15 +25,28 @@ const serverFunction = function (request, response) {
 
         console.log(`Retrieved content: ${content}`);
 
-        let reply_flag = false;
         request.on('end', () => {
-            const { from, to, message } = querystring.parse(content);
+            const { from, to, message, password } = querystring.parse(content);
 
             console.log(`Retrieved from: ${from}`);
 
             console.log(`Retrieved to: ${to}`);
 
             console.log(`Retrieved message: ${message}`);
+
+            console.log(`Retrieved application password: ${password}`);
+
+
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    user: from,
+                    pass: password
+                },
+                secure: true
+
+            });
+
 
             const mailOptions = {
                 from: from,
@@ -50,24 +57,25 @@ const serverFunction = function (request, response) {
 
             transporter.sendMail(mailOptions, (err, info) => {
                 if (err) {
-                    console.log("Error occured: ",err);
-                    response.writeHead(500,{'content-type':'text/html;charset=utf-8'});
+                    console.log("Error occured: ", err);
+                    response.writeHead(500, { 'content-type': 'text/html;charset=utf-8' });
                     response.end(
-                        "<h1>500 Failed to send an email</h1>"+
+                        "<h1>500 Failed to send an email</h1>" +
                         `${err}`
                     );
                 }
-                if(info){
+                if (info) {
                     console.log("Mail successfully sent");
-                    response.writeHead(200,{'content-type':'text/html;charset=utf-8'});
+                    response.writeHead(200, { 'content-type': 'text/html;charset=utf-8' });
                     response.end(
-                        "<h1>200 Mail successfully sent</h1>"+
-                        `Accepted: ${info.accepted}`+
-                        `Envelope: ${info.envelope}`+
-                        `Message ID: ${info.messageId}`+
-                        `Pending: ${info.pending}`+
-                        `Rejected: ${info.rejected}`+
-                        `Response${info.response}`
+                        "<h1>200 Mail successfully sent</h1>" +
+                        `<p>Accepted: ${info.accepted}></p>`+
+                        `<p>Envelope from: ${info.envelope.from}</p>`+
+                        `<p>Envelope to: ${info.envelope.to}</p>`+
+                        `<p>Message ID: ${info.messageId}</p>`+
+                        `<p>Pending: ${info.pending}</p>`+
+                        `<p>Rejected: ${info.rejected}</p>`+
+                        `<p>Response: ${info.response}</p>`
                     );
                 }
 

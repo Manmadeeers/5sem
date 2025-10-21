@@ -9,7 +9,9 @@
     <h1>Enter data to send mail</h1>
     <form method="post">
         <label for="from">From: </label>
-        <input type="email" name="from" id="from" value="philmade6@gmail.com" disabled>
+        <input type="email" name="from" id="from" required>
+        <label for="password">Application Password: </label>
+        <input type="text" name="password" id="password" required>
         <label for="to">To: </label>
         <input type="email" name="to" id="to" required>
         <label for="message">Message: </label>
@@ -17,4 +19,4 @@
         <input type="submit" value="Send">
     </form>
 </body>
-</html>
+</html> 

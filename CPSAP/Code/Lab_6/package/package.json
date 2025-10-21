@@ -1,0 +1,34 @@
+{
+    
+
+"name": "m0603_mnmd",
+    
+
+"version": "1.0.0",
+    
+
+"description": "NodeJS package for sending emails via nodemailer",
+    
+
+"license": "ISC",
+    
+
+"author": "Manmade",
+    
+
+"type": "commonjs",
+    
+
+"main": "m0603.js",
+    
+
+"scripts": {
+    
+
+    
+
+"test": "echo \"Error: no test specified\" && exit 1"
+    
+
+}
+}
