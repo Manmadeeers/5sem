@@ -4,11 +4,10 @@ const { resolve } = require('path');
 const email = 'philmade6@gmail.com';
 
 /**
- * 
  * @param {string} message 
  * @param {string} password 
  * @returns {Promise}
- */
+*/
 
 
 const send = (message, password) => {
