@@ -13,11 +13,32 @@
 
 #define METADATA_OFFSET 4*sizeof(int)+sizeof(time_t)
 #define MUTEX_NAME "Global\\MultiProcessMutex"
+typedef unsigned int uint;
 
 using namespace std;
 
 
 namespace HT {
+
+    struct ScopedNamedMutex {//for multi-process access: locking and releasing mutexes
+        HANDLE h;
+        bool locked;
+
+        ScopedNamedMutex(HANDLE Mutex, DWORD timeout = INFINITE) :h(Mutex), locked(false) {
+            if (h != NULL) {
+                DWORD r = WaitForSingleObject(h, timeout);
+                locked = (r == WAIT_OBJECT_0);
+            }
+        }
+
+        ~ScopedNamedMutex() {
+            if (locked && h != NULL) {
+                ReleaseMutex(h);
+            }
+        }
+
+        bool isLocked() const { return locked; }
+    };
 
     std::mutex ht_mutex;//for multi-thread access
 
@@ -82,6 +103,60 @@ namespace HT {
 
 
     }
+
+    //using classical DJB2 algorithm
+
+    int hashFunction(const void* key, int keyLength, int capacity) {
+        int hash = 5381;
+
+
+        const char* str = static_cast<const char*>(key);
+
+        for (int i = 0; i < keyLength; ++i) {
+
+
+            hash = ((hash << 5) + hash) + str[i];
+
+        }
+
+        std::cout << "--Hash: current Hash value: " << hash << std::endl;
+
+
+        return abs(hash % capacity);
+    }
+
+    static uint mutex_hash(const char* str) {
+        uint hash = 5381;
+
+        while (*str) {
+            hash = ((hash << 5) + hash) + (unsigned char)(*str++);
+        }
+        return hash;
+    }
+
+    static HANDLE create_open_mutexp(const char* fileName, char* outNameBuf, size_t outNameBufSize) {
+        if (!fileName) {
+            return NULL;
+        }
+        uint h = mutex_hash(fileName);
+
+        if (outNameBuf && outNameBufSize < 0) {
+            snprintf(outNameBuf, outNameBufSize, "Global\\HT_Mutex_%08X", h);
+            outNameBuf[outNameBufSize - 1] = '\0';
+        }
+
+        char nameBuf[64];
+        snprintf(nameBuf, sizeof(nameBuf), "Global\\HT_Mutex_%08X", h);
+        nameBuf[sizeof(nameBuf) - 1] = '\0';
+
+        HANDLE hm = CreateMutexA(NULL, FALSE, nameBuf);//open existing if present or create a new one
+
+        return hm;
+    }
+
+
+
+    
 
     HTHANDLE* Create(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char FileName[512]) {
         lock_guard<mutex>lock(ht_mutex);
@@ -432,26 +507,7 @@ namespace HT {
     }
 
 
-    //using classical DJB2 algorithm
 
-    int hashFunction(const void* key, int keyLength, int capacity) {
-        int hash = 5381;
-
-
-        const char* str = static_cast<const char*>(key);
-
-        for (int i = 0; i < keyLength; ++i) {
-
-
-            hash = ((hash << 5) + hash) + str[i];
-
-        }
-
-        std::cout << "--Hash: current Hash value: " << hash << std::endl;
-
-
-        return abs(hash % capacity);
-    }
 
 
     BOOL Insert(HTHANDLE* hthandle,  Element* element) {
@@ -671,7 +727,7 @@ namespace HT {
         }
 
         lock_guard<mutex>lock(ht_mutex);
-
+            
         size_t slot_size = handle->MaxKeyLength + handle->MaxPayloadLength;
         char* base = static_cast<char*>(handle->Addr) + METADATA_OFFSET;
 
