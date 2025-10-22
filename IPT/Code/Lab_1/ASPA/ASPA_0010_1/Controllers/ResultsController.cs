@@ -2,10 +2,8 @@
 using BSTU.Results.Authenticate.Services;
 using BSTU.Results.Collection.Models;
 using BSTU.Results.Collection.Services;
-using Microsoft.AspNet.Identity.EntityFramework;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace ASPA_0010_1.Controllers
 {
