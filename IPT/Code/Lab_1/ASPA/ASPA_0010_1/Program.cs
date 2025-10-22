@@ -68,9 +68,9 @@ internal class Program
                 IdentityRole role = new IdentityRole("READER");
                 await roles.CreateAsync(role);
             }
-            if (!await roles.RoleExistsAsync("writer"))
+            if (!await roles.RoleExistsAsync("WRITER"))
             {
-                IdentityRole role = new IdentityRole("writer");
+                IdentityRole role = new IdentityRole("WRITER");
                 await roles.CreateAsync(role);
             }
 
@@ -87,7 +87,7 @@ internal class Program
             {
                 writerUser = new IdentityUser("writer");
                 await users.CreateAsync(writerUser, "12345");
-                await users.AddToRoleAsync(writerUser, "writer");
+                await users.AddToRoleAsync(writerUser, "WRITER");
             }
 
         }

@@ -56,6 +56,7 @@ namespace ASPA_0010_1.Controllers
 
         [HttpGet("{key:int}")]
         [Authorize(Roles = "READER")]
+        [Authorize (Roles ="WRITER")]
         public ActionResult<Result> Get(int key)
         {
             var result = _resultsService.GetResultSync(key);
