@@ -254,9 +254,17 @@ namespace HT {
 
         memcpy(static_cast<char*>(ht->Addr) + 3 * sizeof(int), &ht->SecSnapshotInterval, sizeof(int));
 
-        
+        ht->mutex_handle = create_open_mutexp(FileName, ht->mutex_name, sizeof(ht->mutex_name));
 
-
+        if (ht->mutex_handle == NULL) {
+            DWORD err = GetLastError();
+            std::cout << "--Create: Failed to create/open global mutex. multi-process access impossible. Error: " << err << std::endl;
+            UnmapViewOfFile(ht->Addr);
+            CloseHandle(ht->FileMapping);
+            CloseHandle(ht);
+            delete ht;
+            return NULL;
+        }
 
         return ht;
     }
@@ -374,6 +382,20 @@ namespace HT {
 
         std::cout << "Opened HT storage has " << ht->Capacity << " capacity, " << ht->MaxKeyLength << " Max key length, " << ht->MaxPayloadLength << " max payload length" << std::endl;
 
+
+        ht->mutex_handle = create_open_mutexp(FileName, ht->mutex_name, sizeof(ht->mutex_name));
+
+        if (ht->mutex_handle == NULL) {
+            DWORD err = GetLastError();
+
+            std::cout << "--Open: Failed to create/open global mutex. Multi-process access impossible. Error: " << err << std::endl;
+            UnmapViewOfFile(ht->Addr);
+            CloseHandle(ht->FileMapping);
+            CloseHandle(ht);
+            delete ht;
+            return NULL;
+        }
+
         return ht;
     }
 
@@ -397,6 +419,14 @@ namespace HT {
             std::cout << "--Snap: Failed to open the handle-- Error: " << GetLastError() << std::endl;
             return FALSE;
         }
+
+        ScopedNamedMutex cross_proc_lock(hthandle->mutex_handle);
+        if (!cross_proc_lock.isLocked()) {
+            std::cout << "--Snap: Failed to acquire cross-process mutex" << std::endl;
+            return FALSE;
+        }
+
+        std::lock_guard<std::mutex>lock(ht_mutex);
 
         hthandle->lastsnaptime = time(nullptr);
 
@@ -548,6 +578,12 @@ namespace HT {
             return FALSE;
         }
 
+        ScopedNamedMutex cross_proc_lock(hthandle->mutex_name);//lock global mutex for multi-process access
+        if (!cross_proc_lock.isLocked()) {
+            std::cout << "--Insert: Failed to acquire cross-process mutex." << std::endl;
+            return FALSE;
+        }
+
         lock_guard<mutex> lock(ht_mutex);
 
         const int slot_size = hthandle->MaxKeyLength + hthandle->MaxPayloadLength;
@@ -604,6 +640,12 @@ namespace HT {
 
         if (element == NULL || element->keylength == NULL) {
             std::cout << "--Delete: Failed to delete an element(element was invalid)--" << std::endl;
+            return FALSE;
+        }
+
+        ScopedNamedMutex cross_proc_lock(handle->mutex_handle);
+        if (!cross_proc_lock.isLocked()) {
+            std::cout << "--Delete: Failed to acquire cross-process mutex" << std::endl;
             return FALSE;
         }
 
