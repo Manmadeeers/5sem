@@ -57,9 +57,18 @@ namespace BSTU.Results.Collection.Services
         {
             lock (_lockObject)
             {
+
                 var results = GetAllSync();
+                if (result == null)
+                {
+                    return false;
+                }
                 if (results.FirstOrDefault(r => r.Key == result.Key) == null)
                 {
+                    if (result.Value == null || result.Value == string.Empty)
+                    {
+                        return false;
+                    }
                     results.Add(result);
                     SaveResultsSync(results);
                     return true;

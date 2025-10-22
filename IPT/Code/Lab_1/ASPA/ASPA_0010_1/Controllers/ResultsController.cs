@@ -18,6 +18,7 @@ namespace ASPA_0010_1.Controllers
             _resultsService = resultsService;
             _authenticationService = authenticationService;
         }
+
         [HttpPost("SignIn")]
         public async Task<ActionResult> SignIn([FromBody] UserProfile profile)
         {
@@ -30,10 +31,12 @@ namespace ASPA_0010_1.Controllers
             {
                 return NotFound();
             }
+            
             return Ok(res);
         }
+
+
         [HttpGet("SignOut")]
-        [Authorize]
         public async Task<ActionResult> SignOut()
         {
             await _authenticationService.SignOut();
@@ -45,11 +48,19 @@ namespace ASPA_0010_1.Controllers
         public ActionResult<List<Result>> Get()
         {
             var results =  _resultsService.GetAllSync();
-            if (results == null)
+            if(results is not null)
             {
-                return NotFound();
+                if (results.Count == 0)
+                {
+                    return NoContent();
+                }
+                else
+                {
+                    return Ok(results);
+                }
             }
-            return Ok(results);
+            return NotFound("Service was null");
+                
         }
 
         [HttpGet("{key:int}")]
@@ -59,9 +70,10 @@ namespace ASPA_0010_1.Controllers
             var result = _resultsService.GetResultSync(key);
             if (result != null)
             {
-                return result;
+                return  Ok(result);
             }
-            return NotFound();
+
+            return NotFound("There is no such element");
         }
 
 
@@ -69,11 +81,11 @@ namespace ASPA_0010_1.Controllers
         [Authorize(Roles ="WRITER")]
         public ActionResult Post([FromBody]Result result)
         {
-            if(_resultsService.AddSync(result))
+            if (_resultsService.AddSync(result))
             {
                 return CreatedAtAction(nameof(Get), result);
             }
-            return BadRequest();
+            return BadRequest("Failed to add. ");
           
         }
 
@@ -81,7 +93,7 @@ namespace ASPA_0010_1.Controllers
         [Authorize(Roles = "WRITER")]
         public ActionResult Put([FromQuery]int key, [FromBody]string value)
         {
-            if( _resultsService.UpdateSync(key, value))
+            if ( _resultsService.UpdateSync(key, value))
             {
                 return Ok();
             }
@@ -92,7 +104,7 @@ namespace ASPA_0010_1.Controllers
         [Authorize(Roles = "WRITER")]
         public ActionResult Delete(int key)
         {
-            if( _resultsService.DeleteSync(key))
+            if ( _resultsService.DeleteSync(key))
             {
                 return Ok();
             }
