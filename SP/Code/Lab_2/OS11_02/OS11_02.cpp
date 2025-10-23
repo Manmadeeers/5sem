@@ -1,4 +1,6 @@
 ﻿#include <iostream>
+#include <thread>
+#include <chrono>
 #include <cstdlib>
 #include "OS_11DLL.h"
 
@@ -48,7 +50,55 @@ int main(int argc, char* argv[]) {
 
 	HANDLE ShutdownEventHandle = CreateEventA(NULL, TRUE, FALSE, eventNameBuf);
 
+	if (ShutdownEventHandle == NULL) {
+		std::cerr << "WARNING: CreateEvent() for ShutdownEventHandle failed. Error: " << GetLastError() << ". Continuing without a global shutdown support" << std::endl;
+	}
 
+	srand((unsigned)time(NULL));
+
+	while (true) {
+		if (ShutdownEventHandle) {
+			DWORD s = WaitForSingleObject(ShutdownEventHandle, 0);
+
+			if (s == WAIT_OBJECT_0) {
+				std::cout << "Shutdown event signaled. Exiting the loop" << std::endl;
+				break;
+			}
+		}
+
+		int key = rand() % 50;
+		int value = rand() % 1000;
+
+		HT::Element element(&key, sizeof(key), &value, sizeof(value));
+
+		if (!HT::Insert(storage, &element)) {
+			std::cout << "Insertion failed. Error: " << GetLastError() << std::endl;
+		}
+		else {
+			std::cout << "Inserted: KEY=" << key << "; VALUE=" << value << ";" << std::endl;
+		}
+
+		if (ShutdownEventHandle) {
+			DWORD waitRes = WaitForSingleObject(ShutdownEventHandle, 1000);
+			if (waitRes==WAIT_OBJECT_0) {
+				std::cout << "Shutdown event signaled during wait phase. Exiting the loop" << std::endl;
+				break;
+			}
+		}
+		else {
+			std::this_thread::sleep_for(std::chrono::seconds(1));
+		}
+	}
+
+	if (ShutdownEventHandle) {
+		CloseHandle(ShutdownEventHandle);
+		ShutdownEventHandle = NULL;
+	}
+
+	HT::Snap(storage);
+	HT::Close(storage);
+
+	std::cout << "Worker exited clearly" << std::endl;
 
 	return EXIT_SUCCESS;
 }

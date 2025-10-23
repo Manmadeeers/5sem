@@ -6,6 +6,10 @@
 typedef unsigned int uint;
 
 
+#define HTAPI __declspec(dllexport)
+
+
+
 namespace HT {
 
 	struct HTHANDLE    // блок управления HT
@@ -27,21 +31,22 @@ namespace HT {
 		char mutex_name[128];           //Added: name of global mutex for multi-process access
 	};
 
+	struct __declspec(dllexport) Element   // элемент 
+	{
+		Element();
+		Element(const void* key, int keylength);                                             // for Get
+		Element(const void* key, int keylength, const void* payload, int  payloadlength);    // for Insert
+		Element(Element* oldelement, const void* newpayload, int  newpayloadlength);         // for update
+		const void* key;                 // значение ключа 
+		int             keylength;           // рахмер ключа
+		const void* payload;             // данные 
+		int             payloadlength;       // размер данных
+	};
+
 	
 
 	
 	extern "C" {
-		__declspec(dllexport) struct Element   // элемент 
-		{
-			Element();
-			Element(const void* key, int keylength);                                             // for Get
-			Element(const void* key, int keylength, const void* payload, int  payloadlength);    // for Insert
-			Element(Element* oldelement, const void* newpayload, int  newpayloadlength);         // for update
-			const void* key;                 // значение ключа 
-			int             keylength;           // рахмер ключа
-			const void* payload;             // данные 
-			int             payloadlength;       // размер данных
-		};
 
 
 		__declspec(dllexport)	HTHANDLE* Create   //  создать HT             
