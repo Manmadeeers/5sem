@@ -3,6 +3,8 @@
 #include <Windows.h>
 #define _CRT_SECURE_NO_WARNINGS
 
+typedef unsigned int uint;
+
 
 namespace HT {
 
@@ -40,6 +42,7 @@ namespace HT {
 			const void* payload;             // данные 
 			int             payloadlength;       // размер данных
 		};
+
 
 		__declspec(dllexport)	HTHANDLE* Create   //  создать HT             
 		(

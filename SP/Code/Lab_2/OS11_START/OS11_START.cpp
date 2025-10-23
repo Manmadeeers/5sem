@@ -21,7 +21,7 @@ void takeSnapshot(HT::HTHANDLE* handle, int snapshot_interval) {
 int main(int argc, char* argv[]) {
 	if (argc != 2) {
 		std::cerr << "Arguments passed: " << argc << std::endl;
-		std::cerr << "Usage: <StorageFileName>" << std::endl;
+		std::cerr << "Usage: ./os11_start.exe <StorageFileName>" << std::endl;
 		return EXIT_FAILURE;
 	}
 

@@ -13,7 +13,6 @@
 
 #define METADATA_OFFSET 4*sizeof(int)+sizeof(time_t)
 #define MUTEX_NAME "Global\\MultiProcessMutex"
-typedef unsigned int uint;
 
 using namespace std;
 
@@ -74,9 +73,6 @@ namespace HT {
         payloadlength(newpayloadlength) {
     }
 
-
-
-
     HTHANDLE::HTHANDLE() :
         Capacity(0),
         SecSnapshotInterval(0),
@@ -100,7 +96,6 @@ namespace HT {
 
         strcpy_s(this->FileName, 512, FileName);
         this->CurrentElements = 0;
-
 
     }
 
@@ -153,10 +148,6 @@ namespace HT {
 
         return hm;
     }
-
-
-
-    
 
     HTHANDLE* Create(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char FileName[512]) {
         lock_guard<mutex>lock(ht_mutex);
@@ -426,69 +417,115 @@ namespace HT {
             return FALSE;
         }
 
+       
+
         std::lock_guard<std::mutex>lock(ht_mutex);
+
+        if (hthandle->Addr == NULL) {
+            std::cout << "--Snap: Addr was NULL" << std::endl;
+            return FALSE;
+        }
 
         hthandle->lastsnaptime = time(nullptr);
 
+        memcpy(static_cast<char*>(hthandle->Addr) + 4 * sizeof(int), &hthandle->lastsnaptime, sizeof(time_t));//write down metadata at the beginning of the file
+
+        const size_t slot_size = (size_t)hthandle->MaxKeyLength + (size_t)hthandle->MaxPayloadLength;
+        const size_t data_size = (size_t)METADATA_OFFSET + (size_t)hthandle->Capacity * slot_size;
+
+        if (data_size == 0) {
+
+            std::cout << "--Snap: nothing to write (data_size == 0)" << std::endl;
+
+            return TRUE;
+        }
+
+        const char* snapName = CreateSnapshotFileName(hthandle);
+
+
+        std::cout << "--Snap: snapshot file name: " << snapName << std::endl;
+
         HANDLE HTSnapshot = CreateFileA(
-            CreateSnapshotFileName(hthandle),
-            GENERIC_READ | GENERIC_WRITE,
+            snapName,
+            GENERIC_WRITE | GENERIC_READ,
             0,
             NULL,
             CREATE_ALWAYS,
-            FILE_ATTRIBUTE_NORMAL|FILE_FLAG_OVERLAPPED,
+            FILE_ATTRIBUTE_NORMAL,
             NULL
         );
 
         if (HTSnapshot == INVALID_HANDLE_VALUE) {
-            std::cout << "--Snap: Failed to create a snapshot file-- Error: " << GetLastError() << std::endl;
+
+            DWORD err = GetLastError();
+
+            std::cout << "--Snap: CreateFileA(snapshot) failed: " << err << std::endl;
+            std::cout << std::endl << "----------End----------" << std::endl;
+
             return FALSE;
         }
-        else {
-            std::cout << "--Snap: Snapshot file created--" << std::endl;
+
+        std::cout << "--Snap:Snapshot file created" << std::endl;
+        std::cout << "--Snap: data size to write: " << data_size << std::endl;
+
+
+        if (data_size > 0xFFFFFFFFULL) {
+
+            std::cout << "--Snap: data size too large to write in one call" << std::endl;
+            std::cout << std::endl << "----------End----------" << std::endl;
+
+            return FALSE;
         }
+        
 
-        SIZE_T data_size = hthandle->CurrentElements * (hthandle->MaxKeyLength + hthandle->MaxPayloadLength);
-        std::cout << "--Data size to write: " << data_size << "--" << std::endl;
-        std::cout << "--Buffer size: " << sizeof(hthandle->Addr) << "--" << std::endl;
-
-        if (data_size == 0) {
-            std::cout << "Snapshot Executed. Nothing to snap" << std::endl;
-            return TRUE;
-        }
-
+        DWORD expected = (DWORD)data_size;
         DWORD bytesWritten;
+
         BOOL writeResult = WriteFile(
             HTSnapshot,
             hthandle->Addr,
-            data_size,
+            expected,
             &bytesWritten,
             NULL
         );
 
         std::cout << "Bytes written: " << bytesWritten << std::endl;
+
         if (!writeResult) {
-            DWORD writeError = GetLastError();
-            std::cout << "--Snap: Failed to execute a snapshot (WriteFile error)-- Error: " << writeError << std::endl;
+
+            DWORD err = GetLastError();
+
+            std::cout << "--Snap: WriteFile Failed. Error: " << err << std::endl;
             std::cout << std::endl << "----------End----------" << std::endl;
+
             CloseHandle(HTSnapshot);
+
             return FALSE;
         }
-        else if (bytesWritten != data_size) {
-            DWORD bytesError = GetLastError();
-            std::cout << "--Snap: Failed to execute a snapshot (Bytes loss)-- Error: " << bytesError << std::endl;
+        else if (bytesWritten != expected) {
+
+            DWORD err = GetLastError();
+
+            std::cout << "--Snap: Incomplete write. Error: " << err << std::endl;
             std::cout << std::endl << "----------End----------" << std::endl;
+
             CloseHandle(HTSnapshot);
+
             return FALSE;
+        }
+        else if (!FlushFileBuffers(HTSnapshot)) {
+
+            DWORD err = GetLastError();
+
+            std::cout << "--Snap: FileFlushBuffer() WARNING: " << err << std::endl;
         }
         else {
+
             std::cout << "--Snap: Snapshot Executed--" << std::endl;
         }
 
-        //write down metadata after the last snapshot
-        memcpy(static_cast<char*>(hthandle->Addr) + 4 * sizeof(int), &hthandle->lastsnaptime, sizeof(time_t));
-
         CloseHandle(HTSnapshot);
+
         return TRUE;
     }
 
@@ -499,9 +536,11 @@ namespace HT {
             return FALSE;
         }
 
-        lock_guard<mutex>lock(ht_mutex);
+        {
+            std::lock_guard<std::mutex> guard(ht_mutex);
+        }
 
-        //snapshot execution now asynchronous. a little bit of a krutch
+        //snapshot execution now asynchronous
 
         std::future<BOOL> snapshot_result = std::async(Snap, hthandle);
 
@@ -514,25 +553,38 @@ namespace HT {
         }
 
 
+        {
+            std::lock_guard<std::mutex>guard(ht_mutex);
 
-        if (hthandle->Addr != NULL) {
-            UnmapViewOfFile(hthandle->Addr);
-            std::cout << "--Close: Unmapped View Of File--" << std::endl;
-        }
-        if (hthandle->FileMapping != NULL) {
-            CloseHandle(hthandle->FileMapping);
-            std::cout << "--Close: File Mapping Handle Closed--" << std::endl;
-        }
-        if (hthandle->File != NULL) {
-            BOOL result = CloseHandle(hthandle->File);
-            if (!result) {
-                std::cout << "--Close:Failed To Close The File Handle--" << GetLastError() << std::endl;
-                return FALSE;
+            if (hthandle->Addr != NULL) {
+                UnmapViewOfFile(hthandle->Addr);
+                std::cout << "--Close: Unmapped View Of File--" << std::endl;
+            }
+            if (hthandle->FileMapping != NULL) {
+                CloseHandle(hthandle->FileMapping);
+                std::cout << "--Close: File Mapping Handle Closed--" << std::endl;
+            }
+            if (hthandle->File != NULL) {
+                BOOL result = CloseHandle(hthandle->File);
+                if (!result) {
+                    std::cout << "--Close:Failed To Close The File Handle--" << GetLastError() << std::endl;
+                    return FALSE;
+                }
+                std::cout << "--Close: File Handle Closed " << std::endl;
+            }
+            if (hthandle->mutex_handle != NULL) {
+                CloseHandle(hthandle->mutex_handle);
+                std::cout << "--Close: Global Mutex Handle Closed" << std::endl;
             }
         }
 
-        std::cout << "Current elements check before close: " << hthandle->CurrentElements << std::endl;
-        std::cout << "--Close:File Handle Closed Successfully--" << std::endl;
+        std::cout << "--Close: Closure Completed" << std::endl;
+
+        delete hthandle;
+       
+
+        std::cout << "--Close:Cleanup completed--" << std::endl;
+
         return TRUE;
     }
 
@@ -584,7 +636,7 @@ namespace HT {
             return FALSE;
         }
 
-        lock_guard<mutex> lock(ht_mutex);
+        lock_guard<mutex> lock(ht_mutex);//lock for multi-thread access
 
         const int slot_size = hthandle->MaxKeyLength + hthandle->MaxPayloadLength;
         int hash_index = hashFunction(element->key, element->keylength, hthandle->Capacity);
