@@ -22,17 +22,67 @@ namespace HT {
     struct ScopedNamedMutex {//for multi-process access: locking and releasing mutexes
         HANDLE h;
         bool locked;
+        bool ownHandle;
 
-        ScopedNamedMutex(HANDLE Mutex, DWORD timeout = INFINITE) :h(Mutex), locked(false) {
-            if (h != NULL) {
-                DWORD r = WaitForSingleObject(h, timeout);
-                locked = (r == WAIT_OBJECT_0);
+        ScopedNamedMutex(const char*name, DWORD timeout = INFINITE) :h(NULL), locked(false),ownHandle(false) {
+            if (name == nullptr) {
+                return;
             }
+            std::string localName(name);
+            h = CreateMutexA(NULL, FALSE, localName.c_str());
+            if (!h) {
+                DWORD err = GetLastError();
+                std::cerr << "--ScopedNamedMutex: CreateMutexA failed. Error: " << err << std::endl;
+                return;
+            }
+            ownHandle = true;
+
+            DWORD w = WaitForSingleObject(h, timeout);
+            if (w == WAIT_OBJECT_0||w==WAIT_ABANDONED) {
+                locked = true;
+                if (w == WAIT_ABANDONED) {
+                    std::cerr << "ScopedNamedMutex: Wait returned WAIT_ABANDONED (mutex previous owner terminated)" << std::endl;
+                }
+                else if (w == WAIT_TIMEOUT) {
+                    std::cerr << "ScopedNamedMutex: Wait timed out" << std::endl;
+                }
+                else {
+                    if (GetLastError() != 0) {
+                        std::cerr << "ScopedNamedMutex: WaitForSingleObject failed. Error: " << GetLastError() << std::endl;
+                    }
+                    }
+                   
+            }
+        }
+
+        explicit ScopedNamedMutex(HANDLE handle, DWORD timeout = INFINITE) :h(handle), locked(false), ownHandle(false) {
+            if (h == NULL) {
+                return;
+            }
+            DWORD w = WaitForSingleObject(h, timeout);
+            if (w == WAIT_OBJECT_0 || w == WAIT_ABANDONED) {
+                locked = true;
+                if (w == WAIT_ABANDONED) {
+                    std::cerr << "ScopedNamedMutex(HANDLE constructor): WAIT_ABANDONED" << std::endl;
+                }
+                else if (w==WAIT_OBJECT_0) {
+                    std::cout << "ScopedNamedMutex: Successful";
+                }
+                else {
+                    std::cerr << "ScopedNamedMutex(HANDLE constructor): WaitForSingleObject returned " << w << ". Error: " << GetLastError() << std::endl;
+                }
+            }
+
         }
 
         ~ScopedNamedMutex() {
             if (locked && h != NULL) {
                 ReleaseMutex(h);
+                locked = false;
+            }
+            if (ownHandle && h != NULL) {
+                CloseHandle(h);
+                h = NULL;
             }
         }
 
@@ -629,10 +679,24 @@ namespace HT {
             std::cout << "--Insert: Failed to insert(payload length was NULL)" << std::endl;
             return FALSE;
         }
+        std::string multiproc_mutex_name;
+        if (hthandle->mutex_name) {
+            try {
+                multiproc_mutex_name = std::string(hthandle->mutex_name);
+            }
+            catch (...) {
+                std::cout << "--Insert: Invalid mutex_name pointer in HTHANDLE structure" << std::endl;
+                return FALSE;
+            }
+        }
+        else {
+            std::cout << "--Insert: mutex_name was NULL" << std::endl;
+            return FALSE;
+        }
 
-        ScopedNamedMutex cross_proc_lock(hthandle->mutex_name);//lock global mutex for multi-process access
+        ScopedNamedMutex cross_proc_lock(multiproc_mutex_name.c_str(), 5000);//lock global mutex for multi-process access
         if (!cross_proc_lock.isLocked()) {
-            std::cout << "--Insert: Failed to acquire cross-process mutex." << std::endl;
+            std::cout << "--Insert: Failed to acquire cross-process mutex. Error: "<<GetLastError() << std::endl;
             return FALSE;
         }
 
