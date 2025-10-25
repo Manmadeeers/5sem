@@ -19,7 +19,7 @@ static uint hash_function(const void* key, int keyLength) {
 	std::cout << "--Hash: current Hash value: " << hash << std::endl;
 
 
-	return hash;
+	return static_cast<uint>(hash);
 }
 
 
@@ -34,6 +34,22 @@ int main(int argc, char* argv[]) {
 
 	char* ret_filename = argv[1];
 
+	uint hash = hash_function(ret_filename, (int)strlen(ret_filename));
+	
+	char shutdown_event_name[64];
+	snprintf(shutdown_event_name, sizeof(shutdown_event_name), "Global\\HT_Shutdown_%08X", hash);
+	HANDLE hShutdownEvent = CreateEventA(
+		NULL,//event attributes
+		TRUE,//manual reset event
+		FALSE,//initial state
+		shutdown_event_name//event name
+	);
+
+	if (hShutdownEvent == NULL) {
+		std::cerr << "WARNING: CreateEventA() failed. Error: " << GetLastError() << std::endl;
+	}
+
+	//TODO: finish with availability
 	HT::HTHANDLE* storage = HT::Open(ret_filename);
 	if (!storage) {
 
@@ -42,17 +58,6 @@ int main(int argc, char* argv[]) {
 		return EXIT_FAILURE;
 	}
 
-	uint hash = hash_function(ret_filename, (int)strlen(ret_filename));
-
-	char eventNameBuf[64];
-
-	snprintf(eventNameBuf, sizeof(eventNameBuf), "Global\\HT_Shutdown_%08X", hash);
-
-	HANDLE ShutdownEventHandle = CreateEventA(NULL, TRUE, FALSE, eventNameBuf);
-
-	if (ShutdownEventHandle == NULL) {
-		std::cerr << "WARNING: CreateEvent() for ShutdownEventHandle failed. Error: " << GetLastError() << ". Continuing without a global shutdown support" << std::endl;
-	}
 
 	srand((unsigned)time(NULL));
 

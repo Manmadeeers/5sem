@@ -12,7 +12,6 @@
 #include <future>
 
 #define METADATA_OFFSET 4*sizeof(int)+sizeof(time_t)
-#define MUTEX_NAME "Global\\MultiProcessMutex"
 
 using namespace std;
 
@@ -35,7 +34,7 @@ namespace HT {
                 std::cerr << "--ScopedNamedMutex: CreateMutexA failed. Error: " << err << std::endl;
                 return;
             }
-            ownHandle = true;
+    
 
             DWORD w = WaitForSingleObject(h, timeout);
             if (w == WAIT_OBJECT_0||w==WAIT_ABANDONED) {
@@ -881,6 +880,12 @@ namespace HT {
 
         if (newpayload == NULL || newpayloadlength == NULL || newpayloadlength > handle->MaxPayloadLength) {
             std::cout << "--Update: Failed to update an element(data to update were invalid)--" << std::endl;
+            return FALSE;
+        }
+
+        ScopedNamedMutex cross_proc_lock(handle->mutex_handle);
+        if (!cross_proc_lock.isLocked()) {
+            std::cout << "--Update: failed to acquire cross-process mutex. Error: " << GetLastError() << std::endl;
             return FALSE;
         }
 
