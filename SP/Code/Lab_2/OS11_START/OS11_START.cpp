@@ -5,6 +5,8 @@
 
 using namespace std;
 
+static std::atomic<bool>g_stopSnapshot(false);
+
 void takeSnapshot(HT::HTHANDLE* handle, int snapshot_interval) {
 
 	while (!g_stopSnapshot.load()) {
@@ -19,7 +21,7 @@ void takeSnapshot(HT::HTHANDLE* handle, int snapshot_interval) {
 	}
 }
 
-static std::atomic<bool>g_stopSnapshot(false);
+
 
 static unsigned int filename_hash(const char* str) {
 

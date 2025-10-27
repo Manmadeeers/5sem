@@ -45,12 +45,10 @@ namespace HT {
                 else if (w == WAIT_TIMEOUT) {
                     std::cerr << "ScopedNamedMutex: Wait timed out" << std::endl;
                 }
-                else {
-                    if (GetLastError() != 0) {
-                        std::cerr << "ScopedNamedMutex: WaitForSingleObject failed. Error: " << GetLastError() << std::endl;
-                    }
-                    }
-                   
+            }
+
+            if (GetLastError != 0) {
+                std::cerr << "ScopedNamedMutex: WaitForSingleObject failed. Error: " << GetLastError() << std::endl;
             }
         }
 
