@@ -3,6 +3,8 @@ select file_name, tablespace_name from dba_data_files
 union
 select file_name, tablespace_name from dba_temp_files;
 
+select * from dba_tablespaces;
+
 --2: create a tablespace FIA_QDATA
 create pluggable database FIA_PDB
 ADMIN USER root identified by 1111
@@ -14,7 +16,7 @@ alter pluggable database FIA_PDB open;
 drop tablespace FIA_QDATA including contents and datafiles;
 
 create tablespace FIA_QDATA
-datafile 'FIA_DATA.dbf'
+datafile 'FIA_QDATA.dbf'
 size 10m
 autoextend on next 1m
 maxsize 20m
@@ -23,13 +25,13 @@ offline
 
 alter tablespace FIA_QDATA online;
 
-drop user FIA;
+drop user FIA_4;
 
 
-create user FIA identified by 1234
+create user FIA_4 identified by 1234
 default tablespace FIA_QDATA quota 2m on FIA_QDATA
 account unlock;
-grant create session, create table to FIA;
+grant create session, create table to FIA_4;
 
 drop table FIA_T1;
 
@@ -55,6 +57,7 @@ select * from user_recyclebin;
 drop table FIA_T1;
 
 select * from dba_segments where TABLESPACE_NAME='FIA_QDATA';
+
 select * from user_recyclebin;
 
 --5: Flashback previously deleted table
@@ -109,13 +112,13 @@ select * from v$log;
 
 --12: Create an additional logfile group EX
 
-alter database add logfile group 3 'REDO3.LOG'
+alter database add logfile group 3 'REDO34.LOG'
 size 50m blocksize 512;
 
-alter database add logfile member 'REDO31.LOG'
+alter database add logfile member 'REDO314.LOG'
 to group 3;
 
-alter database add logfile member 'REDO32.LOG'
+alter database add logfile member 'REDO324.LOG'
 to group 3;
 
 select * from v$log;
@@ -126,9 +129,9 @@ alter system switch logfile;
 --13: Delete previously created logfile group EX
 
 
-alter database drop logfile member '/opt/oracle/product/23ai/dbhomeFree/dbs/REDO31.LOG';
+alter database drop logfile member '/opt/oracle/product/23ai/dbhomeFree/dbs/REDO314.LOG';
 
-alter database drop logfile member '/opt/oracle/product/23ai/dbhomeFree/dbs/REDO32.LOG';
+alter database drop logfile member '/opt/oracle/product/23ai/dbhomeFree/dbs/REDO324.LOG';
 
 alter database drop logfile group 3;
 
