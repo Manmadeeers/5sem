@@ -1,27 +1,26 @@
-﻿#include <iostream>
+﻿//OS11_04 - For opening HT Storage alongside running OS11_START, generating random keys and proceeding Get and Print operations until aborted
+#include <iostream>
 #include <thread>
 #include <chrono>
 #include <cstdlib>
 #include "OS_11DLL.h"
 
-static uint hash_function(const void* key, int keyLength) {
-	int hash = 5381;
-	const char* str = static_cast<const char*>(key);
+static uint filename_hash(const char* str) {
 
-	for (int i = 0; i < keyLength; ++i) {
+	uint hash = 5381;
+	const unsigned char* p = reinterpret_cast<const unsigned char*>(str);
 
-
-		hash = ((hash << 5) + hash) + str[i];
-
+	while (*p) {
+		hash = ((hash << 5) + hash) + *p; // djb2
+		++p;
 	}
-
-	std::cout << "--Hash: current Hash value: " << hash << std::endl;
-
-
 	return hash;
 }
 
 int main(int argc, char* argv[]) {
+
+	SetConsoleCP(1251);
+	SetConsoleOutputCP(1251);
 
 	if (argc != 2) {
 		std::cerr << "Arguments: " << argc << std::endl;
@@ -30,41 +29,91 @@ int main(int argc, char* argv[]) {
 	}
 
 	char* ret_filename = argv[1];
+	uint hash = filename_hash(ret_filename);
 
-	HT::HTHANDLE* storage = HT::Open(ret_filename);
+	char avail_event_name[64];
+	snprintf(avail_event_name, sizeof(avail_event_name), "Global\\HT_Available_%08X", hash);
+	HANDLE hAvailEvent = NULL;
+
+	HT::HTHANDLE* storage = nullptr;
+
+	storage = HT::Open(ret_filename);
 
 	if (!storage) {
-		std::cout << "Unable to open a storage file. Error: " << GetLastError() << std::endl;
-		return EXIT_FAILURE;
+		std::cout << "Initial HT Storage open failed. Error: " << GetLastError() << std::endl;
 	}
-
-	uint hash = hash_function(ret_filename, (int)strlen(ret_filename));
-
-	char eventNameBuf[64];
-
-	snprintf(eventNameBuf, sizeof(eventNameBuf), "Global\\HT_Shutdown_%08X", hash);
-
-	HANDLE ShutdownEventHandle = CreateEventA(NULL, TRUE, FALSE, eventNameBuf);
-
-	if (ShutdownEventHandle == NULL) {
-		std::cerr << "WARNING: CreateEvent() for ShutdownEventHandle failed. Error: " << GetLastError() << ". Continuing without a global shutdown support" << std::endl;
+	else {
+		std::cout << "Storage opened successfully" << std::endl;
 	}
 
 	srand((unsigned)time(NULL));
 
 	while (true) {
-		if (ShutdownEventHandle) {
-			DWORD s = WaitForSingleObject(ShutdownEventHandle, 0);
+		
+		if (!storage) {
 
-			if (s == WAIT_OBJECT_0) {
-				std::cout << "Shutdown event signaled. Exiting the loop" << std::endl;
-				break;
+			if (!hAvailEvent) {
+				hAvailEvent = OpenEventA(SYNCHRONIZE, FALSE, avail_event_name);
+
+				if (!hAvailEvent) {
+					std::this_thread::sleep_for(std::chrono::seconds(1));
+					continue;
+				}
+				else {
+					std::cout << "Availability event opened" << std::endl;
+				}
+			}
+
+			DWORD w = WaitForSingleObject(hAvailEvent, INFINITE);
+
+			if (w == WAIT_OBJECT_0) {
+				storage = HT::Open(ret_filename);
+
+				if (!storage) {
+					std::cout << "Storage opening failed after availability event signal. Waiting for storage to be available again..." << std::endl;
+					std::this_thread::sleep_for(std::chrono::seconds(1));
+					continue;
+				}
+				else {
+					std::cout << "Storage opened successfully after availability event signal" << std::endl;
+				}
+			}
+			else if (w == WAIT_TIMEOUT) {
+				std::cout << "WaitForSingleObject on availability event reached WAIT_TIMEOUT. Continuing" << std::endl;
+				continue;
+			}
+			else {
+				std::cerr << "WaitForSingleObject on availability event failed. Error: " << GetLastError() << std::endl;
+				CloseHandle(hAvailEvent);
+				hAvailEvent = NULL;
+				std::this_thread::sleep_for(std::chrono::seconds(1));
+				continue;
+			}
+		}
+		//if storage indicated as corupted
+		if (!storage || storage->Addr == NULL) {
+
+			if (storage) {
+				std::cout << "WARNING: Invalid Addr detected. Closing storage handle and waiting for availability" << std::endl;
+				HT::Close(storage);
+				storage = nullptr;
+			}
+			continue;
+		}
+		if (WaitForSingleObject(hAvailEvent, 0) != WAIT_OBJECT_0) {
+			std::cout << "Storage became unavailable before insert. Closing handle and wait..." << std::endl;
+
+			if (storage) {
+
+				HT::Close(storage);
+				storage = nullptr;
+				std::this_thread::sleep_for(std::chrono::milliseconds(200));
+				continue;
 			}
 		}
 
-		int key = rand() % 50;
-		
 
+		int key = rand() % 50;
 		HT::Element element(&key, sizeof(key));
 
 
@@ -96,30 +145,20 @@ int main(int argc, char* argv[]) {
 		}
 
 
-		if (ShutdownEventHandle) {
-			DWORD waitRes = WaitForSingleObject(ShutdownEventHandle, 1000);
-			if (waitRes == WAIT_OBJECT_0) {
-				std::cout << "Shutdown event signaled during wait phase. Exiting the loop" << std::endl;
-				break;
-			}
-		}
-		else {
-			std::this_thread::sleep_for(std::chrono::seconds(1));
-		}
-
+		std::this_thread::sleep_for(std::chrono::seconds(1));
 
 	}
 
 
-	if (ShutdownEventHandle) {
-		CloseHandle(ShutdownEventHandle);
-		ShutdownEventHandle = NULL;
+	if (hAvailEvent) {
+		CloseHandle(hAvailEvent);
+		hAvailEvent = NULL;
 	}
 
 	HT::Snap(storage);
 	HT::Close(storage);
 
-	std::cout << "Worker exited clearly" << std::endl;
+	std::cout << "Worker (OS11_04) exited clearly" << std::endl;
 
 
 

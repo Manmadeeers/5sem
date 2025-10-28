@@ -19,67 +19,43 @@ using namespace std;
 namespace HT {
 
     struct ScopedNamedMutex {//for multi-process access: locking and releasing mutexes
-        HANDLE h;
+        HANDLE hMutex;
         bool locked;
         bool ownHandle;
 
-        ScopedNamedMutex(const char*name, DWORD timeout = INFINITE) :h(NULL), locked(false),ownHandle(false) {
+        ScopedNamedMutex(const char*name, DWORD timeout = INFINITE) :hMutex(NULL), locked(false),ownHandle(false) {
             if (name == nullptr) {
                 return;
             }
-            std::string localName(name);
-            h = CreateMutexA(NULL, FALSE, localName.c_str());
-            if (!h) {
-                DWORD err = GetLastError();
-                std::cerr << "--ScopedNamedMutex: CreateMutexA failed. Error: " << err << std::endl;
+           
+            hMutex = CreateMutexA(NULL, FALSE, name);
+            if (!hMutex) {
+                std::cerr << "--ScopedNamedMutex: CreateMutexA failed. Error: " << GetLastError() << std::endl;
                 return;
             }
+            ownHandle = true;
     
 
-            DWORD w = WaitForSingleObject(h, timeout);
+            DWORD w = WaitForSingleObject(hMutex, timeout);
             if (w == WAIT_OBJECT_0||w==WAIT_ABANDONED) {
                 locked = true;
                 if (w == WAIT_ABANDONED) {
-                    std::cerr << "ScopedNamedMutex: Wait returned WAIT_ABANDONED (mutex previous owner terminated)" << std::endl;
-                }
-                else if (w == WAIT_TIMEOUT) {
-                    std::cerr << "ScopedNamedMutex: Wait timed out" << std::endl;
+                    std::cerr << "ScopedNamedMutex: Wait returned WAIT_ABANDONED" << std::endl;
                 }
             }
-
-            if (GetLastError != 0) {
-                std::cerr << "ScopedNamedMutex: WaitForSingleObject failed. Error: " << GetLastError() << std::endl;
+            else {
+                std::cerr << "ScopedNamedMutex: WaitForSingleObject returned " << w<<" Error: "<<GetLastError() << std::endl;
             }
-        }
-
-        explicit ScopedNamedMutex(HANDLE handle, DWORD timeout = INFINITE) :h(handle), locked(false), ownHandle(false) {
-            if (h == NULL) {
-                return;
-            }
-            DWORD w = WaitForSingleObject(h, timeout);
-            if (w == WAIT_OBJECT_0 || w == WAIT_ABANDONED) {
-                locked = true;
-                if (w == WAIT_ABANDONED) {
-                    std::cerr << "ScopedNamedMutex(HANDLE constructor): WAIT_ABANDONED" << std::endl;
-                }
-                else if (w==WAIT_OBJECT_0) {
-                    std::cout << "ScopedNamedMutex: Successful";
-                }
-                else {
-                    std::cerr << "ScopedNamedMutex(HANDLE constructor): WaitForSingleObject returned " << w << ". Error: " << GetLastError() << std::endl;
-                }
-            }
-
         }
 
         ~ScopedNamedMutex() {
-            if (locked && h != NULL) {
-                ReleaseMutex(h);
+            if (locked && hMutex != NULL) {
+                ReleaseMutex(hMutex);
                 locked = false;
             }
-            if (ownHandle && h != NULL) {
-                CloseHandle(h);
-                h = NULL;
+            if (ownHandle && hMutex != NULL) {
+                CloseHandle(hMutex);
+                hMutex = NULL;
             }
         }
 
@@ -131,6 +107,7 @@ namespace HT {
         lastsnaptime(0),
         CurrentElements(0)
     {
+        this->CurrentElements = 0;
     }
 
     HTHANDLE::HTHANDLE(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char FileName[512])
@@ -180,31 +157,36 @@ namespace HT {
         if (!fileName) {
             return NULL;
         }
-        uint h = mutex_hash(fileName);
+        uint hash = mutex_hash(fileName);
 
-        if (outNameBuf && outNameBufSize < 0) {
-            snprintf(outNameBuf, outNameBufSize, "Global\\HT_Mutex_%08X", h);
-            outNameBuf[outNameBufSize - 1] = '\0';
-        }
+        char nameBuf[128];
 
-        char nameBuf[64];
-        snprintf(nameBuf, sizeof(nameBuf), "Global\\HT_Mutex_%08X", h);
+        snprintf(nameBuf, sizeof(nameBuf), "Global\\HT_Mutex_%08X", hash);
         nameBuf[sizeof(nameBuf) - 1] = '\0';
 
-        HANDLE hm = CreateMutexA(NULL, FALSE, nameBuf);//open existing if present or create a new one
+        if (outNameBuf && outNameBufSize > 0) {
+            strncpy_s(outNameBuf, outNameBufSize, nameBuf, _TRUNCATE);
+        }
 
-        return hm;
+        HANDLE hMutex = CreateMutexA(
+            NULL,
+            FALSE,
+            nameBuf
+        );
+
+        if (!hMutex) {
+            std::cerr << "--create_open_mutexp: CreateMutexA failed. Error: " << GetLastError() << std::endl;
+        }
+
+        return hMutex;
     }
 
     HTHANDLE* Create(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char FileName[512]) {
-        lock_guard<mutex>lock(ht_mutex);
 
-      
+        lock_guard<mutex>lock(ht_mutex);
 
         HTHANDLE* ht = new HTHANDLE(Capacity, SecSnapshotInterval, MaxKeyLength, MaxPayloadLength, FileName);
         std::cout << "----------Creation Started----------" << std::endl << std::endl;
-
-
 
         ht->File = CreateFileA(
             FileName,
@@ -458,7 +440,7 @@ namespace HT {
             return FALSE;
         }
 
-        ScopedNamedMutex cross_proc_lock(hthandle->mutex_handle);
+        ScopedNamedMutex cross_proc_lock(hthandle->FileName);
         if (!cross_proc_lock.isLocked()) {
             std::cout << "--Snap: Failed to acquire cross-process mutex" << std::endl;
             return FALSE;
@@ -756,7 +738,7 @@ namespace HT {
             return FALSE;
         }
 
-        ScopedNamedMutex cross_proc_lock(handle->mutex_handle);
+        ScopedNamedMutex cross_proc_lock(handle->FileName);
         if (!cross_proc_lock.isLocked()) {
             std::cout << "--Delete: Failed to acquire cross-process mutex" << std::endl;
             return FALSE;
@@ -881,7 +863,7 @@ namespace HT {
             return FALSE;
         }
 
-        ScopedNamedMutex cross_proc_lock(handle->mutex_handle);
+        ScopedNamedMutex cross_proc_lock(handle->FileName);
         if (!cross_proc_lock.isLocked()) {
             std::cout << "--Update: failed to acquire cross-process mutex. Error: " << GetLastError() << std::endl;
             return FALSE;
