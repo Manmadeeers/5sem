@@ -165,5 +165,6 @@ int main() {
 	}
 	catch (string message) {
 		std::cout << "Error: " << message << std::endl;
+		system("pause");
 	}
 }
