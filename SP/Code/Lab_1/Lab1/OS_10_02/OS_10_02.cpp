@@ -2,12 +2,12 @@
 #include <iostream>
 using namespace std;
 
-//#define CREATION_ENABLED
-#define OPENING_ENABLED
-//#define INSERTION_ENABLED
+#define CREATION_ENABLED
+//#define OPENING_ENABLED
+#define INSERTION_ENABLED
 //#define DELETION_ENABLED
 #define CLOSURE_ENABLED
-//#define GET_ENABLED
+#define GET_ENABLED
 //#define UPDATE_ENABLED
 
 

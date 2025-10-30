@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <Windows.h>
+#include <string>
 #include "OS_11DLL.h"
 
 //#define DEBUG
@@ -24,7 +25,8 @@ static uint filename_hash(const char* str) {
 
 
 int main(int argc, char* argv[]) {
-
+	SetConsoleCP(1251);
+	SetConsoleOutputCP(1251);
 	if (argc != 2) {
 		std::cout << "Arguments: " << argc << std::endl;
 		std::cout << "Usage: ./os11_02.exe <StorageFileName>" << std::endl;
@@ -128,11 +130,13 @@ int main(int argc, char* argv[]) {
 			}
 		}
 
-		int key = rand() % 50;
-		int value = rand() % 1000;
-		HT::Element element(&key, sizeof(key), &value, sizeof(value));
+		int rand_key = rand() % 50;
+		std::string s = "key" + std::to_string(rand_key);
+		const char* key = s.c_str();
+		const char* value = "Value";
+		HT::Element element(&key,(int)strlen(key), &value, (int)strlen(value));
 
-		if (!HT::Insert(storage, &element)) {
+		if (!HT::Insert(storage,new HT::Element(&key,sizeof(int),&value,sizeof(value)))) {
 			DWORD err = GetLastError();
 			if (err != 0) {
 				std::cerr << "Insertion failed. Error: " << err << std::endl;

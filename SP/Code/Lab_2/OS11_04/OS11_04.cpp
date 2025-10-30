@@ -17,10 +17,10 @@ static uint filename_hash(const char* str) {
 	return hash;
 }
 
+
+
 int main(int argc, char* argv[]) {
 
-	SetConsoleCP(1251);
-	SetConsoleOutputCP(1251);
 
 	if (argc != 2) {
 		std::cerr << "Arguments: " << argc << std::endl;
@@ -117,10 +117,10 @@ int main(int argc, char* argv[]) {
 		HT::Element element(&key, sizeof(key));
 
 
-		HT::Element* ret_element = HT::Get(storage, &element);
+		HT::Element* ret_element = HT::Get(storage, new HT::Element(&key, sizeof(int)));
 		if (ret_element == NULL) {
 			DWORD err = GetLastError();
-			if (err == 0) {
+			if (err == 0||err==183) {
 				std::cout << "Can't get an element with key " << key << ". Element with such key does not exist in a storage" << std::endl;
 			}
 			else {
@@ -128,7 +128,7 @@ int main(int argc, char* argv[]) {
 			}
 		}
 		else {
-			std::cout << "Element retrieved: ";
+			std::cout << "Element with KEY="<<key<<" retrieved: ";
 			HT::Print(ret_element);
 
 			int upd_payload = rand() % 1000;

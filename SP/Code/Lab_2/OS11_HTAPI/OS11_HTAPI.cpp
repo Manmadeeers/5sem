@@ -11,7 +11,7 @@
 #include <string>
 #include <future>
 
-#define METADATA_OFFSET 4*sizeof(int)+sizeof(time_t)
+#define METADATA_OFFSET 4*sizeof(int)
 
 using namespace std;
 
@@ -61,6 +61,21 @@ namespace HT {
 
         bool isLocked() const { return locked; }
     };
+
+    static size_t safe_strlen(const char* s, size_t maxlen) {
+        if (!s) {
+            return 0;
+        }
+
+        size_t i = 0;
+
+        for (; i < maxlen; ++i) {
+            if (s[i] == '/0') {
+                return i;
+            }
+        }
+        return maxlen;
+    }
 
     std::mutex ht_mutex;//for multi-thread access
 
@@ -267,14 +282,12 @@ namespace HT {
      
 
         memcpy(ht->Addr, &Capacity, sizeof(int));
-
         memcpy(static_cast<char*>(ht->Addr) + sizeof(int), &MaxKeyLength, sizeof(int));
-
         memcpy(static_cast<char*>(ht->Addr) + 2 * sizeof(int), &MaxPayloadLength, sizeof(int));
-
         memcpy(static_cast<char*>(ht->Addr) + 3 * sizeof(int), &ht->SecSnapshotInterval, sizeof(int));
 
         ht->mutex_handle = create_open_mutexp(FileName, ht->mutex_name, sizeof(ht->mutex_name));
+
 
         if (ht->mutex_handle == NULL) {
             DWORD err = GetLastError();
@@ -356,7 +369,6 @@ namespace HT {
         memcpy(&ht->MaxKeyLength, static_cast<char*>(ht->Addr) + sizeof(int), sizeof(int));
         memcpy(&ht->MaxPayloadLength, static_cast<char*>(ht->Addr) + 2 * sizeof(int), sizeof(int));
         memcpy(&ht->SecSnapshotInterval, static_cast<char*>(ht->Addr) + 3 * sizeof(int), sizeof(int));
-        memcpy(&ht->lastsnaptime, static_cast<char*>(ht->Addr) + 4 * sizeof(int), sizeof(time_t));
 
 
         std::cout << "Current ht->Addr: " << ht->Addr << std::endl;
@@ -455,9 +467,11 @@ namespace HT {
             return FALSE;
         }
 
+        //TODO: handle lastsnaptime metadata transmition properly
         hthandle->lastsnaptime = time(nullptr);
 
-        memcpy(static_cast<char*>(hthandle->Addr) + 4 * sizeof(int), &hthandle->lastsnaptime, sizeof(time_t));//write down metadata at the beginning of the file
+        //write down metadata at the beginning of the file
+        //memcpy(static_cast<char*>(hthandle->Addr) + 4 * sizeof(int), &hthandle->lastsnaptime, sizeof(time_t));
 
         const size_t slot_size = (size_t)hthandle->MaxKeyLength + (size_t)hthandle->MaxPayloadLength;
         const size_t data_size = (size_t)METADATA_OFFSET + (size_t)hthandle->Capacity * slot_size;
@@ -658,28 +672,8 @@ namespace HT {
             std::cout << "--Insert: Failed to insert(payload length was NULL)" << std::endl;
             return FALSE;
         }
-        std::string multiproc_mutex_name;
-        if (hthandle->mutex_name) {
-            try {
-                multiproc_mutex_name = std::string(hthandle->mutex_name);
-            }
-            catch (...) {
-                std::cout << "--Insert: Invalid mutex_name pointer in HTHANDLE structure" << std::endl;
-                return FALSE;
-            }
-        }
-        else {
-            std::cout << "--Insert: mutex_name was NULL" << std::endl;
-            return FALSE;
-        }
 
-        ScopedNamedMutex cross_proc_lock(multiproc_mutex_name.c_str(), 5000);//lock global mutex for multi-process access
-        if (!cross_proc_lock.isLocked()) {
-            std::cout << "--Insert: Failed to acquire cross-process mutex. Error: "<<GetLastError() << std::endl;
-            return FALSE;
-        }
-
-        lock_guard<mutex> lock(ht_mutex);//lock for multi-thread access
+        lock_guard<mutex> lock(ht_mutex);
 
         const int slot_size = hthandle->MaxKeyLength + hthandle->MaxPayloadLength;
         int hash_index = hashFunction(element->key, element->keylength, hthandle->Capacity);
@@ -723,7 +717,7 @@ namespace HT {
         return FALSE;
     }
 
-
+    
     BOOL Delete(HTHANDLE* handle, const Element* element) {
 
 
@@ -827,11 +821,15 @@ namespace HT {
             }
 
             if (memcmp(current_slot, element->key, element->keylength) == 0) {
+
+                char* payload_ptr = current_slot + handle->MaxKeyLength;
+                size_t actual_payload_length = safe_strlen(payload_ptr, handle->MaxPayloadLength);
+
                 Element* found = new Element(
                     current_slot,
                     element->keylength,
-                    current_slot + handle->MaxKeyLength,
-                    handle->MaxPayloadLength
+                    payload_ptr,
+                    actual_payload_length
                 );
 
                 return found;
@@ -843,7 +841,20 @@ namespace HT {
 
 
     void Print(const Element* element) {
-        std::cout << "Key: " << static_cast<const char*>(element->key) << " Payload: " << static_cast<const char*>(element->payload) << std::endl;
+        if (!element) {
+            std::cout << "--Print: Element was NULL" << std::endl;
+            return;
+        }
+        std::string key_str;
+        if (element->key && element->keylength > 0) {
+            key_str.assign(static_cast<const char*>(element->key), element->keylength);
+        }
+
+        std::string payload_str;
+        if (element->payload && element->payloadlength > 0) {
+            payload_str.assign(static_cast<const char*>(element->payload), element->payloadlength);
+        }
+        std::cout << "Key: " << key_str << " Payload: " << payload_str << std::endl;
     }
 
     BOOL Update(const HTHANDLE* handle, const Element* element, const void* newpayload, int newpayloadlength) {
