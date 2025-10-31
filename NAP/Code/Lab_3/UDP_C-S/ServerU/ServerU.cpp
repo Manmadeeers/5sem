@@ -56,6 +56,7 @@ int main(int argc, _TCHAR* argv[]) {
 
 		cout << "--recvfrom and wait" << endl;
 
+		Sleep(1500);
 		LinBuffer = recvfrom(serverSocket, inBuffer, sizeof(inBuffer), NULL, (sockaddr*)&clientParameters, &LClient);
 
 		if (LinBuffer == SOCKET_ERROR) {

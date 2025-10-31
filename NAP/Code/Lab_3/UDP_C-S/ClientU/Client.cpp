@@ -37,7 +37,7 @@ int main(int argc, _TCHAR* argv[]) {
 
 		serv.sin_family = AF_INET;
 		serv.sin_port = htons(2000);
-		if (inet_pton(AF_INET, "192.168.20.197", &serv.sin_addr.S_un.S_addr) <= 0) {
+		if (inet_pton(AF_INET, "10.210.39.148", &serv.sin_addr.S_un.S_addr) <= 0) {
 			throw SetErrorMsgText("Failed to set an IP address", WSAGetLastError());
 		}
 
@@ -59,6 +59,7 @@ int main(int argc, _TCHAR* argv[]) {
 		SOCKADDR_IN inServ;
 		int LinServ = sizeof(inServ);
 
+		//Sleep(100);
 		LinBuffer = recvfrom(clientSocket, inBuffer, sizeof(inBuffer) - 1, NULL, (sockaddr*)&serv, &LinServ);
 
 		if (LinBuffer == SOCKET_ERROR) {
@@ -79,7 +80,7 @@ int main(int argc, _TCHAR* argv[]) {
 
 		for (int i = 0; i < amountMessages; i++) {
 			outBuffer = "Hello from ClientU" + to_string(i);
-			Sleep(1500);
+			//Sleep(1500);
 			LoutBuffer = sendto(clientSocket, outBuffer.c_str(), outBuffer.size() + 1, NULL, (sockaddr*)&serv, sizeof(serv));
 
 			if (LoutBuffer == SOCKET_ERROR) {
@@ -90,7 +91,7 @@ int main(int argc, _TCHAR* argv[]) {
 
 
 
-			LinBuffer = recvfrom(clientSocket, inBuffer, sizeof(inBuffer) - 1, NULL, (sockaddr*)&serv, &LinServ);
+			/*LinBuffer = recvfrom(clientSocket, inBuffer, sizeof(inBuffer) - 1, NULL, (sockaddr*)&serv, &LinServ);
 
 			if (LinBuffer == SOCKET_ERROR) {
 				throw SetErrorMsgText("Failed to receive message from server", WSAGetLastError());
@@ -98,7 +99,7 @@ int main(int argc, _TCHAR* argv[]) {
 
 			inBuffer[LinBuffer] = '\0';
 
-			cout << "--received from server (" << inBuffer << ")" << endl;
+			cout << "--received from server (" << inBuffer << ")" << endl;*/
 
 		}
 
