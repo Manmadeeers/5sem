@@ -3,6 +3,7 @@
 #include <thread>
 #include <chrono>
 #include <cstdlib>
+#include <string>
 #include "OS_11DLL.h"
 
 static uint filename_hash(const char* str) {
@@ -90,7 +91,7 @@ int main(int argc, char* argv[]) {
 				continue;
 			}
 		}
-		//if storage indicated as corupted
+		//if storage indicated as corrupted
 		if (!storage || storage->Addr == NULL) {
 
 			if (storage) {
@@ -113,11 +114,13 @@ int main(int argc, char* argv[]) {
 		}
 
 
-		int key = rand() % 50;
-		HT::Element element(&key, sizeof(key));
+		int rand_key = rand() % 50;
+		std::string s = "key" + std::to_string(rand_key);
+		const char* key = s.c_str();
+		HT::Element* element = new HT::Element(key,(int)strlen(key));
 
 
-		HT::Element* ret_element = HT::Get(storage, new HT::Element(&key, sizeof(int)));
+		HT::Element* ret_element = HT::Get(storage, element);
 		if (ret_element == NULL) {
 			DWORD err = GetLastError();
 			if (err == 0||err==183) {
@@ -131,9 +134,11 @@ int main(int argc, char* argv[]) {
 			std::cout << "Element with KEY="<<key<<" retrieved: ";
 			HT::Print(ret_element);
 
-			int upd_payload = rand() % 1000;
+			int rand_payload = rand() % 1000;
+			std::string upd = "payload" + std::to_string(rand_payload);
+			const char* upd_payload = upd.c_str();
 			
-			if (!HT::Update(storage, ret_element, &upd_payload, sizeof(upd_payload))) {
+			if (!HT::Update(storage, ret_element, upd_payload, (int)strlen(upd_payload))) {
 				DWORD err = GetLastError();
 				if (err != 0) {
 					std::cerr << "Update() failed. Error: " << err << std::endl;

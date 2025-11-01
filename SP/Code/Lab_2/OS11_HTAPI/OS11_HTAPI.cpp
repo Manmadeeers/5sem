@@ -54,6 +54,7 @@ namespace HT {
                 locked = false;
             }
             if (ownHandle && hMutex != NULL) {
+                ownHandle = false;
                 CloseHandle(hMutex);
                 hMutex = NULL;
             }
@@ -75,6 +76,63 @@ namespace HT {
             }
         }
         return maxlen;
+    }
+    //using classical DJB2 algorithm
+
+    uint hashFunction(const void* key, int keyLength, int capacity) {
+        uint hash = 5381;
+
+
+        const char* str = static_cast<const char*>(key);
+
+        for (int i = 0; i < keyLength; ++i) {
+
+
+            hash = ((hash << 5) + hash) + str[i];
+
+        }
+
+        std::cout << "--Hash: current Hash value: " << hash << std::endl;
+
+
+        return hash % capacity;
+    }
+
+    static uint mutex_hash(const char* str) {
+        uint hash = 5381;
+
+        while (*str) {
+            hash = ((hash << 5) + hash) + (unsigned char)(*str++);
+        }
+        return hash;
+    }
+
+    static HANDLE create_open_mutexp(const char* fileName, char* outNameBuf, size_t outNameBufSize) {
+        if (!fileName) {
+            return NULL;
+        }
+        uint hash = mutex_hash(fileName);
+
+        char nameBuf[128];
+
+        snprintf(nameBuf, sizeof(nameBuf), "Global\\HT_Mutex_%08X", hash);
+        nameBuf[sizeof(nameBuf) - 1] = '\0';
+
+        if (outNameBuf && outNameBufSize > 0) {
+            strncpy_s(outNameBuf, outNameBufSize, nameBuf, _TRUNCATE);
+        }
+
+        HANDLE hMutex = CreateMutexA(
+            NULL,
+            FALSE,
+            nameBuf
+        );
+
+        if (!hMutex) {
+            std::cerr << "--create_open_mutexp: CreateMutexA failed. Error: " << GetLastError() << std::endl;
+        }
+
+        return hMutex;
     }
 
     std::mutex ht_mutex;//for multi-thread access
@@ -138,63 +196,7 @@ namespace HT {
 
     }
 
-    //using classical DJB2 algorithm
 
-    int hashFunction(const void* key, int keyLength, int capacity) {
-        int hash = 5381;
-
-
-        const char* str = static_cast<const char*>(key);
-
-        for (int i = 0; i < keyLength; ++i) {
-
-
-            hash = ((hash << 5) + hash) + str[i];
-
-        }
-
-        std::cout << "--Hash: current Hash value: " << hash << std::endl;
-
-
-        return abs(hash % capacity);
-    }
-
-    static uint mutex_hash(const char* str) {
-        uint hash = 5381;
-
-        while (*str) {
-            hash = ((hash << 5) + hash) + (unsigned char)(*str++);
-        }
-        return hash;
-    }
-
-    static HANDLE create_open_mutexp(const char* fileName, char* outNameBuf, size_t outNameBufSize) {
-        if (!fileName) {
-            return NULL;
-        }
-        uint hash = mutex_hash(fileName);
-
-        char nameBuf[128];
-
-        snprintf(nameBuf, sizeof(nameBuf), "Global\\HT_Mutex_%08X", hash);
-        nameBuf[sizeof(nameBuf) - 1] = '\0';
-
-        if (outNameBuf && outNameBufSize > 0) {
-            strncpy_s(outNameBuf, outNameBufSize, nameBuf, _TRUNCATE);
-        }
-
-        HANDLE hMutex = CreateMutexA(
-            NULL,
-            FALSE,
-            nameBuf
-        );
-
-        if (!hMutex) {
-            std::cerr << "--create_open_mutexp: CreateMutexA failed. Error: " << GetLastError() << std::endl;
-        }
-
-        return hMutex;
-    }
 
     HTHANDLE* Create(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char FileName[512]) {
 
@@ -675,6 +677,13 @@ namespace HT {
 
         lock_guard<mutex> lock(ht_mutex);
 
+
+        ScopedNamedMutex cross_proc_lock(hthandle->FileName);
+        if (!cross_proc_lock.isLocked()) {
+            std::cerr << "--Insert: failed to acquire cross-process mutex" << std::endl;
+            return FALSE;
+        }
+
         const int slot_size = hthandle->MaxKeyLength + hthandle->MaxPayloadLength;
         int hash_index = hashFunction(element->key, element->keylength, hthandle->Capacity);
 
@@ -800,7 +809,7 @@ namespace HT {
         lock_guard<mutex>lock(ht_mutex);
 
 
-        size_t slot_size = handle->MaxKeyLength + handle->MaxPayloadLength;
+        const int slot_size = handle->MaxKeyLength + handle->MaxPayloadLength;
         char* base = static_cast<char*>(handle->Addr) + METADATA_OFFSET;
 
         for (int i = 0; i < handle->Capacity; ++i) {
@@ -823,7 +832,7 @@ namespace HT {
             if (memcmp(current_slot, element->key, element->keylength) == 0) {
 
                 char* payload_ptr = current_slot + handle->MaxKeyLength;
-                size_t actual_payload_length = safe_strlen(payload_ptr, handle->MaxPayloadLength);
+                int actual_payload_length = (int)safe_strlen(payload_ptr, handle->MaxPayloadLength);
 
                 Element* found = new Element(
                     current_slot,
@@ -845,16 +854,7 @@ namespace HT {
             std::cout << "--Print: Element was NULL" << std::endl;
             return;
         }
-        std::string key_str;
-        if (element->key && element->keylength > 0) {
-            key_str.assign(static_cast<const char*>(element->key), element->keylength);
-        }
-
-        std::string payload_str;
-        if (element->payload && element->payloadlength > 0) {
-            payload_str.assign(static_cast<const char*>(element->payload), element->payloadlength);
-        }
-        std::cout << "Key: " << key_str << " Payload: " << payload_str << std::endl;
+        std::cout << "Key: " << static_cast<const char*>(element->key) << " Payload: " << static_cast<const char*>(element->payload) << std::endl;
     }
 
     BOOL Update(const HTHANDLE* handle, const Element* element, const void* newpayload, int newpayloadlength) {

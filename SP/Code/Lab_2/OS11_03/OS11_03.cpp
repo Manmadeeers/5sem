@@ -4,6 +4,7 @@
 #include <thread>
 #include <chrono>
 #include <cstdlib>
+#include <string>
 #include "OS_11DLL.h"
 
 //#define DEBUG;
@@ -115,10 +116,12 @@ int main(int argc, char*argv[]) {
 				continue;
 			}
 		}
-		int key = rand() % 50;
-		HT::Element element(&key,sizeof(key));
+		int rand_key = rand() % 50;
+		std::string s = "key" + std::to_string(rand_key);
+		const char* key = s.c_str();
+		HT::Element*element = new HT::Element(key,(int)strlen(key));
 
-		if (!HT::Delete(storage, &element)) {
+		if (!HT::Delete(storage, element)) {
 			DWORD err = GetLastError();
 			if (err == 0) {
 				std::cout << "Unable to delete an element with key " << key << ". Element with this key does not exist in a storage" << std::endl;

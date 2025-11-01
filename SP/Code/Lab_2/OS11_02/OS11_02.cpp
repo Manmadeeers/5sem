@@ -1,4 +1,4 @@
-﻿//OS11_02 - for opening HT Storage alongside runing OS11_START utility and inserting data untill aborted
+﻿//OS11_02 - for opening HT Storage alongside running OS11_START utility and inserting data until aborted
 #include <iostream>
 #include <thread>
 #include <chrono>
@@ -133,10 +133,11 @@ int main(int argc, char* argv[]) {
 		int rand_key = rand() % 50;
 		std::string s = "key" + std::to_string(rand_key);
 		const char* key = s.c_str();
-		const char* value = "Value";
-		HT::Element element(&key,(int)strlen(key), &value, (int)strlen(value));
+		std::string v = "value" + std::to_string(rand_key);
+		const char* value = v.c_str();
+		HT::Element* element = new HT::Element(key,(int)strlen(key), value, (int)strlen(value));
 
-		if (!HT::Insert(storage,new HT::Element(&key,sizeof(int),&value,sizeof(value)))) {
+		if (!HT::Insert(storage,element)) {
 			DWORD err = GetLastError();
 			if (err != 0) {
 				std::cerr << "Insertion failed. Error: " << err << std::endl;
