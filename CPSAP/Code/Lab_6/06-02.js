@@ -6,9 +6,6 @@ var querystring = require('querystring');
 const PORT = 5000;
 
 
-
-
-
 const serverFunction = function (request, response) {
     if (request.url === "/" && request.method === "GET") {
         response.writeHead(200, { 'content-type': 'text/html;charset=utf-8' });
@@ -69,12 +66,12 @@ const serverFunction = function (request, response) {
                     response.writeHead(200, { 'content-type': 'text/html;charset=utf-8' });
                     response.end(
                         "<h1>200 Mail successfully sent</h1>" +
-                        `<p>Accepted: ${info.accepted}></p>`+
-                        `<p>Envelope from: ${info.envelope.from}</p>`+
-                        `<p>Envelope to: ${info.envelope.to}</p>`+
-                        `<p>Message ID: ${info.messageId}</p>`+
-                        `<p>Pending: ${info.pending}</p>`+
-                        `<p>Rejected: ${info.rejected}</p>`+
+                        `<p>Accepted: ${info.accepted}></p>` +
+                        `<p>Envelope from: ${info.envelope.from}</p>` +
+                        `<p>Envelope to: ${info.envelope.to}</p>` +
+                        `<p>Message ID: ${info.messageId}</p>` +
+                        `<p>Pending: ${info.pending}</p>` +
+                        `<p>Rejected: ${info.rejected}</p>` +
                         `<p>Response: ${info.response}</p>`
                     );
                 }
@@ -83,7 +80,7 @@ const serverFunction = function (request, response) {
         });
 
     }
-    else {
+    else{
         response.writeHead(404, { 'content-type': 'text/html;charset=utf-8' });
         response.end("<h1>404 Not Found</h1>");
     }

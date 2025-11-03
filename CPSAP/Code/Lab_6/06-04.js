@@ -1,6 +1,6 @@
 const http = require('http');
 // const {send} = require('m0603_mnmd');   //for local repository
-const {send} = require('/Users/Manmade/AppData/Roaming/npm/node_modules/m0603_mnmd');   //for global repository
+const { send } = require('/Users/Manmade/AppData/Roaming/npm/node_modules/m0603_mnmd');   //for global repository
 const querystring = require('querystring');
 const fs = require('fs');
 const PORT = 5000;
@@ -45,7 +45,7 @@ const serverFunction = function (request, response) {
         });
 
     }
-    else {
+    else{
         response.writeHead(404, { 'content-type': 'text/html;charset=utf-8' });
         response.end("<h1>404 Not Found</h1>");
     }
