@@ -133,8 +133,8 @@ int main(int argc, char* argv[]) {
 		int rand_key = rand() % 50;
 		std::string s = "key" + std::to_string(rand_key);
 		const char* key = s.c_str();
-		std::string v = "value" + std::to_string(rand_key);
-		const char* value = v.c_str();
+		const char* value = "0";
+
 		HT::Element* element = new HT::Element(key,(int)strlen(key), value, (int)strlen(value));
 
 		if (!HT::Insert(storage,element)) {

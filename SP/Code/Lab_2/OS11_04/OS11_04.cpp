@@ -1,10 +1,13 @@
 ﻿//OS11_04 - For opening HT Storage alongside running OS11_START, generating random keys and proceeding Get and Print operations until aborted
 #include <iostream>
+#include <sstream>
 #include <thread>
 #include <chrono>
 #include <cstdlib>
 #include <string>
 #include "OS_11DLL.h"
+
+#define DEBUG
 
 static uint filename_hash(const char* str) {
 
@@ -134,8 +137,18 @@ int main(int argc, char* argv[]) {
 			std::cout << "Element with KEY="<<key<<" retrieved: ";
 			HT::Print(ret_element);
 
-			int rand_payload = rand() % 1000;
-			std::string upd = "payload" + std::to_string(rand_payload);
+			std::stringstream stream_value;
+			stream_value << ret_element->payload;
+			uint ret_payload;
+			stream_value >> ret_payload;
+
+			
+#ifdef DEBUG
+			std::cout << std::endl << "Retrieved payload: " << ret_payload << std::endl;
+
+#endif // DEBUG
+			ret_payload++;
+			std::string upd = std::to_string(ret_payload);
 			const char* upd_payload = upd.c_str();
 			
 			if (!HT::Update(storage, ret_element, upd_payload, (int)strlen(upd_payload))) {
