@@ -58,11 +58,7 @@ namespace ASPA_0011_API.Controllers
             return NoContent();
         }
 
+        //TODO
         //PUT /api/channels - OPEN/CLOSE 
-        [HttpPut]
-        public ActionResult Put([FromBody]object command)
-        {
-
-        }
     }
 }
