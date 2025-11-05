@@ -1,10 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36616.10 d17.14
+VisualStudioVersion = 17.14.36616.10
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ASPA_0011_1", "ASPA_0011_1\ASPA_0011_1.csproj", "{2DF39BAE-D7FF-4437-A72F-C770EA2D6D98}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ASPA_0011_API", "ASPA_0011_API\ASPA_0011_API.csproj", "{061F07FA-33FB-4E9F-94E5-4C1EC8F6168E}"
 EndProject
 Global
@@ -13,10 +11,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{2DF39BAE-D7FF-4437-A72F-C770EA2D6D98}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2DF39BAE-D7FF-4437-A72F-C770EA2D6D98}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2DF39BAE-D7FF-4437-A72F-C770EA2D6D98}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2DF39BAE-D7FF-4437-A72F-C770EA2D6D98}.Release|Any CPU.Build.0 = Release|Any CPU
 		{061F07FA-33FB-4E9F-94E5-4C1EC8F6168E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{061F07FA-33FB-4E9F-94E5-4C1EC8F6168E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{061F07FA-33FB-4E9F-94E5-4C1EC8F6168E}.Release|Any CPU.ActiveCfg = Release|Any CPU
