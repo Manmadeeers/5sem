@@ -137,10 +137,19 @@ int main(int argc, char* argv[]) {
 			std::cout << "Element with KEY="<<key<<" retrieved: ";
 			HT::Print(ret_element);
 
-			std::stringstream stream_value;
-			stream_value << ret_element->payload;
-			uint ret_payload;
-			stream_value >> ret_payload;
+			const void* p = ret_element->payload;
+			int p_len = ret_element->payloadlength;
+
+			std::string payload_str(reinterpret_cast<const char*>(p), p_len);
+
+			ullong ret_payload = 0;
+			try {
+				ret_payload = std::stoull(payload_str);
+			}
+			catch (const std::exception&ex) {
+				std::cerr << "Failed to parse payload as integer: " << ex.what() << std::endl;
+				return EXIT_FAILURE;
+			}
 
 			
 #ifdef DEBUG
@@ -148,6 +157,7 @@ int main(int argc, char* argv[]) {
 
 #endif // DEBUG
 			ret_payload++;
+			
 			std::string upd = std::to_string(ret_payload);
 			const char* upd_payload = upd.c_str();
 			

@@ -12,6 +12,7 @@
 #include <future>
 
 #define METADATA_OFFSET 4*sizeof(int)
+//#define DEBUG
 
 using namespace std;
 
@@ -832,13 +833,21 @@ namespace HT {
             if (memcmp(current_slot, element->key, element->keylength) == 0) {
 
                 char* payload_ptr = current_slot + handle->MaxKeyLength;
-                int actual_payload_length = (int)safe_strlen(payload_ptr, handle->MaxPayloadLength);
+                //int actual_payload_length = (int)safe_strlen(payload_ptr, handle->MaxPayloadLength);
+#ifdef DEBUG
+                std::cout << "---GET DEBUG---" << std::endl;
+                for (int p = handle->MaxKeyLength; p < handle->MaxKeyLength + handle->MaxPayloadLength; ++p) {
+                    std::cout << current_slot[p] << " ";
+                }
+                std::cout << "---GET DEBUG FINISHED---" << std::endl;
+
+#endif // DEBUG
 
                 Element* found = new Element(
                     current_slot,
                     element->keylength,
                     payload_ptr,
-                    actual_payload_length
+                    handle->MaxPayloadLength
                 );
 
                 return found;
@@ -854,7 +863,7 @@ namespace HT {
             std::cout << "--Print: Element was NULL" << std::endl;
             return;
         }
-        std::cout << "Key: " << static_cast<const char*>(element->key) << " Payload: " << static_cast<const char*>(element->payload) << std::endl;
+        std::cout << "--Print-- Key: " << static_cast<const char*>(element->key) << " Payload: " << static_cast<const char*>(element->payload) << std::endl;
     }
 
     BOOL Update(const HTHANDLE* handle, const Element* element, const void* newpayload, int newpayloadlength) {

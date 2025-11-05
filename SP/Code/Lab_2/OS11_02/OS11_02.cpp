@@ -133,9 +133,9 @@ int main(int argc, char* argv[]) {
 		int rand_key = rand() % 50;
 		std::string s = "key" + std::to_string(rand_key);
 		const char* key = s.c_str();
-		const char* value = "0";
+		std::string v = "0";
 
-		HT::Element* element = new HT::Element(key,(int)strlen(key), value, (int)strlen(value));
+		HT::Element* element = new HT::Element(key,(int)strlen(key), v.c_str(), (int)v.size());
 
 		if (!HT::Insert(storage,element)) {
 			DWORD err = GetLastError();
@@ -154,7 +154,7 @@ int main(int argc, char* argv[]) {
 			}
 		}
 		else {
-			std::cout << "Inserted: KEY=" << key << "; VALUE=" << value << std::endl;
+			std::cout << "Inserted: KEY=" << key << "; VALUE=" << v << std::endl;
 		}
 
 		std::this_thread::sleep_for(std::chrono::seconds(1));

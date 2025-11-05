@@ -4,6 +4,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 typedef unsigned int uint;
+typedef unsigned long long ullong;
 
 
 #define HTAPI __declspec(dllexport)
