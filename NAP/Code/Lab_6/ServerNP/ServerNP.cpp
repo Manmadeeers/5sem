@@ -2,7 +2,7 @@
 #include <Windows.h>
 #include <string>
 #define PIPE_NAME "\\\\.\\pipe\\Tube"
-#define NETWORK_PIPE_NAME "\\DESKTOP-I\\pipe\\Tube"
+#define NET_PIPE_NAME "\\\\DESKTOP-Server\\pipe\\Tube"
 
 
 std::string SetPipeError(std::string message, int code) {
@@ -48,17 +48,22 @@ const std::string MESSAGE = "Hello from server";
 
 int main(int argc, char* argv[]) {
 	HANDLE hPipe;
+	SECURITY_ATTRIBUTES sa;
+	sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+	sa.lpSecurityDescriptor = NULL;
+	sa.bInheritHandle = FALSE;
+
 	while (true) {
 		try {
 			hPipe = CreateNamedPipeA(
 				PIPE_NAME,//named pipe name
 				PIPE_ACCESS_DUPLEX,
 				PIPE_TYPE_MESSAGE | PIPE_WAIT,//pipe access mode
-				1,//max pipe instances
+				PIPE_UNLIMITED_INSTANCES,//max pipe instances
 				NULL,//out buffer size (optional, default:NULL)
 				NULL,//in buffer size (optional, default:NULL)
 				INFINITE,//timeout value for WaitNamedPipe (if NULL is transmitted then the parameter is set to default value of 50ms)
-				NULL//security attributes (default value is NULL)
+				&sa//security attributes (default value is NULL)
 			);
 			if (!hPipe) {
 				DWORD err = GetLastError();
@@ -124,7 +129,7 @@ int main(int argc, char* argv[]) {
 			std::cout << "--Written to named pipe: " << write_buffer << std::endl;
 
 			std::cout << "--Writing/Reading message sequence from named pipe--" << std::endl;
-			//TO DO: finish sequential message handling
+
 			while (true) {
 				char iterative_read_buffer[128];
 				DWORD iterative_to_read = (DWORD)sizeof(iterative_read_buffer);

@@ -2,7 +2,7 @@
 #include <string>
 #include <Windows.h>
 #define PIPE_NAME "\\\\.\\pipe\\Tube"
-#define NETWORK_PIPE_NAME "\\DESKTOP-I\\pipe\\Tube"
+#define NETWORK_PIPE_NAME "\\\\DESKTOP-Server\\pipe\\Tube"
 
 std::string SetPipeError(std::string message, int code) {
 	return message + ".Error: " + std::to_string(code);
@@ -16,7 +16,7 @@ int main(int argc, char* argv[]) {
 		std::cout << "--Waiting for named pipe to be available" << std::endl;
 
 		while (true) {
-			if (WaitNamedPipeA(PIPE_NAME, INFINITE)) {
+			if (WaitNamedPipeA(NETWORK_PIPE_NAME, INFINITE)) {
 				std::cout << "--Named pipe available. Client may proceed" << std::endl;
 				break;
 			}
@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
 		
 
 		hPipe = CreateFileA(
-			PIPE_NAME,//pipe symbolic name
+			NETWORK_PIPE_NAME,//pipe symbolic name
 			GENERIC_READ | GENERIC_WRITE,//file access mode
 			FILE_SHARE_READ | FILE_SHARE_WRITE,//shared use 
 			NULL,//security attributes
@@ -83,7 +83,6 @@ int main(int argc, char* argv[]) {
 		std::cout << "Enter the amount of messages: ";
 		std::cin >> messages_amount;
 
-		//TO DO: finish sequential message handling 
 		std::string iterative_message;
 		for (int i = 0; i < messages_amount; i++) {
 			if (i == 0) {
