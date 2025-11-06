@@ -2,6 +2,7 @@
 #include <string>
 #include <Windows.h>
 #define PIPE_NAME "\\\\.\\pipe\\Tube"
+#define NETWORK_PIPE_NAME "\\DESKTOP-I\\pipe\\Tube"
 
 std::string SetPipeError(std::string message, int code) {
 	return message + ".Error: " + std::to_string(code);
@@ -12,10 +13,21 @@ const std::string MESSAGE = "Hello from client";
 int main(int argc, char* argv[]) {
 	HANDLE hPipe;
 	try {
+		std::cout << "--Waiting for named pipe to be available" << std::endl;
+
+		while (true) {
+			if (WaitNamedPipeA(PIPE_NAME, INFINITE)) {
+				std::cout << "--Named pipe available. Client may proceed" << std::endl;
+				break;
+			}
+
+		}
+		
+
 		hPipe = CreateFileA(
 			PIPE_NAME,//pipe symbolic name
-			GENERIC_READ|GENERIC_WRITE,//file access mode
-			FILE_SHARE_READ|FILE_SHARE_WRITE,//shared use 
+			GENERIC_READ | GENERIC_WRITE,//file access mode
+			FILE_SHARE_READ | FILE_SHARE_WRITE,//shared use 
 			NULL,//security attributes
 			OPEN_EXISTING,//open mode
 			NULL,//flags and attributes
@@ -72,10 +84,54 @@ int main(int argc, char* argv[]) {
 		std::cin >> messages_amount;
 
 		//TO DO: finish sequential message handling 
+		std::string iterative_message;
 		for (int i = 0; i < messages_amount; i++) {
-			std::string iterative_message = "Hello from client " + std::to_string(i);
+			if (i == 0) {
+				iterative_message = "Hello from client " + std::to_string(i);
+			}
+
+			DWORD iterative_written = 0;
+			DWORD iterative_to_write = (DWORD)sizeof(iterative_message);
+
+			BOOL iterative_write_result = WriteFile(
+				hPipe,
+				iterative_message.c_str(),
+				iterative_to_write,
+				&iterative_written,
+				NULL
+			);
+
+			if (!iterative_write_result) {
+				throw SetPipeError("Failed to wwrite iterative message to a named pipe", GetLastError());
+			}
+			if (iterative_written != iterative_to_write) {
+				throw SetPipeError("WriteFile failed. Bytes written was different from planned", GetLastError());
+			}
+			std::cout << "--Written to named pipe: " << iterative_message << std::endl;
+
+			char iterative_read_buffer[128];
+			DWORD iterative_to_read = (DWORD)sizeof(iterative_read_buffer);
+			DWORD iterative_read = 0;
+
+			BOOL iterative_read_result = ReadFile(
+				hPipe,
+				iterative_read_buffer,
+				iterative_to_read,
+				&iterative_read,
+				NULL
+			);
+
+			if (!iterative_read_result) {
+
+				throw SetPipeError("Failed to read iterative message form named pipe", GetLastError());
+			}
+
+			std::cout << "--Read from named pipe: " << iterative_read_buffer << std::endl;
+			std::string buff(iterative_read_buffer);
+			iterative_message = buff;
 
 		}
+		std::cout << "--Sequential message handling done" << std::endl;
 
 
 		if (CloseHandle(hPipe) == 0) {
