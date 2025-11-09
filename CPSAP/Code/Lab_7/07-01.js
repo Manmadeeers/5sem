@@ -1,23 +1,15 @@
 const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const PORT = 5000;
+const { createStaticHandler } = require('./07-01m');
 
+const PORT = process.env.PORT ? Number(process.env.PORT) : 5000;
 
+// Параметризуем имя директории static (относительно корня lab7)
+const staticHandler = createStaticHandler('static');
 
-const serverFunction = function (request, response) {
-    if (request.method === "GET") {
+const server = http.createServer((req, res) => {
+  staticHandler(req, res);
+});
 
-    }
-    else {
-        response.writeHead(405, { 'contnt-type': 'text/html;charset=utf-8' });
-        response.end("<h1>405 Method not alowed</h1>");
-    }
-}
-
-
-const server = http.createServer(serverFunction);
-
-server.listen(PORT);
-
-console.log(`Server running at http://localhost:${PORT}`);
+server.listen(PORT, () => {
+  console.log(`Server 07-01 listening at http://localhost:${PORT}/`);
+});

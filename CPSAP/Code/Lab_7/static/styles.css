@@ -1,0 +1,4 @@
+body { font-family: Arial, sans-serif; margin: 20px; }
+h1 { color: #2a7; }
+section { margin-bottom: 20px; }
+pre { background: #f3f3f3; padding: 10px; border-radius: 4px; max-height: 300px; overflow: auto; }

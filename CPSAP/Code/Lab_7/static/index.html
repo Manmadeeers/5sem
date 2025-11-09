@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>07-01</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <h1> Static server 07-01</h1>
+
+  <section>
+    <h2>CSS</h2>
+    <p>Styles are connected via &lt;link&gt; (styles.css)</p>
+  </section>
+
+  <section>
+    <h2>JS</h2>
+    <script src="/app.js" defer></script>
+    <p>Script connected (app.js)</p>
+  </section>
+
+  <section>
+    <h2>Image</h2>
+    <img src="/image.png" alt="demo image" width="300">
+  </section>
+
+  <section>
+    <h2>Video</h2>
+    <video controls width="480">
+      <source src="/sample.mp4" type="video/mp4">
+     Your browser does not support video
+    </video>
+  </section>
+
+  <section>
+    <h2>Docx</h2>
+    <p><a href="/example.docx" download>Download .docx file</a></p>
+  </section>
+
+  <section>
+    <h2>JSON / XML (fetch)</h2>
+    <button id="loadJson">load JSON</button>
+    <pre id="jsonOut"></pre>
+
+    <button id="loadXml">load XML</button>
+    <pre id="xmlOut"></pre>
+  </section>
+</body>
+</html>
