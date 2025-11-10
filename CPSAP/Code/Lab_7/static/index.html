@@ -5,9 +5,32 @@
   <title>07-01</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
+
+<script>
+  document.addEventListener('DOMContentLoaded',()=>{
+    let location_div = document.getElementById('location-show');
+    location_div.innerHTML = '';
+    location_div.innerHTML += `<p>Ancestor origins: ${location.ancestorOrigins}</p>`;
+    location_div.innerHTML += `<p>Hash: ${location.hash}</p>`;
+    location_div.innerHTML += `<p>Host: ${location.host}</p>`;
+    location_div.innerHTML += `<p>Hostname: ${location.hostname}</p>`;
+    location_div.innerHTML += `<p>Href: ${location.href}</p>`;
+    location_div.innerHTML += `<p>Origin: ${location.origin}</p>`;
+    location_div.innerHTML += `<p>Pathname: ${location.pathname}</p>`;
+    location_div.innerHTML += `<p>Port: ${location.port}</p>`;
+    location_div.innerHTML += `<p>Protocol: ${location.protocol}</p>`;
+    location_div.innerHTML += `<p>Search: ${location.search}</p>`;
+  })
+</script>
+
 <body>
   <h1> Static server 07-01</h1>
+  <section>
+    <h2>Location fields</h2>
+    <div id="location-show">
 
+    </div>
+  </section>
   <section>
     <h2>CSS</h2>
     <p>Styles are connected via &lt;link&gt; (styles.css)</p>
