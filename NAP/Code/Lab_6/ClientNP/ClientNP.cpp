@@ -2,7 +2,7 @@
 #include <string>
 #include <Windows.h>
 #define PIPE_NAME "\\\\.\\pipe\\Tube"
-#define NETWORK_PIPE_NAME "\\\\DESKTOP-Server\\pipe\\Tube"
+#define NETWORK_PIPE_NAME "\\\\DESKTOP-I\\pipe\\Tube"
 
 std::string SetPipeError(std::string message, int code) {
 	return message + ".Error: " + std::to_string(code);
@@ -118,7 +118,7 @@ int main(int argc, char* argv[]) {
 				iterative_to_read,
 				&iterative_read,
 				NULL
-			);
+			);	
 
 			if (!iterative_read_result) {
 

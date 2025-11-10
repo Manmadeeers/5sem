@@ -129,7 +129,7 @@ int main() {
 		}
 		std::cout << "--Socket options set to broadcast mode" << std::endl;
 
-		const char* hostname = "DESKTOP-I";
+		const char* hostname = "DESKTOP-Server";
 		const char* server_callsign = "Hello";
 
 		SOCKADDR_IN serv;

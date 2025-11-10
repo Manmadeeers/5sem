@@ -2,8 +2,8 @@
 #include <Windows.h>
 #include <string>
 #define PIPE_NAME "\\\\.\\pipe\\Tube"
-#define NET_PIPE_NAME "\\\\DESKTOP-Server\\pipe\\Tube"
-
+//#define ITERATIVE_MESSAGES
+#define TRANSACTIONS_AND_CALL
 
 std::string SetPipeError(std::string message, int code) {
 	return message+ ".Error: " + std::to_string(code);
@@ -48,6 +48,7 @@ const std::string MESSAGE = "Hello from server";
 
 int main(int argc, char* argv[]) {
 	HANDLE hPipe;
+
 	SECURITY_ATTRIBUTES sa;
 	sa.nLength = sizeof(SECURITY_ATTRIBUTES);
 	sa.lpSecurityDescriptor = NULL;
@@ -63,7 +64,7 @@ int main(int argc, char* argv[]) {
 				NULL,//out buffer size (optional, default:NULL)
 				NULL,//in buffer size (optional, default:NULL)
 				INFINITE,//timeout value for WaitNamedPipe (if NULL is transmitted then the parameter is set to default value of 50ms)
-				&sa//security attributes (default value is NULL)
+				NULL//security attributes (default value is NULL)
 			);
 			if (!hPipe) {
 				DWORD err = GetLastError();
@@ -80,14 +81,102 @@ int main(int argc, char* argv[]) {
 			}
 			std::cout << "--Named pipe created" << std::endl;
 
-
-			if (!ConnectNamedPipe(
+			BOOL connected = ConnectNamedPipe(
 				hPipe,//named pipe handle
 				NULL//NULL for synchronous connection
-			)) {
-				throw SetPipeError("Failed to connect server program to a named pipe", GetLastError());
+			);
+			if (!connected) {
+				DWORD err = GetLastError();
+				if (err == ERROR_PIPE_CONNECTED) {
+					std::cout << "--Client already connected (ERROR_PIPE_CONNECTED)" << std::endl;
+				}
+				else {
+					throw SetPipeError("ConnectNamedPipe failed", err);
+				}
+				
 			}
 			std::cout << "--Named Pipe connected" << std::endl;
+
+#ifdef TRANSACTIONS_AND_CALL
+
+			DWORD mode = PIPE_READMODE_MESSAGE;
+			if (!SetNamedPipeHandleState(
+				hPipe,//named pipe handle
+				&mode,//mode that's being set	
+				NULL,//max collection count
+				NULL//data collection timeout
+			)) {
+				throw SetPipeError("SetNamedPipeHandleState() function failed", GetLastError());
+			}
+			std::cout << "Named pipe handle set to PIPE_READMODE_MESSAGE mode" << std::endl;
+
+			std::string transact_read;
+			char buffer[128];
+			DWORD tbytes_read = 0;
+
+			while (true) {
+				BOOL read_result = ReadFile(
+					hPipe,
+					buffer,
+					(DWORD)sizeof(buffer),
+					&tbytes_read,
+					NULL
+				);
+				if (!read_result) {
+					DWORD err = GetLastError();
+					if (err == ERROR_MORE_DATA) {
+						transact_read.append(buffer,tbytes_read);
+						continue;
+					}
+					else if (err == ERROR_BROKEN_PIPE) {
+						throw SetPipeError("Client disconnected during ReadFile", err);
+					}
+					else {
+						throw SetPipeError("ReadFile failed", err);
+					}
+				
+				}
+				if (tbytes_read > 0) {
+					transact_read.append(buffer, tbytes_read);
+				}
+				break;
+			}
+
+			std::cout << "--Read from transaction: " << transact_read << std::endl;
+			std::string transaction_reply = "Server transction reply";
+
+			DWORD total_to_write = (DWORD)transaction_reply.size();
+			DWORD total_written = 0;
+
+			while (total_written < total_to_write) {
+				DWORD iter_written = 0;
+
+				BOOL write_result = WriteFile(
+					hPipe,
+					transaction_reply.c_str(),
+					total_to_write,
+					&iter_written,
+					NULL
+				);
+				if (!write_result) {
+					DWORD err = GetLastError();
+					if (err == ERROR_BROKEN_PIPE) {
+						throw SetPipeError("Client disconnected during WriteFile", err);
+					}
+					else {
+						throw SetPipeError("WriteFile failed", err);
+					}
+				}
+
+				if (iter_written == 0) {
+					break;
+				}
+				total_written += iter_written;
+			}
+#endif // TRANSACTIONS
+
+
+#ifdef ITERATIVE_MESSAGES
 
 			char read_buffer[128];
 			DWORD read_bytes = 0;
@@ -176,6 +265,7 @@ int main(int argc, char* argv[]) {
 
 			}
 
+#endif // ITERATIVE_MESSAGES
 
 			if (DisconnectNamedPipe(hPipe) == 0) {
 				throw SetPipeError("Failed to disconnect named pipe", GetLastError());
