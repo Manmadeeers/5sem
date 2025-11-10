@@ -3,13 +3,13 @@ const path = require('path');
 
 const MIME = {
   html: 'text/html',
-  css:  'text/css',
-  js:   'text/javascript',
-  png:  'image/png',
+  css: 'text/css',
+  js: 'text/javascript',
+  png: 'image/png',
   docx: 'application/msword',
   json: 'application/json',
-  xml:  'application/xml',
-  mp4:  'video/mp4'
+  xml: 'application/xml',
+  mp4: 'video/mp4'
 };
 
 function createStaticHandler(staticRootRelative) {
@@ -25,24 +25,19 @@ function createStaticHandler(staticRootRelative) {
     const host = request.headers.host || 'localhost';
     const url = new URL(request.url, `http://${host}`);
     let pathname = decodeURIComponent(url.pathname);
-
-    
+    let ext = path.extname(pathname).slice(1).toLowerCase();
     if (pathname.startsWith('/')) pathname = pathname.slice(1);
 
-    if (!pathname) {
-      pathname = 'index.html';
-    }
 
-    const ext = path.extname(pathname).slice(1).toLowerCase();
     if (!ext || !MIME[ext]) {
       response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-      response.end('404 Not Found');
+      response.end('404 Method Is Not Static');
       return;
     }
 
     const absPath = path.resolve(staticRoot, pathname);
 
-  
+
     if (!absPath.startsWith(staticRoot + path.sep) && absPath !== staticRoot) {
       response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
       response.end('404 Not Found');

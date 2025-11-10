@@ -3,7 +3,6 @@ const { createStaticHandler } = require('./07-01m');
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 5000;
 
-// Параметризуем имя директории static (относительно корня lab7)
 const staticHandler = createStaticHandler('static');
 
 const server = http.createServer((req, res) => {
@@ -11,5 +10,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Server 07-01 listening at http://localhost:${PORT}/`);
+  console.log(`Server 07-01 listening at http://localhost:${PORT}/index.html`);
 });
