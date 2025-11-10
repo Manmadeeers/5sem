@@ -5,66 +5,69 @@ select file_name, tablespace_name from dba_temp_files;
 
 select * from dba_tablespaces;
 
---2: create a tablespace FIA_QDATA
-create pluggable database FIA_PDB
+--2: create a tablespace FIA_QDATA_NEW
+drop pluggable database FIA_PDB_NEW including datafiles;
+
+create pluggable database FIA_PDB_NEW
 ADMIN USER root identified by 1111
-roles = (connect)
+roles = (DBA)
 CREATE_FILE_DEST = '/opt/oracle/oradata/FIA';
 
-alter pluggable database FIA_PDB open;
+alter pluggable database FIA_PDB_NEW open;
+alter pluggable database FIA_PDB_NEW close immediate;
 
-drop tablespace FIA_QDATA including contents and datafiles;
+drop tablespace FIA_QDATA_NEW including contents and datafiles;
 
-create tablespace FIA_QDATA
-datafile 'FIA_QDATA.dbf'
+create tablespace FIA_QDATA_NEW
+datafile 'FIA_QDATA_NEW1.dbf'
 size 10m
 autoextend on next 1m
 maxsize 20m
 offline
 
 
-alter tablespace FIA_QDATA online;
+alter tablespace FIA_QDATA_NEW online;
 
-drop user FIA_4;
+drop user FIA_4_NEW;
 
 
-create user FIA_4 identified by 1234
-default tablespace FIA_QDATA quota 2m on FIA_QDATA
+create user FIA_4_NEW identified by 1234
+default tablespace FIA_QDATA_NEW quota 2m on FIA_QDATA_NEW
 account unlock;
-grant create session, create table to FIA_4;
+grant create session, create table to FIA_4_NEW;
 
-drop table FIA_T1;
+drop table FIA_T1_NEW;
 
-create table FIA_T1
+create table FIA_T1_NEW
 (id int primary key,
 name varchar(20)
 );
 
-insert into FIA_T1 values (1,'1');
-insert into FIA_T1 values (2,'2');
-insert into FIA_T1 values (3,'3');
+insert into FIA_T1_NEW values (1,'1');
+insert into FIA_T1_NEW values (2,'2');
+insert into FIA_T1_NEW values (3,'3');
 
 
-select * from FIA_T1;
+select * from FIA_T1_NEW;
 
 --3: Get list of segments of FIA_QDATA and a segment for FIA_T1
 
-select * from dba_segments where TABLESPACE_NAME='FIA_QDATA';
+select * from dba_segments where TABLESPACE_NAME='FIA_QDATA_NEW';
 select * from user_recyclebin;
 
 --4: Drop FIA_T1 
 
-drop table FIA_T1;
+drop table FIA_T1_NEW;
 
-select * from dba_segments where TABLESPACE_NAME='FIA_QDATA';
+select * from dba_segments where TABLESPACE_NAME='FIA_QDATA_NEW';
 
 select * from user_recyclebin;
 
 --5: Flashback previously deleted table
 
-flashback table FIA_T1 to before drop;
+flashback table FIA_T1_NEW to before drop;
 
-select * from dba_segments where TABLESPACE_NAME='FIA_QDATA';
+select * from dba_segments where TABLESPACE_NAME='FIA_QDATA_NEW';
 select * from user_recyclebin;
 
 --6:PL/SQL script to fill table with a 1000 rows
@@ -73,7 +76,7 @@ declare i number :=4;
 
 begin
     while i<1001 loop
-        insert into FIA_T1 values
+        insert into FIA_T1_NEW values
         (i,TO_CHAR(i));
         i:=i+1;
     end loop;
@@ -82,7 +85,7 @@ end;
 
 commit;
 
-select * from FIA_T1;
+select * from FIA_T1_NEW;
 
 
 --7: Search for extents in FIA_T1 
@@ -95,8 +98,8 @@ select * from dba_extents;
 
 --8: Drop tablespace
 
-alter tablespace FIA_QDATA offline;
-drop tablespace FIA_QDATA including contents and datafiles;
+alter tablespace FIA_QDATA_NEW offline;
+drop tablespace FIA_QDATA_NEW including contents and datafiles;
 
 --9: select all v$logs
 

@@ -57,7 +57,7 @@ drop table test_table_keep purge;
 create table TEST_TABLE_DEFAULT(
 key int primary key,
 value varchar(20) not null
-) storage (buffer_pool keep);
+) storage (buffer_pool default);
 
 insert into TEST_TABLE_DEFAULT
 values
@@ -108,5 +108,12 @@ select * from v$services;
 select * from v$dispatcher;
 
 --17:
+-- na dockere ne rabotaet :(((
+
+--18:
+--cat /opt/oracle/product/23ai/dbhomeFree/network/admin/listener.ora
+
+--19:
+--  lsnrctl services
 
 
