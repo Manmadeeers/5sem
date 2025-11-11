@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>08-00</title>
+</head>
+<style>
+    :root {
+        --bg: #f6f8fb;
+        --card: #ffffff;
+        --muted: #6b7280;
+        --accent: #2563eb;
+        /* blue */
+        --accent-2: #06b6d4;
+        /* teal */
+        --danger: #ef4444;
+        --radius: 12px;
+        --shadow: 0 6px 18px rgba(16, 24, 40, 0.08);
+        --gap: 16px;
+        font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+        font-size: 16px;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 24px;
+        background: linear-gradient(180deg, #eef2ff 0%, var(--bg) 100%);
+        color: #0f172a;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Form container */
+    .nice-form {
+        max-width: 720px;
+        margin: 24px auto;
+        padding: 24px;
+        background: var(--card);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        border: 1px solid rgba(15, 23, 42, 0.04);
+    }
+
+    /* Row layout */
+    .form-row {
+        display: grid;
+        grid-template-columns: 170px 1fr;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: var(--gap);
+    }
+
+    /* For smaller screens stack labels on top */
+    @media (max-width: 640px) {
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .form-row label {
+            margin-bottom: 6px;
+        }
+    }
+
+    /* Labels */
+    .nice-form label {
+        font-weight: 600;
+        color: #0f172a;
+        font-size: 0.95rem;
+    }
+
+    /* Inputs & textarea */
+    .nice-form input[type="text"],
+    .nice-form input[type="number"],
+    .nice-form input[type="date"],
+    .nice-form textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        background: #fff;
+        transition: box-shadow .15s ease, border-color .12s ease;
+        font-size: 0.95rem;
+        color: #0f172a;
+        outline: none;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    }
+
+    .nice-form textarea {
+        resize: vertical;
+        min-height: 120px;
+    }
+
+    /* Focus state */
+    .nice-form input:focus,
+    .nice-form textarea:focus {
+        border-color: rgba(37, 99, 235, 0.9);
+        box-shadow: 0 4px 18px rgba(37, 99, 235, 0.08);
+    }
+
+    /* Checkbox and radio rows: inline, tighter spacing */
+    .checkbox-row,
+    .radio-row {
+        grid-template-columns: 170px 1fr;
+        align-items: center;
+    }
+
+    .checkbox-row input[type="checkbox"],
+    .radio-row input[type="radio"] {
+        margin-right: 8px;
+        transform: translateY(1px);
+        width: 18px;
+        height: 18px;
+    }
+
+    /* Buttons */
+    .submit-row {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-start;
+        align-items: center;
+    }
+
+    .btn {
+        padding: 10px 16px;
+        border-radius: 10px;
+        border: 1px solid rgba(15, 23, 42, 0.06);
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: transform .06s ease, box-shadow .12s ease, opacity .08s ease;
+        background: white;
+    }
+
+    .btn:active {
+        transform: translateY(1px);
+    }
+
+    .btn.primary {
+        background: linear-gradient(180deg, var(--accent), #1e40af);
+        color: white;
+        border: none;
+        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.18);
+    }
+
+    .btn.ghost {
+        background: transparent;
+        color: var(--muted);
+        border: 1px dashed rgba(15, 23, 42, 0.06);
+    }
+
+    /* Small helper text (if you want to add it) */
+    .form-hint {
+        grid-column: 2 / -1;
+        font-size: 0.85rem;
+        color: var(--muted);
+        margin-top: -6px;
+        margin-bottom: 12px;
+    }
+
+    /* Error state example */
+    .is-invalid {
+        border-color: var(--danger) !important;
+        box-shadow: 0 6px 18px rgba(239, 68, 68, 0.08) !important;
+    }
+
+    /* Nice subtle divider */
+    .nice-form .section-divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(15, 23, 42, 0.04), transparent);
+        margin: 12px 0 18px;
+    }
+</style>
+
+<body>
+    <h1>Form Parameter</h1>
+    <form action="/formparameter" method="post" class="nice-form">
+        <div class="form-row">
+            <label for="word">Enter a word</label>
+            <input id="word" name="word" type="text" />
+        </div>
+
+        <div class="form-row">
+            <label for="number">Enter a number</label>
+            <input id="number" name="number" type="number" />
+        </div>
+
+        <div class="form-row">
+            <label for="date">Pick a date</label>
+            <input id="date" name="date" type="date" />
+        </div>
+
+        <div class="form-row checkbox-row">
+            <input id="check" name="check" type="checkbox" />
+            <label for="check">Check this pls</label>
+        </div>
+
+        <div class="form-row radio-row">
+            <input id="radio1" name="radio" type="radio" value="1" />
+            <label for="radio1">Option 1</label>
+            <input id="radio2" name="radio" type="radio" value="2" />
+            <label for="radio2">Option 2</label>
+        </div>
+
+        <div class="form-row">
+            <label for="text">Write or paste some text here</label>
+            <textarea id="text" name="text" rows="6"></textarea>
+        </div>
+
+        <div class="form-row submit-row">
+            <input class="btn primary" type="submit" id="submit1" value="Submit A" />
+            <input class="btn ghost" type="submit" id="submit2" value="Submit B" />
+        </div>
+    </form>
+</body>
+
+</html>
