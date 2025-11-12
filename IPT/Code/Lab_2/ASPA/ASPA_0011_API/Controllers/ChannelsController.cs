@@ -29,7 +29,7 @@ namespace ASPA_0011_API.Controllers
             var channels = _channelService.GetAllChannels();
             if (channels == null || channels.Count == 0)
             {
-                return NoContent();//204
+                return NoContent();//204    
             }
 
             return Ok(channels);//200
@@ -70,10 +70,10 @@ namespace ASPA_0011_API.Controllers
                 return BadRequest(result.Status);
             }
 
-            if (model.State == ChannelState.ACTIVE)
-            {
-                return NoContent();
-            }
+            //if (model.State == ChannelState.ACTIVE)
+            //{
+            //    return NoContent();
+            //}
 
             return CreatedAtAction(nameof(GetById), new { id = result.Channel.Id }, result.Channel);
 

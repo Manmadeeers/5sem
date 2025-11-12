@@ -55,8 +55,8 @@ namespace ASPA_0011_API.Services
 
                 return new CreateChannelResult
                 {
-                    Channel = null,
-                    Status = "Wrong command. Try again"
+                    Channel = aspChannel,
+                    Status = "success"
                 };
             }
             else
@@ -308,7 +308,7 @@ namespace ASPA_0011_API.Services
                 return new DequeueOrPeekResult
                 {
                     Data = null,
-                    Status = "Wring comand. Try again"
+                    Status = "Wrong command. Try again"
                 };
             }
         }
