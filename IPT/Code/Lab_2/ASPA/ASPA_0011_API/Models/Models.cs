@@ -2,86 +2,81 @@
 namespace ASPA_0011_API.Models
 {
     public enum ChannelState { ACTIVE, CLOSED}
-    public enum QueueOperations { ENQUEUE,DEQUEUE,PEEK}
-    public class ChannelInfo
+
+    public class ASP11Channel
     {
         public Guid Id { get; set; }
-        public string Name { get; set; }= default!;
+        public string Name { get; set; }
+        public string Description { get; set; }
         public ChannelState State { get; set; }
-        public string Description { get; set; } = default!;
     }
 
     public class CreateChannel
     {
-        public string Command { get; set; } = "new";
-        public string Name { get; set; } = default!;
+        public string Command { get; set; }
+        public string Name { get; set; }
         public ChannelState State { get; set; }
-        public string Description { get; set; } = string.Empty;
+        public string Description { get; set; }
     }
 
-    public class CloseAllChannels
+    public class StopAllChannels
     {
-        public string Command { get; set; } = "close";
-        public string Reason { get; set; }=string.Empty;
+        public string Command { get; set; }
+        public string Reason { get; set; }
     }
 
-    public class CloseChannelById
+    public class StopChannelById
     {
         public Guid Id { get; set; }
-        public string Command { get; set; } = "close";
-        public string Reason { get; set; } = string.Empty;
+        public string Command { get; set; }
+        public string Reason { get; set; }
 
     }
+
 
     public class OpenAllChannels
     {
-        public string Command { get; set; } = "open";
+        public string Command { get; set; }
     }
+
 
     public class OpenChannelById
     {
         public Guid Id { get; set; }
-        public string Command { get; set; } = "open";
-        public ChannelState State { get; set; } = ChannelState.ACTIVE;
+        public string Command { get; set; }
+        public ChannelState State { get; set; }
     }
 
 
     public class DeleteAllChannels
     {
-        public string Command { get; set; } = "delete";
+        public string Command { get; set; } 
     }
+
 
     public class DeleteClosedChannels
     {
-        public string Command { get; set; } = "delete";
-        public ChannelState State { get; set; } = ChannelState.CLOSED;
+        public string Command { get; set; }
+        public ChannelState State { get; set; }
     }
 
-    public class DequeueElement
+    public class QueueCommand
     {
-        public QueueOperations Command { get; set; } //DEQUEUE, PEEK
+        public string Command { get; set; }
         public Guid Id { get; set; }
-
     }
 
-    public class EnqueueElement
+    public class EnqueueModel
     {
-        public QueueOperations Command { get; set; } = QueueOperations.ENQUEUE;
+        public string Command { get; set; }
         public Guid Id { get; set; }
-        public string Data { get; set; } = default!; //JSON string
+        public string Data { get; set; }
     }
 
-
-    public class Element
+    public class QueueErrorModel
     {
         public Guid Id { get; set; }
-        public string Data { get; set; }= default!; //JSON string
-    }
-
-    public class ErrorMessage
-    {
-        public Guid Id { get; set; }
-        public string Error { get; set; } = default!;
+        public string Message { get; set; }
     }
 
 }

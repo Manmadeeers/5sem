@@ -1,293 +1,376 @@
-﻿using ASPA_0011_API.Models;
-using System.Collections.Concurrent;
-using System.Threading.Channels;
+﻿using System.Threading.Channels;
+using ASPA_0011_API.Models;
+
 
 namespace ASPA_0011_API.Services
 {
 
-
-    public interface IChannleService
+    public class ChannelService
     {
-        List<ChannelInfo> GetAll();
-        ChannelInfo? Get(Guid id);
-        ChannelInfo Create(CreateChannel req);
-        List<ChannelInfo> CloseAll(string? reason = null);
-        ChannelInfo?CloseById(Guid id, string?reason=null);
-        List<ChannelInfo> OpenAll();
-        ChannelInfo? OpenById(Guid id);
-        int DeleteAll();
-        int DeleteClosed();
-        Task<(bool success, Element? item, string? error)> EnqueueAsync(EnqueueElement req, int waitForSecDefault);
-        Task<(bool success,Element?item,string?error)>DequeueAsync(DequeueElement req, int waitForSecDefault);
-        Task<(bool success, Element? item, string? error)> PeekAsync(DequeueElement req, int waitForSecDefault);
+        private ILogger<ChannelService> _logger;
+        private int _waitEnqueue;
+        private int _eventCounter = 0;
+        private List<ASP11Channel> _asp11Channels = new List<ASP11Channel>();
+        private List<Channel<string>> _channels = new List<Channel<string>>();
 
-
-    }
-    public class ChannelService:IChannleService
-    {
-
-
-        public readonly ConcurrentDictionary<Guid, ChannelWrapper> _map = new();
-        private readonly ILogger<ChannelService> _logger;
-
-        public ChannelService(ILogger<ChannelService> logger)
+        public ChannelService(IConfiguration c, ILogger<ChannelService> logger)
         {
             _logger = logger;
+            _waitEnqueue = c.GetValue<int>("WaitEnqueue", 30);
+            _logger.LogTrace("[{EventId}] {TimeStamp} - ChannelService started", ++_eventCounter, DateTime.Now);
         }
 
+        public ChannelService() { }
 
-        public List<ChannelInfo> GetAll()
+        public List<ASP11Channel> GetAllChannels()
         {
-            return _map.Values.Select(ToDTO).ToList();
-        }
-        public ChannelInfo?Get(Guid id)
-        {
-            if(!_map.TryGetValue(id,out var w))
-            {
-                return null;
-            }
-            return ToDTO(w);
+            return this._asp11Channels;
         }
 
-        public ChannelInfo Create(CreateChannel req)
+        public ASP11Channel? GetChannelById(Guid id)
         {
-            var wrapper = new ChannelWrapper
-            {
-                Name = req.Name,
-                State = req.State,
-                Description = req.Description,
-                Capacity = 100
-            };
-
-            var options = new BoundedChannelOptions(wrapper.Capacity);
-            {
-             
-            };
-            wrapper.Channel = Channel.CreateBounded<object>(options);
-            wrapper.Count = 0;
-
-            _map[wrapper.Id] = wrapper;
-            _logger.LogInformation("Created channel with id={Id} name={Name}, state={State}", wrapper.Id, wrapper.Name, wrapper.State);
-            return ToDTO(wrapper);
+            return this._asp11Channels.FirstOrDefault(c => c.Id == id);
         }
 
-        public List<ChannelInfo>CloseAll(string?reason = null)
+        public CreateChannelResult CreateChannel(CreateChannel newChannel)
         {
-            var outList = new List<ChannelInfo>();
-            foreach(var kv in _map)
-            {
-                kv.Value.State = ChannelState.CLOSED;
-                outList.Add(ToDTO(kv.Value));
-                _logger.LogInformation("Closed channel with id={Id}. Reason={reason}", kv.Key, reason);
-            }
-            return outList;
-        }
+            _logger.LogDebug("[{EventId}] {TimeStamp} - CreateChannel {Command}", ++_eventCounter, DateTime.Now, newChannel.Command);
 
-        public ChannelInfo?CloseById(Guid id,string? reason=null)
-        {
-            if(!_map.TryGetValue(id,out var w))
+            if (newChannel.Command == "new")
             {
-                return null;
-            }
-            w.State = ChannelState.CLOSED;
-            _logger.LogInformation("Channel with id={Id} closed", id);
-            return ToDTO(w);
-        }
+                var id = Guid.NewGuid();
+                var channel = Channel.CreateUnbounded<string>();
+                _channels.Add(channel);
 
-        public List<ChannelInfo> OpenAll()
-        {
-            var outList = new List<ChannelInfo>();
-            foreach(var kv in _map)
-            {
-                kv.Value.State = ChannelState.ACTIVE;
-                outList.Add(ToDTO(kv.Value));
-                _logger.LogInformation("Channel with id={Id} opened", kv.Value.Id);
-            }
-            return outList;
-        }
-
-        public ChannelInfo?OpenById(Guid id)
-        {
-            if(!_map.TryGetValue(id,out var w))
-            {
-                return null;
-            }
-            w.State = ChannelState.ACTIVE;
-            _logger.LogInformation("Opened channel with id {id}", id);
-            return ToDTO(w);
-        }
-
-        public int DeleteAll()
-        {
-            var keys = _map.Keys.ToList();
-            foreach(var k in keys)
-            {
-                if(_map.TryRemove(k,out var w))
+                var aspChannel = new ASP11Channel
                 {
-                    w.Channel.Writer.TryComplete();
-                    _logger.LogInformation("Deleted channel with id {id}", k);  
-                }
-            }
-            return keys.Count;
-        }
+                    Id = id,
+                    Name = newChannel.Name,
+                    Description = newChannel.Description,
+                    State = newChannel.State,
+                };
+                _asp11Channels.Add(aspChannel);
 
-        public int DeleteClosed()
-        {
-            var toRemove = _map.Where(x => x.Value.State == ChannelState.CLOSED).Select(x => x.Key).ToList();
-            foreach(var k in toRemove)
-            {
-                if(_map.TryRemove(k,out var w))
+                _logger.LogInformation("[{EventId}] {Timestamp} - Channel created: {ChannelId}", ++_eventCounter, DateTime.Now, id);
+
+                return new CreateChannelResult
                 {
-                    w.Channel.Writer.TryComplete();
-                    _logger.LogInformation("Deleted closed channel with id {id}", k);
-;               }
+                    Channel = null,
+                    Status = "Wrong command. Try again"
+                };
             }
-
-            return toRemove.Count;
-        }
-
-        public async Task<(bool success, Element?item, string?error)>EnqueueAsync(EnqueueElement req, int waitSecondsDefault)
-        {
-            if(!_map.TryGetValue(req.Id,out var w))
+            else
             {
-                _logger.LogError("Enqueue: Channel not found ({id})", req.Id);
-                return (false, null, "Channel not found");
-            }
-
-            if (w.State != ChannelState.ACTIVE)
-            {
-                _logger.LogWarning("Enqueue: channel not active ({id})", req.Id);
-                return (false, null, "Channel not active");
-            }
-            var writer = w.Channel.Writer;
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(waitSecondsDefault));
-            try
-            {
-                if(!await writer.WaitToWriteAsync(cts.Token)){
-                    _logger.LogWarning("Enqueue timeout waiting to write ({id})", req.Id);
-                    return (false, null, "Enqueue timeout");
-                }
-
-                var payload = req.Data;
-                var success = writer.TryWrite(payload);
-                if (!success)
+                return new CreateChannelResult
                 {
-                    _logger.LogWarning("Enqueue TryWrite failed {id}", req.Id);
-                    return (false, null, "Enqueue failed");
-                }
-                Interlocked.Increment(ref w.Count);
-                _logger.LogInformation("Enqueued to {Id}", req.Id);
-                return (true, null, null);
-            }
-            catch(OperationCanceledException ex)
-            {
-                _logger.LogWarning("Enqueue operation canceled (timeout) {id}", req.Id);
-                return (false, null, "Enqueue timeout");
+                    Channel = null,
+                    Status = "Wrong command. Try again"
+                };
             }
         }
 
-        public async Task<(bool success, Element?item,string?error)>DequeueAsync(DequeueElement req,int waitSecondsDefault)
+        public StopAllChannelsResult StopAllChannels(Models.StopAllChannels model)
         {
-            if(!_map.TryGetValue(req.Id,out var w))
+            _logger.LogDebug("[{EventId}] {Timestamp} - StopAllChannels {Command}", ++_eventCounter, DateTime.Now, model.Command);
+
+            if (model.Command == "close")
             {
-                _logger.LogError("Dequeue: Channel not found {Id}", req.Id);
-                return (false, null, "Channel not found");
-            }
-            var reader = w.Channel.Reader;
-            if(reader.TryRead(out var obj))
-            {
-                Interlocked.Decrement(ref w.Count);
-                var el = new Element { Id = req.Id, Data = obj?.ToString() ?? string.Empty };
-                _logger.LogInformation("Dequeued from {Id}", req.Id);
-                return (true, el, null);
-            }
-            using var cts =new CancellationTokenSource(TimeSpan.FromSeconds(1));
-            try
-            {
-                if(await reader.WaitToReadAsync(cts.Token))
+                for(int i = 0; i < _channels.Count; i++)
                 {
-                    if(reader.TryRead(out var it))
+                    if (_asp11Channels[i].State != ChannelState.CLOSED)
                     {
-                        Interlocked.Decrement(ref w.Count);
-                        var el = new Element { Id = req.Id, Data = it?.ToString() ?? string.Empty };
-                        _logger.LogInformation("Dequeued after wait from {Id}", req.Id);
-                        return (true, el, null);
+                        _channels[i].Writer.Complete();
+                        _asp11Channels[i].State = ChannelState.CLOSED;
+                    }
+
+                }
+
+                return new StopAllChannelsResult
+                {
+                    Channels = _asp11Channels,
+                    Status = "success",
+                    Reason = model.Reason
+                };
+            }
+
+            return new StopAllChannelsResult
+            {
+                Channels = null,
+                Status = "Wrong command. Try again",
+                Reason = null
+            };
+        }
+
+        public StopOneChannelResult StopOneChannel(Models.StopChannelById model)
+        {
+            _logger.LogDebug("[{EventId}] {Timestamp} - StopOneChannels {Command}", ++_eventCounter, DateTime.Now, model.Command);
+
+            if (model.Command == "close")
+            {
+                int index = _asp11Channels.FindIndex(c => c.Id == model.Id);
+                if (index == -1)
+                {
+                    return new StopOneChannelResult
+                    {
+                        Channel = null,
+                        Status = "Channel not found"
+                    };
+                }
+                if (_asp11Channels[index].State == ChannelState.ACTIVE)
+                {
+                    _channels[index].Writer.Complete();
+                    _asp11Channels[index].State = ChannelState.CLOSED;
+                }
+
+                return new StopOneChannelResult
+                {
+                    Channel = _asp11Channels[index],
+                    Status = "success"
+                };
+            }
+
+            return new StopOneChannelResult
+            {
+                Channel = null,
+                Status = "Wrong command. Try again"
+            };
+        }
+
+        public OpenAllChannelsResult OpenAllChannels(Models.OpenAllChannels model)
+        {
+            _logger.LogDebug("[{EventId}] {Timestamp} -OpensAllChannels {Command}", ++_eventCounter, DateTime.Now, model.Command);
+
+
+            if (model.Command == "open")
+            {
+                for(int i = 0; i < _channels.Count; i++)
+                {
+                    if (_asp11Channels[i].State == ChannelState.CLOSED)
+                    {
+                        var newChannel = Channel.CreateUnbounded<string>();
                     }
                 }
 
+                return new OpenAllChannelsResult
+                {
+                    Channels = _asp11Channels,
+                    Status = "success"
+                };
             }
-            catch(OperationCanceledException ex)
+            return new OpenAllChannelsResult
             {
-                _logger.LogWarning("Operation canceled {Id}", req.Id);
-                return (false, null, "Operation canceled");
+                Channels = null,
+                Status = "Wrong command.Try again"
+            };
+
+        }
+
+
+        public OpenOneChannelResult OpenOneChannel(Models.OpenChannelById model)
+        {
+            _logger.LogDebug("[{EventId}] {Timestamp} - OpenOneChannel {Command}", ++_eventCounter, DateTime.Now, model.Command);
+
+            if (model.Command == "open")
+            {
+                int index = _asp11Channels.FindIndex(c=>c.Id == model.Id);
+                if(index == -1)
+                {
+                    return new OpenOneChannelResult
+                    {
+                        Channel = null,
+                        Status = "No channel found"
+                    };
+                }
+                if (_asp11Channels[index].State == ChannelState.CLOSED)
+                {
+                    _channels[index] = Channel.CreateUnbounded<string>();
+                    _asp11Channels[index].State = model.State;
+                }
+
+                return new OpenOneChannelResult
+                {
+                    Channel = _asp11Channels[index],
+                    Status = "success"
+                };
+            }
+
+            return new OpenOneChannelResult
+            {
+                Channel = null,
+                Status = "Wrong comman. Try again"
+            };
+        }
+
+        public string?DeleteAllChannels(Models.DeleteAllChannels model)
+        {
+            _logger.LogDebug("[{EventId}] {Timestamp} - DeleteAllChannels {Command}", ++_eventCounter, DateTime.Now, model.Command);
+
+            if (model.Command == "delete")
+            {
+                foreach(var channel in _channels)
+                {
+                    try
+                    {
+                        channel.Writer.Complete();
+                    }
+                    catch(Exception ex)
+                    {
+                        Console.Write(ex.ToString());
+                    }
+
+                    _channels.Clear();
+                    _asp11Channels.Clear();
+                    return null;
+                }
+            }
+            return "Wrong command.Try again";
+        }
+
+        public List<ASP11Channel> DeleteCloedChannels(Models.DeleteClosedChannels model)
+        {
+            _logger.LogDebug("[{EventId}] {Timestamp} - DeleteClosedChannels {Command}", ++_eventCounter, DateTime.Now, model.Command);
+
+            for(int i=_channels.Count-1; i>=0; i--)
+            {
+                if (_asp11Channels[i].State == ChannelState.CLOSED)
+                {
+                    try
+                    {
+                        _channels[i].Writer.Complete();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.ToString());
+                    }
+
+                    _channels.RemoveAt(i);
+                    _asp11Channels.RemoveAt(i);
+                }
+            }
+            return _asp11Channels;
+        }
+
+        public DequeueOrPeekResult DequeueOrPeek(Models.QueueCommand model)
+        {
+            _logger.LogDebug("[{EventId}] {Timestamp} - DequeueOrPeek {Command}", ++_eventCounter, DateTime.Now, model.Command);
+
+            int index = _asp11Channels.FindIndex(c => c.Id == model.Id);
+            if (index == -1)
+            {
+                return new DequeueOrPeekResult
+                {
+                    Data = null,
+                    Status = "No channel found"
+                };
+            }
+            var channel = _channels[index];
+
+            if (model.Command == "dequeue")
+            {
+                if(channel.Reader.TryRead(out var value))
+                {
+                    return new DequeueOrPeekResult
+                    {
+                        Data = value,
+                        Status = "TryRead success"
+                    };
+                }
+                else
+                {
+                    return new DequeueOrPeekResult
+                    {
+                        Data = null,
+                        Status = "TryRead failed"
+                    };
+                }
+            }
+            else if (model.Command == "peek")
+            {
+                if(channel.Reader.TryPeek(out var value))
+                {
+                    return new DequeueOrPeekResult
+                    {
+                        Data = value,
+                        Status = "TryPeek success"
+                    };
+                }
+                else
+                {
+                    return new DequeueOrPeekResult
+                    {
+                        Data = value,
+                        Status = "TryPeek failed"
+                    };
+                }
+            }
+            else
+            {
+                return new DequeueOrPeekResult
+                {
+                    Data = null,
+                    Status = "Wring comand. Try again"
+                };
             }
         }
 
-        public async Task<(bool success,Element?item,string?error)>PeekAsync(DequeueElement req, int waitSecondsDefault)
+        public async Task<EnqueueResult>Enqueue(Models.EnqueueModel model)
         {
-            if(!_map.TryGetValue(req.Id,out var w))
+            _logger.LogDebug("[{EventId}] {Timestamp} - Enqueue {Command}", ++_eventCounter, DateTime.Now, model.Command);
+
+            if (model.Command != "enqueue")
             {
-                _logger.LogError("Peek:channel not found {Id}", req.Id);
-                return (false, null, "Channel not found");
-            }
-            var reader = w.Channel.Reader;
-            if(reader.TryRead(out var obj))
-            {
-                var writer = w.Channel.Writer;
-                var wroteBack = writer.TryWrite(obj);
-                if (!wroteBack)
+                return new EnqueueResult
                 {
-                    _logger.LogWarning("Peek:couldn't write back item for {id}", req.Id);
-
-                }
-                var el = new Element { Id=req.Id,Data = obj?.ToString() ?? string.Empty };
-                _logger.LogInformation("Peek item in {Id}", req.Id);
-                return (true, el, null);
+                    Success = false,
+                    Status = "Wrong command. Try again"
+                };
             }
 
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+            int index = _asp11Channels.FindIndex(c => c.Id == model.Id);
+            if (index == -1)
+            {
+                return new EnqueueResult
+                {
+                    Success = false,
+                    Status = "No channels found"
+                };
+            }
+
+            var channel = _channels[index];
+            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_waitEnqueue));
 
             try
             {
-                if(await reader.WaitToReadAsync(cts.Token))
+                if(await channel.Writer.WaitToWriteAsync(cts.Token))
                 {
-                    if(reader.TryRead(out var obj2))
+                    if (channel.Writer.TryWrite(model.Data))
                     {
-                        var writer = w.Channel.Writer;
-                        var wroteBacck = writer.TryWrite(obj2);
-                        if (!wroteBacck)
+                        return new EnqueueResult
                         {
-                            _logger.LogWarning("Peek: couldn't write back after wait on {Id}", req.Id);
-
-                        }
-                        var el = new Element { Id = req.Id, Data = obj2?.ToString() ?? string.Empty };
-                        _logger.LogInformation("Peek after wait on {Id}", req.Id);
-                        return (true, el, null);
+                            Success = true,
+                            Status = "TryWrite success"
+                        };
                     }
+                   
                 }
-                return (false, null, "Queue empty");    
-
             }
             catch(OperationCanceledException ex)
             {
-                _logger.LogWarning("Peek:operation canceled {Id}", req.Id);
-                return (false, null, "Operation canceled");
+                _logger.LogWarning("[{EventId}] {Timestamp} - WaitEnqueue timeout for channel {ChannelId}", ++_eventCounter, DateTime.Now, model.Id);
+                return new EnqueueResult
+                {
+                    Success = false,
+                    Status = "WaitEnqueue timout expired"
+                };
             }
-        }
 
-
-
-        private static ChannelInfo ToDTO(ChannelWrapper wrapper)
-        {
-            return new ChannelInfo
+            return new EnqueueResult
             {
-                Id = wrapper.Id,
-                Name = wrapper.Name,
-                State = wrapper.State,
-                Description = wrapper.Description
+                Success = false,
+                Status = "TryWrite failed"
             };
-
         }
-
     }
+
 }
+
