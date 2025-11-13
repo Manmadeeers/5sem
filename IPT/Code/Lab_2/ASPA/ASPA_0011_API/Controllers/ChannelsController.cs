@@ -10,10 +10,10 @@ namespace ASPA_0011_API.Controllers
     {
 
         private readonly ChannelService _channelService;
-        private ILogger<ChannelService> _logger;
+        private ILogger<ChannelsController> _logger;
         private int _eventCounter = 0;
 
-        public ChannelsController(ChannelService channelService, ILogger<ChannelService> logger)
+        public ChannelsController(ChannelService channelService, ILogger<ChannelsController> logger)
         {
             _channelService = channelService;
             _logger = logger;

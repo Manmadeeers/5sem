@@ -15,12 +15,10 @@ namespace ASPA_0011_API.Services
 
         public ChannelService(IConfiguration c, ILogger<ChannelService> logger)
         {
-            _logger = logger;
+            _logger = logger??throw new ArgumentNullException(nameof(logger));
             _waitEnqueue = c.GetValue<int>("WaitEnqueue", 30);
             _logger.LogTrace("[{EventId}] {TimeStamp} - ChannelService started", ++_eventCounter, DateTime.Now);
         }
-
-        public ChannelService() { }
 
         public List<ASP11Channel> GetAllChannels()
         {
