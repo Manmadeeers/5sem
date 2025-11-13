@@ -6,6 +6,7 @@
 #include <string>
 #include "ErrorHandler.h"
 #pragma comment(lib,"WS2_32.lib")
+#define CHECK_MESSAGE (char*)"CheckServerMessage"
 
 using namespace std;
 
@@ -73,7 +74,7 @@ void SendCheckMessage(SOCKET* socket, char* name) {
 	}
 }
 
-bool GetRequestFromClient(SOCKET* socket,char* name, struct sockaddr* from, int* flen) {
+int GetRequestFromClient(SOCKET* socket,char* name, struct sockaddr* from, int* flen) {
 	
 	cout << "Recvfrom and wait" << endl;
 	while (true) {
@@ -93,7 +94,13 @@ bool GetRequestFromClient(SOCKET* socket,char* name, struct sockaddr* from, int*
 		cout << "Received from client: " << buffer << endl;
 
 		if (strncmp(name, buffer, buffer_length) == 0) {
-			return true;
+			return 1;
+		}
+		else if (strncmp(CHECK_MESSAGE, buffer, buffer_length) == 0) {
+			return 2;
+		}
+		else {
+			return -1;
 		}
 	}
 }
@@ -105,7 +112,7 @@ bool PutAnswerToClient(char* name, struct sockaddr* to, int* lto, SOCKET* socket
 }
 
 
-int _tmain(int arc, TCHAR* argv[]) {
+int main(int argc, char* argv[]) {
 
 	int WSD_version = MAKEWORD(2, 0);
 	WSADATA WSD_pointer;
@@ -144,6 +151,7 @@ int _tmain(int arc, TCHAR* argv[]) {
 		int client_length = sizeof(client);
 
 		char in_buffer[50] = "Hello";
+		char check_buffer[50] = "Server";
 
 		int optval = 1;
 
@@ -152,12 +160,20 @@ int _tmain(int arc, TCHAR* argv[]) {
 		}
 		cout << "--Socket options set to broadcast mode" << endl;
 
-		SendCheckMessage(&server_socket, server_callsign);
+		SendCheckMessage(&server_socket,CHECK_MESSAGE);
 
 		while (true) {
-			if (GetRequestFromClient(&server_socket, server_callsign, (sockaddr*)&client, &client_length)) {
+			int request_result = GetRequestFromClient(&server_socket, server_callsign, (sockaddr*)&client, &client_length);
+			if (request_result == -1) {
+				std::cerr << "GetRequestFromClient failed" << std::endl;
+			}
+			if (request_result==1) {
 				PutAnswerToClient(in_buffer, (sockaddr*)&client, &client_length, &server_socket);
 			}
+			else if (request_result == 2) {
+				PutAnswerToClient(check_buffer, (sockaddr*)&client, &client_length, &server_socket);
+			}
+			
 		}
 
 		if (closesocket(server_socket) == SOCKET_ERROR) {
