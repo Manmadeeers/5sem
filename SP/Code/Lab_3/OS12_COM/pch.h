@@ -9,5 +9,7 @@
 
 // Добавьте сюда заголовочные файлы для предварительной компиляции
 #include "framework.h"
+#include "OS12_COM.h"
+#include "Registry.h"
 
 #endif //PCH_H
