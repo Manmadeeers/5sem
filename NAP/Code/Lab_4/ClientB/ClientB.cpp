@@ -14,7 +14,8 @@ bool GetServer(char* call, struct sockaddr* from, int* flen,SOCKET*socket) {
 		throw SetErrorMsgText("Failed to send message to server", WSAGetLastError());
 	}
 	cout << "--Message sent to server: " << call << endl;
-	if (recvfrom(*socket, buffer, sizeof(buffer), NULL, from, flen) == SOCKET_ERROR) {
+	int recv_length = recvfrom(*socket, buffer, sizeof(buffer), NULL, from, flen);
+	if (recv_length == SOCKET_ERROR) {
 		int err = WSAGetLastError();
 		if (err == WSAETIMEDOUT) {
 			cout << "--Connection timed out" << endl;
@@ -65,13 +66,10 @@ int _tmain(int argc, TCHAR* argv[]) {
 
 		char out_buffer[50] = "Hello";
 
-		if (GetServer(out_buffer, (sockaddr*)&serv, &serv_size, &client_socket)) {
+		if(GetServer(out_buffer, (sockaddr*)&serv, &serv_size, &client_socket)) {
 			cout << "Got response from server!" << endl;
 			cout << "Server IP: " << serv.sin_addr.S_un.S_addr << endl;
 			cout << "Server port: " << serv.sin_port << endl;
-		}
-		else {
-			cout << "Something went wrong" << endl;
 		}
 
 		

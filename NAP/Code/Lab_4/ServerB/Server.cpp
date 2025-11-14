@@ -8,13 +8,15 @@
 #pragma comment(lib,"WS2_32.lib")
 #define CHECK_MESSAGE (char*)"CheckServerMessage"
 
+int DESIRED_PORT = 2000;
+
 using namespace std;
 
 void SendCheckMessage(SOCKET* socket, char* name) {
 	SOCKADDR_IN to{};
 
 	to.sin_family = AF_INET;
-	to.sin_port = htons(2000); 
+	to.sin_port = htons(DESIRED_PORT); 
 	to.sin_addr.s_addr = INADDR_BROADCAST;
 
 	int sent_check_length = sendto(*socket, name, strlen(name)+1, NULL, (sockaddr*)&to, sizeof(to));
@@ -134,15 +136,28 @@ int main(int argc, char* argv[]) {
 		cout << "--Server socket created" << endl;
 
 		SOCKADDR_IN serv;
-
 		serv.sin_family = AF_INET;
-		serv.sin_port = htons(2000);
+		serv.sin_port = htons(DESIRED_PORT);
 		serv.sin_addr.S_un.S_addr = INADDR_ANY;
 
+		while (true) {
 
-		if (bind(server_socket, (LPSOCKADDR)&serv, sizeof(serv)) == SOCKET_ERROR) {
-			throw SetErrorMsgText("Failed to bind server socket parameters", WSAGetLastError());
+			if (bind(server_socket, (LPSOCKADDR)&serv, sizeof(serv)) == SOCKET_ERROR) {
+				DWORD err = WSAGetLastError();
+				if (err == WSAEADDRINUSE) {
+					serv.sin_port = htons(++DESIRED_PORT);
+					continue;
+				}
+				else {
+					throw SetErrorMsgText("Failed to bind server socket parameters", WSAGetLastError());
+				}
+			}
+			else {
+				break;
+			}
+
 		}
+
 		cout << "--Server socket parameters binded" << endl;
 		
 		SOCKET client_socket;
@@ -151,7 +166,6 @@ int main(int argc, char* argv[]) {
 		int client_length = sizeof(client);
 
 		char in_buffer[50] = "Hello";
-		char check_buffer[50] = "Server";
 
 		int optval = 1;
 
@@ -171,7 +185,11 @@ int main(int argc, char* argv[]) {
 				PutAnswerToClient(in_buffer, (sockaddr*)&client, &client_length, &server_socket);
 			}
 			else if (request_result == 2) {
-				PutAnswerToClient(check_buffer, (sockaddr*)&client, &client_length, &server_socket);
+				//ignore server-to-server handshake. respond with server information instead
+				char server_ip[16];
+				inet_ntop(AF_INET, &client.sin_addr, server_ip, (size_t)sizeof(server_ip));
+				std::cout << "Server found! " << "IP: " << server_ip << " Port: " << ntohs(client.sin_port) << std::endl;
+				
 			}
 			
 		}
@@ -189,11 +207,12 @@ int main(int argc, char* argv[]) {
 			throw SetErrorMsgText("Failed to cleanup", WSAGetLastError());
 		}
 		cout << "--Cleanup executed" << endl;
-		system("pause");
+
 	}
 	catch (string message) {
 		cerr << "Error occured: " << message << endl;
 	}
 
+	system("pause");
 	return 0;
 }
