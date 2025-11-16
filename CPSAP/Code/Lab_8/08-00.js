@@ -4,16 +4,28 @@ const fs = require('fs');
 const url = require('url');
 const qs = require('querystring');
 const jsonValidator = require('./json_validator');
-const xmlParser = require('xml2js');
-const xmlBuilder = require('xmlbuilder');
-const xmlHelper = require('./xml_helper');
-const { type } = require('os');
+const { XMLParser, XMLBuilder } = require('fast-xml-parser');
 const PORT = 5000;
 const SERVER_KILL_TIMEOUT = 10000;//10seconds in ms
 const connections = new Set();
+const staticDirectory = path.join(__dirname, '/static');
 let connection_count = 0;
 
 
+const parser = new XMLParser(
+    {
+        ignoreAttributes: false,
+        attributeNamePrefix: '',
+    }
+);
+const builder = new XMLBuilder(
+    {
+        ignoreAttributes: false,
+        attributeNamePrefix: '',
+        format: true,
+        suppressEmptyNode: true,
+    }
+);
 
 const serverFunction = function (request, response) {
 
@@ -182,6 +194,29 @@ const serverFunction = function (request, response) {
             response.writeHead(200, { 'content-type': 'text/html;charset=utf-8' });
             response.end(param_page);
         }
+        else if (pathname == '/files') {
+            const files = fs.readdirSync('./static');
+            const n = files.length;
+
+            response.setHeader('X-static-files-count', n);
+            response.end();
+        }
+        else if (pathname.startsWith('/files/')) {
+            
+            let filename = decodeURIComponent(pathname.slice('/files/'.length));
+            let filepath = path.join(staticDirectory, filename);
+
+            try {
+                response.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+                response.statusCode = 200;
+                fs.createReadStream(filepath).pipe(res);
+            }
+            catch (exception) {
+                response.statusCode = 400;
+                response.end('error: ', exception.message);
+            }
+
+        }
         else if (pathname == '/upload') {
 
         }
@@ -241,59 +276,68 @@ const serverFunction = function (request, response) {
             });
         }
         else if (pathname == '/xml') {
-            let xml_req = '';
+            let xml_request = '';
             request.on('data', (data) => {
-                xml_req += data;
+                xml_request += data;
             });
+
             request.on('end', () => {
                 try {
-                    const xmlParsed = xmlParser.parseString(xml_req, { explicitArray: false, explicitRoot: false, attrkey: '$' });
+                    let parsedXML = parser.parse(xml_request);
+                    if (!parsedXML.request) {
+                        throw "Failed to parse <request> tag";
+                    }
 
-                    const xs = xmlHelper.normalize(parsed.x);
-                    const ms = xmlHelper.normalize(parsed.m);
+                    let requestId = Number(parsedXML.request.id);
 
-                    const sum = xs.map(x => {
-                        if (x && typeof x === 'object' && x.$ && x.$.value != undefined) {
-                            return Number(x.$.value);
-                        }
-                        if (x && typeof x === 'object' && x.value != undefined) {
-                            return Number(x.value);
-                        }
-                        return Number(x);
-                    }).reduce((acc, n) => acc + (Number.isFinite(n) ? n : 0), 0);
+                    let arrayX = parsedXML.request.x;
+                    let arrayY = parsedXML.request.m;
 
-                    const concat = ms.map(m => {
-                        if (m && typeof m === 'object' && m.$ && x.$.value != undefined) {
-                            return String(m.$.value);
-                        }
-                        if (m && typeof m === 'object' && m.value != undefined) {
-                            return String(m.value);
-                        }
-                        return String(m);
-                    }).join('');
+                    if (!arrayX) {
+                        arrayX = [];
+                    }
+                    if (!arrayY) {
+                        arrayY = [];
+                    }
 
-                    const XML_response = {
-                        response: {
-                            sum: sum.toString(),
-                            concat: concat
-                        }
+                    let sumX = arrayX.reduce((accum, element) => {
+                        let value = Number(element.value);
+                        return accum + value;
+                    }, 0);
+
+                    let sumY = arrayY.map(element => element.value).join('');
+
+                    const XML_OBJ = {
+                        response:
+                        {
+                            id: (requestId + 5).toString(),
+                            request: requestId,
+                            sum:
+                            {
+                                element: "X",
+                                result: sumX.toString(),
+                            },
+                            concat:
+                            {
+                                element: 'M',
+                                result: sumY,
+                            },
+                        },
                     };
 
-                    const xmlResponse = xmlBuilder.create(XML_response, { version: '1.0', encoding: 'UTF-8', standalone: true });
-
-                    response.writeHead(200,{'content-type':'application/xml'});
+                    const xmlResponse = builder.build(XML_OBJ);
+                    response.writeHead(200, { 'content-type': 'application/xml' });
                     response.end(xmlResponse);
                 }
                 catch (err) {
-                    console.log(err);
-                    response.writeHead(400,{'content-type':'text/html;charset=utf-8'});
-                    response.end("<h1>400 Bad Request. XML was invalid");
+                    console.error("XML parse error", err);
+                    response.writeHead(400, { 'content-type': 'text/html;charset=utf-8' });
+                    response.end("<h1>400 Bad Request</h1>");
                 }
-
-
             });
         }
         else if (pathname == '/files') {
+
 
         }
         else if (pathname == '/upload') {

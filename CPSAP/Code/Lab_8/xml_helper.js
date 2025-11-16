@@ -1,9 +1,8 @@
+function ensureArray(v) {
+  if (v === undefined || v === null) return [];
 
-const normalize = (v) => {
-    if (v === undefined) {
-        return [];
-    }
-    return Array.isArray(v) ? v : [v];
+  return Array.isArray(v) ? v : [v];
+
 }
 
-module.exports = {normalize};
+module.exports = {ensureArray};
