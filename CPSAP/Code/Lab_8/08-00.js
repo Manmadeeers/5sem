@@ -6,6 +6,9 @@ const qs = require('querystring');
 const jsonValidator = require('./json_validator');
 const { XMLParser, XMLBuilder } = require('fast-xml-parser');
 const formidable = require('formidable');
+const { PassThrough } = require('stream');
+const busboy = require('busboy');
+const { doesNotMatch } = require('assert');
 const PORT = 5000;
 const SERVER_KILL_TIMEOUT = 10000;//10seconds in ms
 const connections = new Set();
@@ -203,7 +206,7 @@ const serverFunction = function (request, response) {
             response.end();
         }
         else if (pathname.startsWith('/files/')) {
-            
+
             let filename = decodeURIComponent(pathname.slice('/files/'.length));
             let filepath = path.join(staticDirectory, filename);
 
@@ -219,8 +222,9 @@ const serverFunction = function (request, response) {
 
         }
         else if (pathname == '/upload') {
+
             let upload_form = fs.readFileSync('./upload.html');
-            response.writeHead(200,{'content-type':'text/html;charset=utf-8'});
+            response.writeHead(200, { 'content-type': 'text/html;charset=utf-8' });
             response.end(upload_form);
         }
         else {
@@ -340,32 +344,40 @@ const serverFunction = function (request, response) {
             });
         }
         else if (pathname == '/upload') {
+            let form_data = '';
+
+            request.on('data', (data) => {
+               console.log(data);
+            });
             let form = new formidable.IncomingForm();
-            form.parse(request,(err,fields,files)=>{
-                if(err){
-                    response.writeHead(400,{'content-type':'text/html;charset=utf-8'});
+
+            form.parse(request, (err, fields, files) => {
+
+                if (err) {
+                    response.writeHead(400, { 'content-type': 'text/html;charset=utf-8' });
                     response.end("<h1>400 Bad Request</h1>");
                 }
+                
 
                 let uploaded_file = files.uploadFile[0];
-                if(!uploaded_file){
-                    response.writeHead(400,{'content-type':'text/html;charset=utf-8'});
+                if (!uploaded_file) {
+                    response.writeHead(400, { 'content-type': 'text/html;charset=utf-8' });
                     response.end("<h1>400 Bad Request</h1>");
                 }
-                let new_file_path = path.join(staticDirectory,uploaded_file.originalFilename);
+                let new_file_path = path.join(staticDirectory, uploaded_file.originalFilename);
 
-                fs.rename(uploaded_file.filepath,new_file_path,err=>{
-                    if(err){
-                        response.writeHead(400,{'content-type':'text/html;charset=utf-8'});
+                fs.rename(uploaded_file.filepath, new_file_path, err => {
+                    if (err) {
+                        response.writeHead(400, { 'content-type': 'text/html;charset=utf-8' });
                         response.end("<h1>400 Bad Request</h1>");
                     }
 
                 });
 
-                response.writeHead(200,{'content-type':'text/html;charset=utf-8'});
+                response.writeHead(200, { 'content-type': 'text/html;charset=utf-8' });
                 response.end("<h1>200 Success</h1>");
 
-            })
+            });
         }
         else {
             response.writeHead(404, { 'content-type': 'text/html;charset=utf-8' });
