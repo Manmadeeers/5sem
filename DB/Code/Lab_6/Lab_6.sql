@@ -1,13 +1,13 @@
---1-----------------------------------------------------------------------
 
--- sqlplus
+--1--find config files and inspect ther contents--------------------------------------------------------------
+
 
 -- cat oradata/dbconfig/FREE/sqlnet.ora
 
 -- cat oradata/dbconfig/FREE/tnsnames.ora
 
 
---2----------------------------------------------------------------------
+--2---connect via sqlplus as SYSTEM and get parameters of oracle instance-----------------------------------------------------------------
 
 -- sqlplus
 -- show parameter
@@ -21,12 +21,17 @@
 -- select role from dba_roles;
 -- select username from dba_users;
 
+--4-- exemine HKEY_LOCAL_MACHINE oralce parameters----
 
---5-----------------------------------------------------------------------
+
+--na dockere ne rabotaet:(       
+
+
+--5 --------------------------------------------------------
 
 --sqlplus 
 
--- echo "C##KEO_CONECTION =" > oradata/dbconfig/FREE/tnsnames.ora
+-- echo "Common_CDB_Connection =" > oradata/dbconfig/FREE/tnsnames.ora
 -- echo "  (DESCRIPTION =" >> oradata/dbconfig/FREE/tnsnames.ora
 -- echo "    (ADDRESS = (PROTOCOL = TCP)(HOST = localhost)(PORT = 1521))" >> oradata/dbconfig/FREE/tnsnames.ora
 -- echo "    (CONNECT_DATA = (SERVICE_NAME = FREEPDB1))" >> oradata/dbconfig/FREE/tnsnames.ora
@@ -39,7 +44,7 @@
 
 -- sqlplus
 
--- connect C##KEO/1111@C##KEO_CONECTION;
+-- connect C##FIA/1111@Common_CDB_Connection;
 
 
 --7----------------------------------------------------------------------
@@ -70,7 +75,7 @@
 
 -- select segment_name, segment_type, tablespace_name from user_segments;
 
-
+9
 --11--------------------------------------------------------------------
 
 
