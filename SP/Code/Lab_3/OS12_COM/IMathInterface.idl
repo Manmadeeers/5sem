@@ -1,0 +1,17 @@
+import "oaidl.idl";
+import "ocidl.idl";
+import "unknwn.idl";
+
+[object,
+	uuid("719058CC-1E63-42F9-8781-F15D6D5850D2")]
+interface IAdder :IUnknown {
+	HRESULT Add(const double x, const double y, double z);
+	HRESULT Sub(const double x, const double y, double z);
+};
+
+[object,
+	uuid("6060B7F4-3459-4D39-8961-670ECAA75463")]
+interface IMultiplier :IUnknown {
+	HRESULT Mul(const double x, const double y, double z);
+	HRESULT Div(const double x, const double y, double z);
+};
