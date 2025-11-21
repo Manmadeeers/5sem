@@ -7,6 +7,7 @@ const jsonValidator = require('./json_validator');
 const { XMLParser, XMLBuilder } = require('fast-xml-parser');
 const formidable = require('formidable');
 const { PassThrough } = require('stream');
+const { buffer } = require('stream/consumers');
 const PORT = 5000;
 const SERVER_KILL_TIMEOUT = 10000;//10seconds in ms
 const connections = new Set();
@@ -342,40 +343,53 @@ const serverFunction = function (request, response) {
             });
         }
         else if (pathname == '/upload') {
-            let form_data = '';
-            let form = new formidable.IncomingForm();
+            const showingBody = false;//set true to show request body specifics when enctype multipart is being used. set false to work normally
+            if (showingBody) {
+                let show_body = ''
+                request.on('data', (chunk) => {
+                    console.log(chunk);
+                    show_body += chunk;
+                });
+                request.on('end', () => {
+                    response.writeHead(200, { 'content-type': 'text/html;charset=utf-8' });
+                    response.end(`<h1>200 Success</h1><p>${show_body ||"nope. empty lol"}</p>`);
+                })
 
-            form.on('data',(data)=>{
-                form_data+=data.toString();
-            });
-
-            form.parse(request, (err, fields, files) => {
-
-                if (err) {
-                    response.writeHead(400, { 'content-type': 'text/html;charset=utf-8' });
-                    response.end(`<h1>400 Bad Request. ${err}</h1>`);
-                }
-
-
-                let uploaded_file = files.uploadFile[0];
-                if (!uploaded_file) {
-                    response.writeHead(400, { 'content-type': 'text/html;charset=utf-8' });
-                    response.end("<h1>400 Bad Request. File was null or undefined</h1>");
-                }
-                let new_file_path = path.join(staticDirectory, uploaded_file.originalFilename);
-
-                fs.rename(uploaded_file.filepath, new_file_path, err => {
+            }
+            else {
+                const form = new formidable.IncomingForm({ multiples: true, keepExtensions: true });
+                form.parse(request, (err, fields, files) => {
                     if (err) {
+                        console.log("formidable parse error", err);
                         response.writeHead(400, { 'content-type': 'text/html;charset=utf-8' });
                         response.end(`<h1>400 Bad Request. ${err}</h1>`);
                     }
 
+                    console.log("Fields:", fields);
+                    console.log("Files: ", files);
+
+                    let uploaded_file = files.uploadFile[0];
+                    if (!uploaded_file) {
+                        response.writeHead(400, { 'content-type': 'text/html;charset=utf-8' });
+                        response.end("<h1>400 Bad Request. File was null or undefined</h1>");
+                    }
+                    let new_file_path = path.join(staticDirectory, uploaded_file.originalFilename);
+
+                    fs.rename(uploaded_file.filepath, new_file_path, err => {
+                        if (err) {
+                            response.writeHead(400, { 'content-type': 'text/html;charset=utf-8' });
+                            response.end(`<h1>400 Bad Request. ${err}</h1>`);
+                        }
+
+
+                    });
+
+                    response.writeHead(200, { 'content-type': 'text/html;charset=utf-8' });
+                    response.end("<h1>200 Success. File uploaded</h1>");
+
                 });
+            }
 
-                response.writeHead(200, { 'content-type': 'text/html;charset=utf-8' });
-                response.end(`<h1>200 Success</h1><p>${form_data.toString()}</p>`);
-
-            });
         }
         else {
             response.writeHead(404, { 'content-type': 'text/html;charset=utf-8' });
