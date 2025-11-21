@@ -36,5 +36,7 @@ int main(int argc, char* argv[]) {
 		std::cout << "PID: " << pid << " Iteration " << i + 1 << "/" << iterationsCount << std::endl;
 		Sleep(500);
 	}
+
+	system("pause");
 	return 0;
 }
