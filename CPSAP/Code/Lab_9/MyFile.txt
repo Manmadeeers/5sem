@@ -1,0 +1,1 @@
+here's some text that will be transmitted in request body when this file will be attached and sent in 09-06.js client application
