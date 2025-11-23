@@ -6,111 +6,67 @@
 #include <string>
 #include "ErrorHandler.h"
 #pragma comment(lib,"WS2_32.lib")
-#define CHECK_MESSAGE (char*)"CheckServerMessage"
-
-int DESIRED_PORT = 2000;
-
+#define SERVER_CALLSIGN (char*)"Hello"
+#define DESIRED_PORT 2000
 using namespace std;
 
-void SendCheckMessage(SOCKET* socket, char* name) {
-	SOCKADDR_IN to{};
+SOCKET client_socket;
+SOCKET server_socket;
 
-	to.sin_family = AF_INET;
-	to.sin_port = htons(DESIRED_PORT); 
-	to.sin_addr.s_addr = INADDR_BROADCAST;
+bool SendCheckMessage(char*callsign,int port, sockaddr*from, int*flen) {
 
-	int sent_check_length = sendto(*socket, name, strlen(name)+1, NULL, (sockaddr*)&to, sizeof(to));
-	if (sent_check_length == SOCKET_ERROR) {
-		throw SetErrorMsgText(to_string(WSAGetLastError()), WSAGetLastError());
-	}
-
-	if (sent_check_length == 0) {
-		cout << "No servers with the similar callsigns in local network" << endl;
-		return;
-	}
-
-	char check_buffer[50];
-	int check_buffer_length;
-
-	SOCKADDR_IN from{};
-	int lfrom = sizeof(from);
-
-	char local_ip[INET_ADDRSTRLEN];
+	SOCKADDR_IN servers;
+	servers.sin_addr.S_un.S_addr = INADDR_BROADCAST;
+	servers.sin_family = AF_INET;
+	servers.sin_port = DESIRED_PORT;
 	
+	from = (sockaddr*)&servers;
 
-	check_buffer_length = recvfrom(*socket, check_buffer, sizeof(check_buffer), NULL, (sockaddr*)&from, &lfrom);
-
-	if (check_buffer_length == SOCKET_ERROR) {
-		throw SetErrorMsgText("Failed to receive check message from client", WSAGetLastError());
+	int check_sendlength = sendto(client_socket, callsign, strlen(callsign) + 1, NULL, from, *flen);
+	if (check_sendlength == SOCKET_ERROR) {
+		throw SetErrorMsgText("Failed to send a message to check other servers presense", WSAGetLastError());
 	}
 
-	check_buffer[check_buffer_length] = '\0';
-
-	char ip_buffer[INET_ADDRSTRLEN];
-	inet_ntop(AF_INET, &(from.sin_addr), ip_buffer, sizeof(ip_buffer));
-
-	char local_buffer[INET_ADDRSTRLEN];
-	SOCKADDR_IN local_addr;
-	int local_len = sizeof(local_addr);
-
-	inet_ntop(AF_INET, &(local_addr.sin_addr), local_buffer, sizeof(local_buffer));
-
-	
-	getsockname(*socket, (sockaddr*)&local_addr, &local_len);
-
-	cout << "This server ip: " << local_buffer << endl;
-	cout << "Another server ip: " << ip_buffer << endl;
-
-	if (strcmp(check_buffer, name) == 0) {
-
-		if (strcmp(ip_buffer,local_buffer) != 0) {
-			cout << "----------WARNING----------" << endl;
-			cout << "Server with the similar callsign found in the local network!" << endl;
-			cout << "IP: " << ip_buffer << endl;
-			cout << "----------WARNING----------" << endl;
-		}
-
+	char buffer[50];
+	int check_recvlength = recvfrom(client_socket, buffer, sizeof(buffer), NULL, from, flen);
+	if (check_recvlength == SOCKET_ERROR) {
+		throw SetErrorMsgText("Failed to receive a message from another server", WSAGetLastError());
 	}
-	else {
-		cout << "No servers with similar call sign in local network" << endl;
-	}
+	buffer[strlen(callsign)] = '\0';
+
+	cout << "Another server callsign: " << buffer << endl;
+	return true;
 }
 
-int GetRequestFromClient(SOCKET* socket,char* name, struct sockaddr* from, int* flen) {
+bool GetRequestFromClient(char* name, struct sockaddr* from, int* flen) {
 	
 	cout << "Recvfrom and wait" << endl;
+	char buffer[50];
+	int buffer_length;
+
 	while (true) {
-		char buffer[50];
-		int buffer_length;
 
-
-		buffer_length = recvfrom(*socket, buffer, sizeof(buffer), NULL, from, flen);
+		buffer_length = recvfrom(server_socket, buffer, sizeof(buffer), NULL, from, flen);
 		if (buffer_length == SOCKET_ERROR) {
-			if (WSAGetLastError() == WSAETIMEDOUT) {
-				return false;
-			}
-			else {
-				throw SetErrorMsgText("Failed to receive a message", WSAGetLastError());
-			}
+			throw SetErrorMsgText("Failed to receive message from a client", WSAGetLastError());
 		}
 		cout << "Received from client: " << buffer << endl;
 
-		if (strncmp(name, buffer, buffer_length) == 0) {
-			return 1;
-		}
-		else if (strncmp(CHECK_MESSAGE, buffer, buffer_length) == 0) {
-			return 2;
-		}
-		else {
-			return -1;
+		if (strcmp(name, buffer) == 0) {
+			return true;
 		}
 	}
 }
 
-bool PutAnswerToClient(char* name, struct sockaddr* to, int* lto, SOCKET* socket) {
-	if (sendto(*socket, name, strlen(name), NULL, to, *lto)==SOCKET_ERROR) {
+bool PutAnswerToClient(char* name, struct sockaddr* to, int* lto) {
+
+	int answer_length = sendto(server_socket, name, strlen(name) + 1, NULL, to, *lto);
+	if (answer_length == SOCKET_ERROR) {
 		throw SetErrorMsgText("Failed to put answer to client", WSAGetLastError());
+		return false;
 	}
+	cout << "Send back to client: " << name << endl;
+	return true;
 }
 
 
@@ -122,87 +78,86 @@ int main(int argc, char* argv[]) {
 
 	
 	try {
+
 		if (WSAStartup(WSD_version, &WSD_pointer)!=0) {
 			throw SetErrorMsgText("Failed to startup", WSAGetLastError());
 		}
 		cout << "--Server started" << endl;
 
 		
-		SOCKET server_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+		client_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+		if (server_socket == INVALID_SOCKET) {
+			throw SetErrorMsgText("Failed to create a server socket", WSAGetLastError());
+		}
+		cout << "--Server socket created" << endl;
+		DWORD timer = 10;
+		if (setsockopt(client_socket, SOL_SOCKET, SO_BROADCAST, (char*)timer, sizeof(int)) == SOCKET_ERROR) {
+			throw SetErrorMsgText("Failed to set socket to broadcast mode(timer)", WSAGetLastError());
+		}
+		cout << "--Client socket options set to broadcast mode" << endl;
+		
+		int server_optval = 1;
+		if (setsockopt(client_socket, SOL_SOCKET, SO_BROADCAST, (char*)server_optval, sizeof(int)) == SOCKET_ERROR) {
+			throw SetErrorMsgText("Failed to set socket to broadcast mode(optval)", WSAGetLastError());
+		}
+		cout << "--Client socket options set to broadcast mode" << endl;
 
+		SOCKADDR_IN all_servers;
+		int all_servers_len = sizeof(all_servers);
+
+		if (SendCheckMessage(SERVER_CALLSIGN, DESIRED_PORT, (sockaddr*)&all_servers, &all_servers_len)) {
+			cout << "There are several servers within a network with a callsign " << SERVER_CALLSIGN << endl;
+		}
+		else {
+			cout << "There are just one server within a network with a callsign " << SERVER_CALLSIGN << endl;
+		}
+
+		if (closesocket(client_socket)==SOCKET_ERROR) {
+			throw SetErrorMsgText("Failed to close client socket", WSAGetLastError());
+		}
+		cout << "--Client socket closed" << endl;
+
+		server_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 		if (server_socket == INVALID_SOCKET) {
 			throw SetErrorMsgText("Failed to create a server socket", WSAGetLastError());
 		}
 		cout << "--Server socket created" << endl;
 
 		SOCKADDR_IN serv;
+		serv.sin_addr.S_un.S_addr = INADDR_ANY;
 		serv.sin_family = AF_INET;
 		serv.sin_port = htons(DESIRED_PORT);
-		serv.sin_addr.S_un.S_addr = INADDR_ANY;
 
-		while (true) {
+		BOOL optval_serv = TRUE;
 
-			if (bind(server_socket, (LPSOCKADDR)&serv, sizeof(serv)) == SOCKET_ERROR) {
-				DWORD err = WSAGetLastError();
-				if (err == WSAEADDRINUSE) {
-					serv.sin_port = htons(++DESIRED_PORT);
-					continue;
-				}
-				else {
-					throw SetErrorMsgText("Failed to bind server socket parameters", WSAGetLastError());
-				}
-			}
-			else {
-				break;
-			}
-
+		if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, (char*)optval_serv, sizeof(optval_serv))==SOCKET_ERROR) {
+			throw SetErrorMsgText("Failed to set server socket options", WSAGetLastError());
 		}
+		cout << "--Server socket options set to broadcast mode" << endl;
 
+		if (bind(server_socket, (LPSOCKADDR)&serv, sizeof(serv)) == SOCKET_ERROR) {
+			throw SetErrorMsgText("Failed to bind server socket parameters", WSAGetLastError());
+		}
 		cout << "--Server socket parameters binded" << endl;
-		
-		SOCKET client_socket;
-		SOCKADDR_IN client;
-		memset(&client, 0, sizeof(client));
-		int client_length = sizeof(client);
 
-		char in_buffer[50] = "Hello";
 
-		int optval = 1;
-
-		if (setsockopt(server_socket, SOL_SOCKET, SO_BROADCAST, (char*)&optval, sizeof(int)) == SOCKET_ERROR) {
-			throw SetErrorMsgText("Failed to set socket options", WSAGetLastError());
-		}
-		cout << "--Socket options set to broadcast mode" << endl;
-
-		SendCheckMessage(&server_socket,CHECK_MESSAGE);
+		SOCKADDR_IN from;
+		memset(&from, 0, sizeof(from));
+		int from_length = sizeof(from);
 
 		while (true) {
-			int request_result = GetRequestFromClient(&server_socket, server_callsign, (sockaddr*)&client, &client_length);
-			if (request_result == -1) {
-				std::cerr << "GetRequestFromClient failed" << std::endl;
+			if (!GetRequestFromClient(SERVER_CALLSIGN, (sockaddr*)&from, &from_length)) {
+				throw SetErrorMsgText("GetRequestFromClient failed", WSAGetLastError());
 			}
-			if (request_result==1) {
-				PutAnswerToClient(in_buffer, (sockaddr*)&client, &client_length, &server_socket);
+
+			if (!PutAnswerToClient(SERVER_CALLSIGN, (sockaddr*)&from, &from_length)) {
+				throw SetErrorMsgText("PutAnswerToClient failed", WSAGetLastError());
 			}
-			else if (request_result == 2) {
-				//ignore server-to-server handshake. respond with server information instead
-				char server_ip[16];
-				inet_ntop(AF_INET, &client.sin_addr, server_ip, (size_t)sizeof(server_ip));
-				std::cout << "Server found! " << "IP: " << server_ip << " Port: " << ntohs(client.sin_port) << std::endl;
-				
-			}
-			
 		}
 
 		if (closesocket(server_socket) == SOCKET_ERROR) {
 			throw SetErrorMsgText("Failed to close server socket", WSAGetLastError());
 		}
-		cout << "--Server socket closed" << endl;
-
-		if (closesocket(client_socket) == SOCKET_ERROR) {
-
-		}
-
 		if (WSACleanup() == SOCKET_ERROR) {
 			throw SetErrorMsgText("Failed to cleanup", WSAGetLastError());
 		}

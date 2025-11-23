@@ -2,7 +2,7 @@
 #include <string>
 #include <Windows.h>
 #define SLOT_NAME_LOCAL "\\\\.\\mailslot\\Box"
-#define SLOT_NAME_NETWORK "\\\\DESKTOP-Server\\mailslot\\Box"
+#define SLOT_NAME_NETWORK "\\\\DESKTOP-I\\mailslot\\Box"
 #define SLOT_NAME_DOMAIN "\\\\*\\mailslot\\Box"
 
 std::string SetMailslotError(std::string message, int code) {
