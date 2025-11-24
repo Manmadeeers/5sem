@@ -4,7 +4,7 @@ const { buffer } = require('stream/consumers');
 
 let bound = "----mnmd";
 let body = `--${bound}\r\n`;
-body += 'content-disposition:form-data; name="uploadFile"; filename="MyFile.txt"\r\n';
+body += 'content-disposition:attachment; name="uploadFile"; filename="MyFile.txt"\r\n';
 body += 'content-type:text/plain\r\n\r\n';
 body += fs.readFileSync("./MyFile.txt");
 body += `\r\n--${bound}--\r\n`;

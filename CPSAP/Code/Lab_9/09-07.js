@@ -3,7 +3,7 @@ const fs = require('fs');
 
 const bound = "----mnmd";
 let requestBody = `--${bound}\r\n`;
-requestBody += 'content-disposition:form-data; name="uploadFile"; filename="MyFile.png"\r\n';
+requestBody += 'content-disposition:attachment; name="uploadFile"; filename="MyFile.png"\r\n';
 requestBody += 'content-type:application/octet-stream\r\n\r\n';
 
 const options = {
