@@ -137,6 +137,7 @@
   <ItemGroup>
     <ClInclude Include="framework.h" />
     <ClInclude Include="IHTStorage.h" />
+    <ClInclude Include="OS13.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
