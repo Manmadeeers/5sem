@@ -4,6 +4,7 @@ select * from dba_users;
 
 
 alter pluggable database FIA_PDB open;
+alter pluggable database FIA_PDB close;
 
 --1: Granting privilidges to a user
 
@@ -16,6 +17,7 @@ create SEQUENCE to FIA;
 select * from dba_sys_privs where grantee = 'FIA';
 
 --2:create S1 sequence with 1000 start, increment by 10 and so on
+
 
 create sequence S1 start with 1000 increment by 10
 nominvalue nomaxvalue nocycle nocache noorder;
@@ -70,6 +72,9 @@ N4 number(20)
 drop table T1;
 
 insert into T1 values(S1.nextval, S2.nextval, S3.nextval,S4.nextval);
+commit;
+
+select buffer_pool from user_tables where table_name like 'T1';
 
 select * from T1;
 
@@ -123,12 +128,15 @@ select * from user_tables;
 
 create synonym SC for FIA.C;
 select * from SC;
+
 drop synonym SC;
 
 --14: create a public synonym for table B
 
-create public synonym SB for FIA.B;
+create public synonym SB for B;
 select * from SB;
+
+drop public synonym SB;
 
 --15: create A and B tables with a view
 
@@ -138,6 +146,8 @@ VA varchar(12),
 YA number(10)
 );
 
+drop table A1;
+
 create table B1(
 XB number(10) ,
 VB varchar(12),
@@ -145,18 +155,24 @@ YB number(10),
 constraint fk_b1 foreign key (XB) references A1(XA)
 );
 
+drop table B1;
+
 insert into A1 values(1,'1',1);
 insert into A1 values(2,'2',2);
 insert into A1 values(3,'3',3);
-insert into A1 values(4,'4',4);
+insert into A1 values(5,'5',5);
+commit;
 
 insert into B1 values(1,'1',1);
-insert into B1 values(4,'4',4);
+insert into B1 values(5,'5',5);
+commit;
 
 create view V1 as
 Select * from A1 inner join B1 on XA = XB;
 
 select * from V1;
+
+drop view V1;
 
 
 --16: create a materialized view
@@ -167,4 +183,8 @@ next sysdate + 2/1440
 as
 Select * from A1 inner join B1 on XA = XB;
 
+exec dbms_mview.refresh('MV','COMPLETE');
+
 select * from MV;
+
+drop materialized view MV;
