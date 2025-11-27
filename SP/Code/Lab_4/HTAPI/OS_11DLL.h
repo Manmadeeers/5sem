@@ -56,7 +56,7 @@ namespace HT {
 			int   SecSnapshotInterval,		   // переодичность сохранени€ в сек.
 			int   MaxKeyLength,                // максимальный размер ключа
 			int   MaxPayloadLength,            // максимальный размер данных
-			const char*  FileName[512]          // им€ файла 
+			const char  FileName[512]          // им€ файла 
 		); 	// != NULL успешное завершение  
 
 		__declspec(dllexport) HTHANDLE* Open     //  открыть HT             

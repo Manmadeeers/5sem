@@ -1,6 +1,5 @@
 #include "pch.h"
-#include "HTCOM.h"
-
+#include "HTHandle.h"
 
 
 class CHTHandle :public IHTHandle {
@@ -19,7 +18,7 @@ public:
 		InterlockedDecrement(&g_serverLocks);
 	}
 
-	STDMETHODIMP QueryInterface(REFIID riid, void** ppv) override{
+	STDMETHODIMP QueryInterface(REFIID riid, void** ppv) override {
 		if (!ppv) {
 			return E_POINTER;
 		}
@@ -181,7 +180,7 @@ public:
 	}
 
 
-	STDMETHODIMP Print(const ElementStruct* element) override{
+	STDMETHODIMP Print(const ElementStruct* element) override {
 		if (!element) {
 			return E_POINTER;
 		}
@@ -195,7 +194,7 @@ public:
 		return S_OK;
 	}
 
-	STDMETHODIMP CreateSnapshotFileName(BSTR* pSnapshotFileName) override{
+	STDMETHODIMP CreateSnapshotFileName(BSTR* pSnapshotFileName) override {
 		if (!pSnapshotFileName) {
 			return E_POINTER;
 		}
@@ -210,7 +209,7 @@ public:
 			return E_FAIL;
 		}
 
-		BSTR b = SysAllocStringLen(NULL, required -1);
+		BSTR b = SysAllocStringLen(NULL, required - 1);
 		MultiByteToWideChar(CP_UTF8, 0, cstr, -1, b, required);
 		*pSnapshotFileName = b;
 		return S_OK;
@@ -238,161 +237,27 @@ public:
 	}
 };
 
-class CHTStorage : public IHTStorage {
-	std::atomic<ULONG>m_ref;
-public:
-	CHTStorage() :m_ref(1) {
-		InterlockedIncrement(&g_serverLocks);
-	}
-	virtual ~CHTStorage() {
-		InterlockedDecrement(&g_serverLocks);
-	}
 
-	STDMETHODIMP QueryInterface(REFIID riid, void** ppv)override {
-		if (!ppv) {
-			return E_POINTER;
-		}
-		*ppv = nullptr;
-		if (riid == IID_IUnknown || riid == IID_IHTStorage) {
-			*ppv = static_cast<IHTStorage*>(this);
-			AddRef();
-			return S_OK;
-		}
-		return E_NOINTERFACE;
-	}
-
-	STDMETHODIMP_(ULONG) AddRef() override {
-		return ++m_ref;
-	}
-	STDMETHODIMP_(ULONG) Release()override {
-		ULONG v = --m_ref;
-		if (v == 0) {
-			delete this;
-		}
-		return v;
-	}
-
-	STDMETHODIMP Create(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const wchar_t* FileName[512], IUnknown** ppHandle)override {
+extern "C" {
+	__declspec(dllexport) HRESULT CreateHTHandleInstance(HT::HTHANDLE* nativeHandle, IUnknown** ppHandle) {
 		if (!ppHandle) {
 			return E_POINTER;
 		}
 		*ppHandle = nullptr;
 
+		try {
 
-		char fileNameA[512] = { 0 };
-		size_t written = 0;
+			CHTHandle* obj = new CHTHandle(nativeHandle);
+			*ppHandle = static_cast<IHTHandle*>(obj);
 
-		wcstombs_s(&written, fileNameA, FileName ? *FileName : L"", _TRUNCATE);
-		HT::HTHANDLE* native = HT::Create(Capacity, SecSnapshotInterval, MaxKeyLength, MaxPayloadLength, (const char*)FileName);
-		if (!native) {
-			return E_FAIL;
-		}
-
-		CHTHandle* obj = new (std::nothrow) CHTHandle(native);
-		if (!obj) {
-			HT::Close(native);
-			return E_OUTOFMEMORY;
-		}
-
-		*ppHandle = static_cast<IUnknown*>(obj);
-		return S_OK;
-	}
-
-	STDMETHODIMP Open(const wchar_t* FileName, IUnknown** ppHandle)override {
-		if (!ppHandle) {
-			return E_POINTER;
-		}
-		*ppHandle = nullptr;
-		char filenameA[512] = { 0 };
-		size_t written = 0;
-		
-		wcstombs_s(&written, filenameA, FileName ? FileName : L"", _TRUNCATE);
-
-		HT::HTHANDLE* native = HT::Open(filenameA);
-		if (!native) {
-			return E_FAIL;
-		}
-
-		CHTHandle* obj = new (std::nothrow) CHTHandle(native);
-		if (!obj) {
-			HT::Close(native);
-			return E_OUTOFMEMORY;
-		}
-
-		*ppHandle = static_cast<IUnknown*>(obj);
-		return S_OK;
-	}
-};
-
-
-class StorageFactory :public IClassFactory {
-	std::atomic<ULONG>m_ref;
-public:
-	StorageFactory() :m_ref(1){}
-	virtual ~StorageFactory(){}
-
-	STDMETHODIMP QueryInterface(REFIID riid, void** ppv)override {
-		if (!ppv) {
-			return E_POINTER;
-		}
-		*ppv = nullptr;
-
-		if (riid == IID_IUnknown || riid == IID_IClassFactory) {
-			*ppv = static_cast<IClassFactory*>(this);
-			AddRef();
 			return S_OK;
 		}
-		return E_NOINTERFACE;
-	}
-	STDMETHODIMP_(ULONG) AddRef()override {
-		return ++m_ref;
-	}
-	STDMETHODIMP_(ULONG)Release()override {
-		ULONG v = --m_ref;
-		if (v == 0) {
-			delete this;
-		}
-		return v;
-	}
-
-	STDMETHODIMP CreateInstance(IUnknown* pUnkOuter, REFIID riid, void** ppvObject)override {
-		if (!ppvObject) {
-			return E_POINTER;
-		}
-
-		*ppvObject = nullptr;
-		if (pUnkOuter) {
-			return CLASS_E_NOAGGREGATION;
-		}
-
-		CHTStorage* store = new (std::nothrow) CHTStorage();
-		if (!store) {
+		catch (std::bad_alloc&) {
+			HT::Close(nativeHandle);
 			return E_OUTOFMEMORY;
 		}
-
-		HRESULT hr = store->QueryInterface(riid, ppvObject);
-		store->Release();
-		return hr;
-	}
-
-	STDMETHODIMP LockServer(BOOL flock)override {
-		if (flock) {
-			InterlockedIncrement(&g_serverLocks);
+		catch (...) {
+			return E_FAIL;
 		}
-		else {
-			InterlockedDecrement(&g_serverLocks);
-		}
-		return S_OK;
 	}
-};
-
-HRESULT CreateClassFactoryInstance(REFIID riid, void** ppv) {
-	StorageFactory* sf = new (std::nothrow) StorageFactory();
-
-	if (!sf) {
-		return E_OUTOFMEMORY;
-	}
-	HRESULT hr = sf->QueryInterface(riid, ppv);
-	sf->Release();
-	return hr;
 }

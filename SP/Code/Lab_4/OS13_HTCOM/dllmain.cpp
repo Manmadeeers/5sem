@@ -1,5 +1,6 @@
-﻿#include "pch.h"
-#include "HTCOM.h"
+﻿#define _CRT_SECURE_NO_WARNINGS
+#include "pch.h"
+#include "Connector.h"
 
 HMODULE g_hModule = nullptr;
 
@@ -22,7 +23,15 @@ extern "C" __declspec(dllexport) STDAPI DllGetClassObject(REFCLSID rclsid, REFII
     }
     *ppv = nullptr;
     if (IsEqualCLSID(rclsid, CLSID_HTStorage)) {
-        CreateClassFactoryInstance(riid, ppv);
+
+        StorageFactory* sf = new (std::nothrow) StorageFactory();
+
+        if (!sf) {
+            return E_OUTOFMEMORY;
+        }
+        HRESULT hr = sf->QueryInterface(riid, ppv);
+        sf->Release();
+        return hr;
     }
     return CLASS_E_NOAGGREGATION;
 }
