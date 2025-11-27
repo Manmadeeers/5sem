@@ -24,14 +24,7 @@ extern "C" __declspec(dllexport) STDAPI DllGetClassObject(REFCLSID rclsid, REFII
     *ppv = nullptr;
     if (IsEqualCLSID(rclsid, CLSID_HTStorage)) {
 
-        StorageFactory* sf = new (std::nothrow) StorageFactory();
-
-        if (!sf) {
-            return E_OUTOFMEMORY;
-        }
-        HRESULT hr = sf->QueryInterface(riid, ppv);
-        sf->Release();
-        return hr;
+        CreateStorageFactoryInstance(riid, ppv);
     }
     return CLASS_E_NOAGGREGATION;
 }

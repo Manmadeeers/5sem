@@ -49,19 +49,18 @@ namespace HT {
 	
 	extern "C" {
 
-
 		__declspec(dllexport)	HTHANDLE* Create   //  создать HT             
 		(
 			int	  Capacity,					   // емкость хранилища
 			int   SecSnapshotInterval,		   // переодичность сохранения в сек.
 			int   MaxKeyLength,                // максимальный размер ключа
 			int   MaxPayloadLength,            // максимальный размер данных
-			const char*  FileName[512]          // имя файла 
+			const char*  FileName          // имя файла 
 		); 	// != NULL успешное завершение  
 
 		__declspec(dllexport) HTHANDLE* Open     //  открыть HT             
 		(
-			const char    FileName[512]         // имя файла 
+			const char*    FileName         // имя файла 
 		); 	// != NULL успешное завершение  
 
 		__declspec(dllexport) BOOL Snap         // выполнить Snapshot

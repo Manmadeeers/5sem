@@ -199,7 +199,7 @@ namespace HT {
 
 
 
-    HTHANDLE* Create(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char FileName[512]) {
+    HTHANDLE* Create(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char* FileName) {
 
         lock_guard<mutex>lock(ht_mutex);
 
@@ -306,7 +306,7 @@ namespace HT {
     }
 
 
-    HTHANDLE* Open(const char FileName[512]) {
+    HTHANDLE* Open(const char* FileName) {
         std::cout << "----------Opening Started----------" << std::endl << std::endl;
 
         lock_guard<mutex>lock(ht_mutex);

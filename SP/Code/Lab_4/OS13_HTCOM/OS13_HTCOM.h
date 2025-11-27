@@ -4,7 +4,7 @@
 #include <Unknwn.h>
 #include <iostream>
 #include <vector>
-
+#include "Connector.h"
 
 typedef unsigned int uint32;
 typedef unsigned long uint64;
@@ -62,8 +62,8 @@ __interface IHTHandle :public IUnknown {
 
 __interface IHTStorage :public IUnknown {
 
-	virtual HRESULT STDMETHODCALLTYPE CrStorage(int Capacity,int SecSnapshotInterval,int MaxKeyLength,int MaxPayloadLength,const char FileName[512],IUnknown** ppHandle)PURE;
-	virtual HRESULT STDMETHODCALLTYPE Open(const char FileName, IUnknown** ppHandle)PURE;
+	virtual HRESULT STDMETHODCALLTYPE CrStorage(int Capacity,int SecSnapshotInterval,int MaxKeyLength,int MaxPayloadLength,const char* FileName,IUnknown** ppHandle)PURE;
+	virtual HRESULT STDMETHODCALLTYPE Open(const char* FileName, IUnknown** ppHandle)PURE;
 };
 
 

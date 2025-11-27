@@ -36,7 +36,7 @@ public:
 		}
 		return v;
 	}
-	STDMETHODIMP CrStorage(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char FileName[512], IUnknown** ppHandle) {
+	STDMETHODIMP CrStorage(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char* FileName, IUnknown** ppHandle) {
 		if (!ppHandle) {
 			return E_POINTER;
 		}
@@ -44,7 +44,7 @@ public:
 		*ppHandle = nullptr;
 
 
-		HT::HTHANDLE* native = HT::Create(Capacity, SecSnapshotInterval, MaxKeyLength, MaxPayloadLength, (const char**)FileName);
+		HT::HTHANDLE* native = HT::Create(Capacity, SecSnapshotInterval, MaxKeyLength, MaxPayloadLength, FileName);
 
 		if (!native) {
 			return E_FAIL;
@@ -52,10 +52,11 @@ public:
 
 		CreateHTHandleInstance(native, ppHandle);
 	}
-	STDMETHODIMP Open(const char FileName, IUnknown** ppHandle) {
+	STDMETHODIMP Open(const char* FileName, IUnknown** ppHandle) {
 		if (!ppHandle) {
 			return E_POINTER;
 		}
+
 
 		*ppHandle = nullptr;
 
@@ -69,3 +70,20 @@ public:
 	}
 
 };
+
+extern "C" {
+	__declspec(dllexport) HRESULT CreateHTStorageInstance(REFIID riid, void**ppvObject) {
+
+		CHTStorage* store = new (std::nothrow) CHTStorage();
+
+		if (!store) {
+			return E_OUTOFMEMORY;
+		}
+
+		HRESULT hr = store->QueryInterface(riid, ppvObject);
+		store->Release();
+
+		return hr;
+
+	}
+}
