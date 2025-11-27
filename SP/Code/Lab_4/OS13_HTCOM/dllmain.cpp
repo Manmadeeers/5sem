@@ -1,19 +1,17 @@
-﻿// dllmain.cpp : Определяет точку входа для приложения DLL.
-#include "pch.h"
+﻿#include "pch.h"
 #include "HTCOM.h"
 
-BOOL APIENTRY DllMain( HMODULE hModule,
-                       DWORD  ul_reason_for_call,
-                       LPVOID lpReserved
-                     )
+HMODULE g_hModule = nullptr;
+
+
+BOOL APIENTRY DllMain(HMODULE hModule,
+    DWORD  ul_reason_for_call,
+    LPVOID lpReserved
+)
 {
-    switch (ul_reason_for_call)
-    {
-    case DLL_PROCESS_ATTACH:
-    case DLL_THREAD_ATTACH:
-    case DLL_THREAD_DETACH:
-    case DLL_PROCESS_DETACH:
-        break;
+    if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
+        g_hModule = hModule;
+        DisableThreadLibraryCalls(hModule);
     }
     return TRUE;
 }
@@ -29,7 +27,7 @@ extern "C" __declspec(dllexport) STDAPI DllGetClassObject(REFCLSID rclsid, REFII
     return CLASS_E_NOAGGREGATION;
 }
 
-extern "C" __declspec(dllexport) STDAPI DllCanUnloadNow(void) {
+extern "C" __declspec(dllexport) STDAPI DllCanUnloadNow() {
     return(g_serverLocks == 0) ? S_OK : S_FALSE;
 }
 
@@ -90,13 +88,13 @@ extern "C" __declspec(dllexport) STDAPI DllRegisterServer() {
         return hr;
     }
 
-    hr = SetRegKeyValue(HKEY_CLASSES_ROOT, L"OS12_COM.1", NULL, L"OS12 COM Object");
+    hr = SetRegKeyValue(HKEY_CLASSES_ROOT, L"OS13_COM.1", NULL, L"OS13 COM Object");
     if (FAILED(hr)) {
         CoTaskMemFree(clsidString);
         return hr;
     }
 
-    hr = SetRegKeyValue(HKEY_CLASSES_ROOT, L"OS12_COM.1\\CLSID", NULL, clsidString);
+    hr = SetRegKeyValue(HKEY_CLASSES_ROOT, L"OS13_COM.1\\CLSID", NULL, clsidString);
     if (FAILED(hr)) {
         CoTaskMemFree(clsidString);
         return hr;
@@ -138,14 +136,14 @@ extern "C" __declspec(dllexport) STDAPI DllUnregisterServer() {
 
 #if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600)
 
-    if (RegDeleteTreeW(HKEY_CLASSES_ROOT, L"OS12_COM.1") != ERROR_SUCCESS) {
+    if (RegDeleteTreeW(HKEY_CLASSES_ROOT, L"OS13_COM.1") != ERROR_SUCCESS) {
         hr = S_FALSE;
     }
 
 #else
 
-    RegDeleteKeyW(HKEY_CLASSES_ROOT, L"OS12_COM.1\\CLSID");
-    RegDeleteKeyW(HKEY_CLASSES_ROOT, L"OS12_COM.1");
+    RegDeleteKeyW(HKEY_CLASSES_ROOT, L"OS13_COM.1\\CLSID");
+    RegDeleteKeyW(HKEY_CLASSES_ROOT, L"OS13_COM.1");
 
 #endif
 

@@ -148,7 +148,7 @@ public:
 		nativeOld.payload = nullptr;
 		nativeOld.payloadlength = 0;
 
-		BOOL res = HT::Update(m_nativeHandle, &nativeOld, newPayload, (int)newPayloadLength);
+		BOOL res = HT::Update(m_nativeHandle, &nativeOld, (void*)newPayload, (int)newPayloadLength);
 		*pbSuccess = res ? TRUE : FALSE;
 		return S_OK;
 	}

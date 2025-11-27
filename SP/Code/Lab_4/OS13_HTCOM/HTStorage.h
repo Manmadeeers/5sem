@@ -4,7 +4,7 @@
 #include <Unknwn.h>
 #include <iostream>
 #include <vector>
-#include "../../Lab_2/OS11_HTAPI/OS_11DLL.h"
+#include "OS_11DLL.h"
 
 typedef unsigned int uint32;
 typedef unsigned long uint64;
