@@ -1,83 +1,51 @@
 #pragma once
-#include "pch.h"
 #include <Windows.h>
 #include <Unknwn.h>
 #include <iostream>
-#include <vector>
-#include "Connector.h"
+#include <atomic>
+#include <mutex>
+#include <string>
+typedef unsigned int uint;
 
-typedef unsigned int uint32;
-typedef unsigned long uint64;
+typedef struct HTHANDLE {
+	int Capacity;
+	int SecSnapshotInterval;
+	int MaxKeyLength;
+	int MaxPayloadLength;
+	char FileName[512];
+	HANDLE File;
+	HANDLE FIleMapping;
+	LPVOID Addr;
+	int CurrentElements;
+	HANDLE MutexHandle;
+	char MutexName[256];
+} HTHANDLE;
+
+typedef struct ELEMENT {
+	const void* Key;
+	int KeyLength;
+	const void* Payload;
+	int PayloadLength;
+}ELEMENT;
+
+// {34AC9F7D-FB6C-492B-9760-B2B9EE1BE388}
+static const GUID IID_IHTStorage =
+{ 0x34ac9f7d, 0xfb6c, 0x492b, { 0x97, 0x60, 0xb2, 0xb9, 0xee, 0x1b, 0xe3, 0x88 } };
+
+// {2EDF67BD-801C-4FD5-8598-1BD6769ED202}
+static const GUID CLSID_HTCOM =
+{ 0x2edf67bd, 0x801c, 0x4fd5, { 0x85, 0x98, 0x1b, 0xd6, 0x76, 0x9e, 0xd2, 0x2 } };
 
 
-struct HTHandleInfo {
-	uint32 Capacity;
-	uint32 SecSnapshotInterval;
-	uint32 MaxKeyLength;
-	uint32 MaxPayloadLength;
-	wchar_t FileName[512];
-	uint32 CurrentElements;
-	wchar_t CrossProcessMutexName[512];
+__interface IHTStorage :public IUnknown
+{
+	virtual HRESULT STDMETHODCALLTYPE Create(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char* FileName,/*out*/HTHANDLE** ppHandle)PURE;
+	virtual HRESULT STDMETHODCALLTYPE Open(const char* FileName, HTHANDLE** ppHandle)PURE;
+	virtual HRESULT STDMETHODCALLTYPE Close(HTHANDLE* pHandle)PURE;
+	virtual HRESULT STDMETHODCALLTYPE Insert(HTHANDLE* pHandle, const ELEMENT* Element)PURE;
+	virtual HRESULT STDMETHODCALLTYPE Delete(HTHANDLE* pHandle, const ELEMENT* Element)PURE;
+	virtual HRESULT STDMETHODCALLTYPE Update(HTHANDLE* pHandle, const ELEMENT* OldElement, const void* NewPayload, int NewPayloadLength)PURE;
+	virtual HRESULT STDMETHODCALLTYPE Get(HTHANDLE* pHandle, const ELEMENT* Element,/*out*/ ELEMENT** ppElement)PURE;
+	virtual HRESULT STDMETHODCALLTYPE Snap(HTHANDLE* pHandle)PURE;
+	virtual HRESULT STDMETHODCALLTYPE Print(ELEMENT* Element)PURE;
 };
-
-struct ElementStruct {
-	std::vector<BYTE>Key;
-	uint32 KeyLength;
-	std::vector<BYTE>Payload;
-	uint32 PayloadLength;
-};
-
-struct ElementStructReturn {
-	BYTE* Key;
-	uint32 KeyLength;
-	BYTE* Payload;
-	uint32 PayloadLength;
-};
-
-// {38BD7D03-CB43-4CB1-BDE5-3FF8A8AAA2DB}
-static const GUID IID_IHTStorage =	
-{ 0x38bd7d03, 0xcb43, 0x4cb1, { 0xbd, 0xe5, 0x3f, 0xf8, 0xa8, 0xaa, 0xa2, 0xdb } };
-
-// {94BB0DA0-E853-47B4-A6D7-6E960C65D314}
-static const GUID IID_IHTHandle =
-{ 0x94bb0da0, 0xe853, 0x47b4, { 0xa6, 0xd7, 0x6e, 0x96, 0xc, 0x65, 0xd3, 0x14 } };
-
-// {AFB1C5EA-436E-4183-BEAA-91BC2371467B}
-static const GUID CLSID_HTStorage =
-{ 0xafb1c5ea, 0x436e, 0x4183, { 0xbe, 0xaa, 0x91, 0xbc, 0x23, 0x71, 0x46, 0x7b } };
-
-
-__interface IHTHandle :public IUnknown {
-	virtual HRESULT STDMETHODCALLTYPE Insert(const ElementStruct* element,/*out*/ BOOL* pbSuccess)PURE;
-	virtual HRESULT STDMETHODCALLTYPE Delete(const ElementStruct* element, /*out*/BOOL* pbSuccess)PURE;
-	virtual HRESULT STDMETHODCALLTYPE Get(const ElementStruct* searchElement,/*out*/ ElementStructReturn** ppFoundElement)PURE;
-	virtual HRESULT STDMETHODCALLTYPE Update(const ElementStruct* oldElement, const BYTE* newPayload, uint32 newPayloadLength, /*out*/BOOL* pbSuccess)PURE;
-	virtual HRESULT STDMETHODCALLTYPE Snap(/*out*/BOOL* pbSuccess)PURE;
-	virtual HRESULT STDMETHODCALLTYPE Close(/*out*/BOOL* pbSuccess)PURE;
-	virtual HRESULT STDMETHODCALLTYPE Print(const ElementStruct* element)PURE;
-	virtual HRESULT STDMETHODCALLTYPE CreateSnapshotFileName(/*out*/BSTR* pSnapshotFileName)PURE;
-	virtual HRESULT STDMETHODCALLTYPE GetHandleInfo(/*out*/HTHandleInfo* pInfo)PURE;
-};
-
-
-__interface IHTStorage :public IUnknown {
-
-	virtual HRESULT STDMETHODCALLTYPE CrStorage(int Capacity,int SecSnapshotInterval,int MaxKeyLength,int MaxPayloadLength,const char* FileName,IUnknown** ppHandle)PURE;
-	virtual HRESULT STDMETHODCALLTYPE Open(const char* FileName, IUnknown** ppHandle)PURE;
-};
-
-
-
-inline void FreeReturnedElement(ElementStructReturn* e) {
-	if (!e) {
-		return;
-	}
-	if (e->Key) {
-		CoTaskMemFree(e->Key);
-	}
-	if (e->Payload) {
-		CoTaskMemFree(e->Payload);
-	}
-	CoTaskMemFree(e);
-
-}

@@ -1,6 +1,5 @@
 ﻿#define _CRT_SECURE_NO_WARNINGS
 #include "pch.h"
-#include "Connector.h"
 
 HMODULE g_hModule = nullptr;
 
