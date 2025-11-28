@@ -1,12 +1,16 @@
+//broadcast client
 const ws = require('ws');
 const wss = new ws('ws://localhost:5000/broadcast');
 
-wss.on('open',()=>{
-    setInterval(()=>{
-        wss.send('Hello from broadcast client');
-    },3000);
+if(process.argv.length<3){
+    console.error("Usage: node 10-03a.js <ClientId>");
+    process.exit(1);
+}
+const clientId = process.argv[2];
 
+wss.on('open',()=>{
     wss.on('message',(message)=>{
-        console.log(`Received broadcast message: ${message}`);
+        console.log(`Received from broadcast server: ${message}`);
+        wss.send(`Hello from client identified by: ${clientId}`);
     });
 });
