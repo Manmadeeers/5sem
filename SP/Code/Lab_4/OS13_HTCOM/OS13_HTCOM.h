@@ -4,7 +4,9 @@
 #include <iostream>
 #include <atomic>
 #include <mutex>
+#include <thread>
 #include <string>
+#include <future>
 typedef unsigned int uint;
 
 typedef struct HTHANDLE {
@@ -13,6 +15,7 @@ typedef struct HTHANDLE {
 	int MaxKeyLength;
 	int MaxPayloadLength;
 	char FileName[512];
+	time_t LastSnapTime;
 	HANDLE File;
 	HANDLE FIleMapping;
 	LPVOID Addr;
