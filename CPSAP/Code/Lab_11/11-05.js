@@ -1,8 +1,7 @@
 const rpcWS = require('rpc-websockets').Server;
 const SERVER_OPTIONS = {
     host: 'localhost',
-    port: 4000,
-    path:'/rpc'
+    port: 4000
 };
 
 function factorial(num) {
@@ -24,19 +23,12 @@ function fibonacci(n) {
 
 const server = new rpcWS(SERVER_OPTIONS);
 
-server.setAuth((credentials)=>{
-    return credentials.login=='mnmd'&&credentials.password == '12345';
-});
-
 server.register('square', (params) => {
     if (params.length == 1) {
         return Math.PI * Math.pow(params[0], 2);
     }
     else if (params.length == 2) {
         return params[0] * params[1];
-    }
-    else {
-        return { error: 'Not enough or too many parameters' };
     }
 }).public();
 
@@ -64,19 +56,18 @@ server.register('fib',(params)=>{
         }
         return result;
     }
-    else{
-        return {error:"Not enough or too many parameter"};
-    }
 }).protected();
 
 server.register('fact',(params)=>{
     if(params.length==1){
         return factorial(params[0]);
     }   
-    else{
-        return {error:"Not enough or too many parameters"};
-    }
 }).protected();
+
+server.setAuth((credentials)=>{
+    return credentials.login=='mnmd'&&credentials.password == '12345';
+});
+
 
 
 console.log(`Server running on ws://${SERVER_OPTIONS.host}:${SERVER_OPTIONS.port}`);

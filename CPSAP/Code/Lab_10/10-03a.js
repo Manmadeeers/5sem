@@ -1,4 +1,3 @@
-//broadcast client
 const ws = require('ws');
 const wss = new ws('ws://localhost:5000/broadcast');
 

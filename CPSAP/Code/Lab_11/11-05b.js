@@ -1,6 +1,6 @@
 const rpcWS = require('rpc-websockets').Client;
 const async = require('async');
-const client = new rpcWS("ws://localhost:4000/rpc");
+const client = new rpcWS("ws://localhost:4000");
 
 client.on('open', () => {
     client.login({ login: 'mnmd', password: '12345' })
@@ -36,10 +36,10 @@ client.on('open', () => {
             });
         })
         .catch((err)=>{
-            console.error("Error occured: ",err);
+            console.error("Error occured(promise): ",err);
         });
 });
 
 client.on('error',(err)=>{
-    console.error("Error ocured: ",err);
+    console.error("Error ocured(client): ",err);
 });

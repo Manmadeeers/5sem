@@ -1,4 +1,3 @@
-//broadcast server
 const ws = require('ws');
 const socketOptions = {
     port: 5000,
