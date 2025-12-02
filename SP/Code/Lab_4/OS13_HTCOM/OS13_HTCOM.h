@@ -45,10 +45,11 @@ __interface IHTStorage :public IUnknown
 	virtual HRESULT STDMETHODCALLTYPE Create(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char* FileName,/*out*/HTHANDLE** ppHandle)PURE;
 	virtual HRESULT STDMETHODCALLTYPE Open(const char* FileName, HTHANDLE** ppHandle)PURE;
 	virtual HRESULT STDMETHODCALLTYPE Close(HTHANDLE* pHandle)PURE;
-	virtual HRESULT STDMETHODCALLTYPE Insert(HTHANDLE* pHandle, const ELEMENT* Element)PURE;
-	virtual HRESULT STDMETHODCALLTYPE Delete(HTHANDLE* pHandle, const ELEMENT* Element)PURE;
-	virtual HRESULT STDMETHODCALLTYPE Update(HTHANDLE* pHandle, const ELEMENT* OldElement, const void* NewPayload, int NewPayloadLength)PURE;
-	virtual HRESULT STDMETHODCALLTYPE Get(HTHANDLE* pHandle, const ELEMENT* Element,/*out*/ ELEMENT** ppElement)PURE;
+	virtual HRESULT STDMETHODCALLTYPE Insert(HTHANDLE* pHandle, ELEMENT* Element)PURE;
+	virtual HRESULT STDMETHODCALLTYPE Delete(HTHANDLE* pHandle, ELEMENT* Element)PURE;
+	virtual HRESULT STDMETHODCALLTYPE Update(HTHANDLE* pHandle, ELEMENT* OldElement, const void* NewPayload, int NewPayloadLength)PURE;
+	virtual HRESULT STDMETHODCALLTYPE Get(HTHANDLE* pHandle, ELEMENT* Element,/*out*/ ELEMENT** ppElement)PURE;
 	virtual HRESULT STDMETHODCALLTYPE Snap(HTHANDLE* pHandle)PURE;
 	virtual HRESULT STDMETHODCALLTYPE Print(ELEMENT* Element)PURE;
+	virtual HRESULT STDMETHODCALLTYPE WriteHeader(HTHANDLE* pHanlde)PURE;
 };

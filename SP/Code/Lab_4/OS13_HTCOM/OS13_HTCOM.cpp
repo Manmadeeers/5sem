@@ -44,6 +44,15 @@ namespace HT_NATIVE {
 
         return buffer;
     }
+
+    //Utility function to write metadata to a head of the file
+    void WriteMetadata(HTHANDLE* handle) {
+
+        memcpy(&handle->Capacity, handle->Addr, sizeof(int));
+        memcpy(&handle->MaxKeyLength, static_cast<char*>(handle->Addr) + sizeof(int), sizeof(int));
+        memcpy(&handle->MaxPayloadLength, static_cast<char*>(handle->Addr) + 2 * sizeof(int), sizeof(int));
+        memcpy(&handle->SecSnapshotInterval, static_cast<char*>(handle->Addr) + 3 * sizeof(int), sizeof(int));
+    }
     
     //structure to control locking and releasing cross process mutexes in data managing functions(all functions except for Create and Open)
     struct ScopedNamedMutex {
@@ -479,6 +488,9 @@ namespace HT_NATIVE {
             return TRUE;
         }
     }
+
+    
+
 }
 
 
@@ -512,7 +524,18 @@ public:
         return ref_count;
     }
 
-    HRESULT STDMETHODCALLTYPE Create(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char* FileName, HANDLE** ppHandle) {
+    HRESULT STDMETHODCALLTYPE WriteHeader(HTHANDLE* pHandle) override{
+        if (!pHandle) {
+            return E_INVALIDARG;
+        }
+        
+        HT_NATIVE::WriteMetadata(pHandle);
+
+        return S_OK;
+        
+    }
+
+    HRESULT STDMETHODCALLTYPE Create(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char* FileName, HTHANDLE** ppHandle) override{
         if (!FileName || !ppHandle) {
             return E_INVALIDARG;
         }
@@ -526,6 +549,228 @@ public:
         strcpy_s(handle->FileName, FileName);
         handle->LastSnapTime = time(nullptr);
 
+        handle->File = CreateFileA(
+            FileName,
+            GENERIC_READ | GENERIC_WRITE,
+            0,
+            NULL,
+            CREATE_ALWAYS,
+            FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,
+            NULL
+        );
 
+        if (handle->File == INVALID_HANDLE_VALUE) {
+            std::cerr << "Creat: CreateFileA() for handle->File failed" << std::endl;
+            CloseHandle(handle->File);
+            delete handle;
+            return E_FAIL;
+        }
+
+        handle->FIleMapping = CreateFileMappingA(
+            handle->File,
+            NULL,
+            PAGE_READWRITE,
+            0,
+            0,
+            "SharedHTMapping"
+        );
+
+        if (handle->FIleMapping == NULL) {
+            std::cerr << "Create: CreateFileMappingA() for handle.File failed" << std::endl;
+            CloseHandle(handle->File);
+            delete handle;
+            return E_FAIL;
+        }
+
+        handle->Addr = MapViewOfFile(
+            handle->FIleMapping,
+            FILE_MAP_ALL_ACCESS,
+            0,
+            0,
+            0
+        );
+
+        if (handle->Addr == NULL) {
+            std::cerr << "Create: MapViewOfFile() for handle.FileMapping failed" << std::endl;
+            CloseHandle(handle->FIleMapping);
+            CloseHandle(handle->File);
+            delete handle;
+            return E_FAIL;
+        }
+
+        //writing metadata
+        WriteHeader(handle);
+
+        handle->MutexHandle = HT_NATIVE::create_open_mutexp(handle->FileName, handle->MutexName, sizeof(handle->MutexName));
+        if (handle->MutexHandle == NULL) {
+            std::cerr << "Create: create_open_mutexp() for handle->MutexHandle failed" << std::endl;
+            UnmapViewOfFile(handle->Addr);
+            CloseHandle(handle->FIleMapping);
+            CloseHandle(handle->File);
+            delete handle;
+            return E_FAIL;
+        }
+
+        *ppHandle = handle;
+        return S_OK;
+
+    }
+
+    HRESULT STDMETHODCALLTYPE Open(const char* FileName, HTHANDLE** ppHandle) override{
+        if (!FileName || !ppHandle) {
+            return E_INVALIDARG;
+        }
+
+        HTHANDLE* handle = new HTHANDLE();
+        
+        handle->File = CreateFileA(
+            FileName,
+            GENERIC_READ | GENERIC_WRITE,
+            FILE_SHARE_READ | FILE_SHARE_WRITE,
+            NULL,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            NULL
+        );
+        if (handle->File == INVALID_HANDLE_VALUE) {
+            std::cerr << "Open: CreateFileA() for handle->File failed" << std::endl;
+            delete handle;
+            return E_FAIL;
+        }
+
+        handle->FIleMapping = CreateFileMappingA(
+            handle->File,
+            NULL,
+            PAGE_READWRITE,
+            0,
+            0,
+            "SharedHTMapping"
+        );
+
+        if (handle->FIleMapping == NULL) {
+            std::cerr << "Open: CreateFileNappingA() for handle->FileMapping failed" << std::endl;
+            CloseHandle(handle->File);
+            delete handle;
+            return E_FAIL;
+        }
+
+        handle->Addr = MapViewOfFile(
+            handle->FIleMapping,
+            FILE_MAP_ALL_ACCESS,
+            0,
+            0,
+            0
+        );
+
+        if (handle->Addr == NULL) {
+            std::cerr << "Open: MapViewOfFile() for handle->Addr failed" << std::endl;
+            CloseHandle(handle->FIleMapping);
+            CloseHandle(handle->File);
+            delete handle;
+            return E_FAIL;
+        }
+
+        WriteHeader(handle);
+
+        int slot_size = handle->MaxKeyLength + handle->MaxPayloadLength;
+        char* base = static_cast<char*>(handle->Addr) + METADATA_OFFSET;
+
+        for (int i = 0; i < handle->Capacity; ++i) {
+            char* current_slot = base + (i * slot_size);
+            
+            bool is_empty = true;
+            for (int k = 0; k < handle->MaxKeyLength; ++k) {
+                if (current_slot[k] != 0) {
+                    handle->CurrentElements++;
+                    is_empty = false;
+                    break;
+                }
+            }
+
+            if (is_empty) {
+                continue;
+
+            }
+        }
+
+        handle->MutexHandle = HT_NATIVE::create_open_mutexp(FileName);
+        if (handle->MutexHandle == NULL) {
+            std::cerr << "Open: create_open_mutexp() for handle->MutexHandle failed" << std::endl;
+            UnmapViewOfFile(handle->Addr);
+            CloseHandle(handle->FIleMapping);
+            CloseHandle(handle->File);
+            delete handle;
+            return E_FAIL;
+        }
+
+        *ppHandle = handle;
+        return S_OK;
+    }
+
+    HRESULT STDMETHODCALLTYPE Close(HTHANDLE* pHandle) override{
+        if (!pHandle) {
+            return E_INVALIDARG;
+        }
+        BOOL result = HT_NATIVE::CloseNative(pHandle);
+        delete pHandle;
+
+        return result ? S_OK : E_FAIL;
+    }
+
+    HRESULT STDMETHODCALLTYPE Insert(HTHANDLE* pHandle,  ELEMENT* element) override{
+        if (!pHandle || !element) {
+            return E_INVALIDARG;
+        }
+        HRESULT result = HT_NATIVE::InsertNative(pHandle, element);
+
+        return result ? S_OK : E_FAIL;
+    }
+
+    HRESULT STDMETHODCALLTYPE Delete(HTHANDLE* pHandle, ELEMENT* element) override{
+        if (!pHandle || !element) {
+            return E_INVALIDARG;
+        }
+        HRESULT result = HT_NATIVE::DeleteNative(pHandle, element);
+
+        return result ? S_OK : E_FAIL;
+    }
+
+    HRESULT STDMETHODCALLTYPE Update(HTHANDLE* pHandle, ELEMENT* oldElement, const void* NewPayload, int NewPayloadLength) override {
+        if (!pHandle || !oldElement) {
+            return E_INVALIDARG;
+        }
+
+        HRESULT result = HT_NATIVE::UpdateNative(pHandle, oldElement, NewPayload, NewPayloadLength);
+
+        return result ? S_OK : E_FAIL;
+    }
+
+    HRESULT STDMETHODCALLTYPE Get(HTHANDLE* pHandle, ELEMENT* Element,/*out*/ ELEMENT** ppElement) override{
+        if (!pHandle || !Element) {
+            return E_INVALIDARG;
+        }
+
+        *ppElement = HT_NATIVE::GetNative(pHandle, Element);
+
+        return *ppElement ? S_OK : E_FAIL;
+    }
+
+    HRESULT STDMETHODCALLTYPE Snap(HTHANDLE* handle) override{
+        if (!handle) {
+            return E_INVALIDARG;
+        }
+
+        HRESULT result = HT_NATIVE::SnapNative(handle);
+
+        return result ? S_OK : E_FAIL;
+    }
+
+    HRESULT STDMETHODCALLTYPE Print(ELEMENT* element) override {
+        if (!element) {
+            return E_INVALIDARG;
+        }
+
+        std::cout << "Element info: KEY: " << static_cast<const char*>(element->Key) << " PAYLOAD: " << static_cast<const char*>(element->Payload) << std::endl;
+        return S_OK;
     }
 };
