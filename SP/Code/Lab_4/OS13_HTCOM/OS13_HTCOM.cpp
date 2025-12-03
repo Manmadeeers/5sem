@@ -1,5 +1,25 @@
+#include "pch.h"
 #include "OS13_HTCOM.h"
 #define METADATA_OFFSET 4*sizeof(int);
+
+HANDLE StartMutex = NULL;
+HANDLE OperationMutex = NULL;
+
+//Utility function to create mutexes that will protect Create/Open operations
+bool InitCreateOpenMutexes() {
+    StartMutex = CreateMutexA(NULL, FALSE, "HT_StartMutex");
+    if (StartMutex == NULL) {
+        return false;
+    }
+
+    OperationMutex = CreateMutexA(NULL, FALSE, NULL);
+    if (OperationMutex == NULL) {
+        CloseHandle(StartMutex);
+        return false;
+    }
+
+    return true;
+}
 
 namespace HT_NATIVE {
 
@@ -46,12 +66,21 @@ namespace HT_NATIVE {
     }
 
     //Utility function to write metadata to a head of the file
-    void WriteMetadata(HTHANDLE* handle) {
+    BOOL WriteMetadataNative(HTHANDLE* handle) {
 
-        memcpy(&handle->Capacity, handle->Addr, sizeof(int));
-        memcpy(&handle->MaxKeyLength, static_cast<char*>(handle->Addr) + sizeof(int), sizeof(int));
-        memcpy(&handle->MaxPayloadLength, static_cast<char*>(handle->Addr) + 2 * sizeof(int), sizeof(int));
-        memcpy(&handle->SecSnapshotInterval, static_cast<char*>(handle->Addr) + 3 * sizeof(int), sizeof(int));
+        DWORD written;
+
+        SetFilePointer(handle->File, 0, NULL, FILE_BEGIN);
+
+        if (!WriteFile(handle->File, &handle->Capacity, sizeof(handle->Capacity), &written, NULL) ||
+            !WriteFile(handle->File, &handle->MaxKeyLength, sizeof(handle->MaxKeyLength), &written, NULL) ||
+            !WriteFile(handle->File, &handle->MaxPayloadLength, sizeof(handle->MaxPayloadLength), &written, NULL) ||
+            !WriteFile(handle->File, &handle->SecSnapshotInterval, sizeof(handle->SecSnapshotInterval), &written, NULL)) {
+            return FALSE;
+        }
+
+        FlushFileBuffers(handle->File);
+        return TRUE;
     }
     
     //structure to control locking and releasing cross process mutexes in data managing functions(all functions except for Create and Open)
@@ -693,7 +722,7 @@ public:
             }
         }
 
-        handle->MutexHandle = HT_NATIVE::create_open_mutexp(FileName);
+        handle->MutexHandle = HT_NATIVE::create_open_mutexp(FileName,handle->MutexName,sizeof(handle->MutexName));
         if (handle->MutexHandle == NULL) {
             std::cerr << "Open: create_open_mutexp() for handle->MutexHandle failed" << std::endl;
             UnmapViewOfFile(handle->Addr);
@@ -774,3 +803,92 @@ public:
         return S_OK;
     }
 };
+
+
+class HTStorageFactory : public IClassFactory {
+private:
+    LONG m_ref;
+public:
+    HTStorageFactory() :m_ref(1) {}
+    ~HTStorageFactory() {}
+
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppv) override{
+        if (!ppv) {
+            return E_POINTER;
+        }
+        *ppv = nullptr;
+        if (riid == IID_IUnknown || riid == IID_IClassFactory) {
+            *ppv = static_cast<IClassFactory*>(this);
+        }
+        else {
+            return E_NOINTERFACE;
+        }
+        AddRef();
+        return S_OK;
+
+    }
+
+    ULONG STDMETHODCALLTYPE AddRef() override {
+        return InterlockedIncrement(&m_ref);
+    }
+
+    ULONG STDMETHODCALLTYPE Release() override {
+        ULONG v = InterlockedDecrement(&m_ref);
+        if (v == 0) {
+            delete this;
+        }
+        return v;
+    }
+
+    HRESULT STDMETHODCALLTYPE CreateInstance(IUnknown* pUnkOuter, REFIID riid, void** ppv) override {
+        if (!ppv) {
+            return E_POINTER;
+        }
+        *ppv = nullptr;
+
+        if (pUnkOuter != nullptr) {
+            return CLASS_E_CLASSNOTAVAILABLE;
+        }
+
+        OS13* pHTStorage = new (std::nothrow) OS13();
+        if (!pHTStorage) {
+            return E_OUTOFMEMORY;
+        }
+
+
+        HRESULT hr = pHTStorage->QueryInterface(riid, ppv);
+        pHTStorage->Release();
+
+        return hr;
+    }
+
+    HRESULT STDMETHODCALLTYPE LockServer(BOOL flock) override {
+        return S_OK;
+    }
+};
+
+
+STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, void** ppv) {
+    if (!ppv) {
+        return E_POINTER;
+    }
+    *ppv = nullptr;
+
+    if (!IsEqualCLSID(rclsid, CLSID_HTCOM)) {
+        return CLASS_E_CLASSNOTAVAILABLE;
+    }
+
+    HTStorageFactory* pFactory = new (std::nothrow) HTStorageFactory();
+    if (!pFactory) {
+        return E_OUTOFMEMORY;
+    }
+
+    HRESULT hr = pFactory->QueryInterface(riid, ppv);
+    pFactory->Release();
+
+    return hr;
+}
+
+STDAPI DllCanUnloadNow() {
+    return S_FALSE;
+}
