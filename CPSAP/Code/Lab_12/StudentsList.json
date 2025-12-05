@@ -1,107 +1,12 @@
 [
-    {
-        "id": 1,
-        "firstName": "Alexander",
-        "lastName": "Ivanov",
-        "studentId": "S001",
-        "email": "alexander.ivanov@example.edu"
-    },
-    {
-        "id": 2,
-        "firstName": "Maria",
-        "lastName": "Petrova",
-        "studentId": "S002",
-        "email": "maria.petrova@example.edu"
-    },
-    {
-        "id": 3,
-        "firstName": "Dmitry",
-        "lastName": "Sokolov",
-        "studentId": "S003",
-        "email": "dmitry.sokolov@example.edu"
-    },
-    {
-        "id": 4,
-        "firstName": "Elena",
-        "lastName": "Novikova",
-        "studentId": "S004",
-        "email": "elena.novikova@example.edu"
-    },
-    {
-        "id": 5,
-        "firstName": "Ivan",
-        "lastName": "Popov",
-        "studentId": "S005",
-        "email": "ivan.popov@example.edu"
-    },
-    {
-        "id": 6,
-        "firstName": "Anna",
-        "lastName": "Kuznetsova",
-        "studentId": "S006",
-        "email": "anna.kuznetsova@example.edu"
-    },
-    {
-        "id": 7,
-        "firstName": "Sergey",
-        "lastName": "Smirnov",
-        "studentId": "S007",
-        "email": "sergey.smirnov@example.edu"
-    },
-    {
-        "id": 8,
-        "firstName": "Olga",
-        "lastName": "Morozova",
-        "studentId": "S008",
-        "email": "olga.morozova@example.edu"
-    },
-    {
-        "id": 9,
-        "firstName": "Nikolay",
-        "lastName": "Fedorov",
-        "studentId": "S009",
-        "email": "nikolay.fedorov@example.edu"
-    },
-    {
-        "id": 10,
-        "firstName": "Tatiana",
-        "lastName": "Lebedeva",
-        "studentId": "S010",
-        "email": "tatiana.lebedeva@example.edu"
-    },
-    {
-        "id": 11,
-        "firstName": "Mikhail",
-        "lastName": "Orlov",
-        "studentId": "S011",
-        "email": "mikhail.orlov@example.edu"
-    },
-    {
-        "id": 12,
-        "firstName": "Victoria",
-        "lastName": "Belova",
-        "studentId": "S012",
-        "email": "victoria.belova@example.edu"
-    },
-    {
-        "id": 13,
-        "firstName": "Pavel",
-        "lastName": "Egorov",
-        "studentId": "S013",
-        "email": "pavel.egorov@example.edu"
-    },
-    {
-        "id": 14,
-        "firstName": "Kristina",
-        "lastName": "Antonova",
-        "studentId": "S014",
-        "email": "kristina.antonova@example.edu"
-    },
-    {
-        "id": 15,
-        "firstName": "Roman",
-        "lastName": "Vasiliev",
-        "studentId": "S015",
-        "email": "roman.vasiliev@example.edu"
-    }
+  { "id": 1, "Name": "Ivanov I.I",   "bday": "2006-12-02", "speciality": "PI" },
+  { "id": 2, "Name": "Petrova M.A",  "bday": "2005-07-18", "speciality": "ISIT" },
+  { "id": 3, "Name": "Sidorov K.L",  "bday": "2006-03-05", "speciality": "PI" },
+  { "id": 4, "Name": "Smirnova E.V", "bday": "2007-01-22", "speciality": "ISIT" },
+  { "id": 5, "Name": "Kuznetsov D.P","bday": "2005-11-09", "speciality": "PI" },
+  { "id": 6, "Name": "Volkova A.S",  "bday": "2006-06-30", "speciality": "ISIT" },
+  { "id": 7, "Name": "Morozov N.R",  "bday": "2004-09-14", "speciality": "PI" },
+  { "id": 8, "Name": "Lebedeva O.T", "bday": "2007-04-01", "speciality": "ISIT" },
+  { "id": 9, "Name": "Novikov V.B",  "bday": "2005-02-26", "speciality": "PI" },
+  { "id": 10, "Name": "Fedorova L.M", "bday": "2006-08-11", "speciality": "ISIT" }
 ]
