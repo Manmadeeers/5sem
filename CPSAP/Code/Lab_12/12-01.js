@@ -64,46 +64,51 @@ const HandleIdGetEP = (req, res, id) => {
 }
 
 const HandleRootPostEP = (req, res) => {
-    let requestBody = '';
+    let reqBody = '';
     req.on('data', (chunk) => {
-        requestBody += chunk;
+        reqBody += chunk;
     });
-    let reqStudent
-    try {
-         reqStudent = JSON.parse(requestBody);
-    }
-    catch (err) {
-        res.writeHead(400, { 'content-type': 'application/json' });
-        res.end(JSON.stringify({ error: `Could not parse JSON from request body. Error: ${err}` }));
-        return;
-    }
+    req.on('end', () => {
 
-    if (!reqStudent.id || !reqStudent.Name || !reqStudent.bday || !reqStudent.speciality) {
-        res.writeHead(400, { 'content-type': 'application/json' });
-        res.end(JSON.stringify({ error: "Student transmitted in request body has a corrupted structure" }));
-        return;
-    }
+        let reqStudent;
+        try {
+            reqStudent = JSON.parse(reqBody.toString());
+        }
+        catch (err) {
+            res.writeHead(400, { 'content-type': 'application/json' });
+            res.end(JSON.stringify({ error: `Could not parse JSON from request body. Error: ${err}` }));
+            return;
+        }
 
-    let studentsArray = [];
-    if (fs.existsSync(STUDENTS_PATH)) {
-        let filetext = fs.readFileSync(STUDENTS_PATH);
-        studentsArray = JSON.parse(filetext);
-    }
+        if (!reqStudent.id || !reqStudent.Name || !reqStudent.bday || !reqStudent.speciality) {
+            res.writeHead(400, { 'content-type': 'application/json' });
+            res.end(JSON.stringify({ error: "Student transmitted in request body has a corrupted structure" }));
+            return;
+        }
 
-    let duplicate = studentsArray.find(s => {
-        s.id == reqStudent.id;
+        let studentsArray = [];
+        if (fs.existsSync(STUDENTS_PATH)) {
+            let filetext = fs.readFileSync(STUDENTS_PATH);
+            studentsArray = JSON.parse(filetext);
+        }
+
+        let duplicate = false;
+        studentsArray.forEach(student => {
+            if (student.id == reqStudent.id) {
+                duplicate = true;
+            }
+        });
+        if (duplicate) {
+            res.writeHead(400, { 'content-type': 'application/json' });
+            res.end(JSON.stringify({ error: "Duplicate found. Could not add this element to a file" }));
+            return;
+        }
+        studentsArray.push(reqStudent);
+        fs.writeFileSync(STUDENTS_PATH, JSON.stringify(studentsArray, null, 2));
+        res.writeHead(201, { 'content-type': 'application/json' });
+        //TODO: send notification to a client here
+        res.end(JSON.stringify(reqStudent));
     });
-    if(duplicate){
-        res.writeHead(400,{'content-type':'application/json'});
-        res.end(JSON.stringify({error: "Duplicate found. Could not add this element to a file"}));
-        return;
-    }
-    studentsArray.push(reqStudent);
-    fs.writeFileSync(STUDENTS_PATH,JSON.stringify(reqStudent,null,2));
-    res.writeHead(201,{'content-type':'application/json'});
-    //TODO: send notification to a client here
-    res.end(JSON.stringify(reqStudent));
-
 
     req.on('error', (err) => {
         console.error("Request error occured: ", err);
@@ -111,7 +116,36 @@ const HandleRootPostEP = (req, res) => {
     });
 }
 
+
+const HandleRootPutEP = (req, res) => {
+    let reqBody = '';
+    req.on('data', (chunk) => {
+        reqBody += chunk;
+    });
+    req.on('end', () => {
+        if (reqBody == '') {
+            res.writeHead(400, { 'content-type': 'application/json' });
+            res.end(JSON.stringify({ error: "Bad request. BOdy was null" }));
+            return;
+        }
+        let reqStud;
+        try {
+            reqStud = JSON.parse(reqBody);
+        }
+        catch (err) {
+            res.writeHead(500, { 'content-type': 'application/json' });
+            res.end(JSON.stringify({ error: `Failed to parse JSON from request body. Error: ${err}` }));
+        }
+    });
+
+    req.on('error', (err) => {
+        res.writeHead(500, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ error: `Request failed. Error: ${err}` }));
+    })
+}
+
 const serverFunction = (req, res) => {
+
     const method = req.method;
     const parsed = url.parse(req.url);
     const pathname = parsed.pathname;
@@ -139,7 +173,13 @@ const serverFunction = (req, res) => {
         }
     }
     else if (method == 'PUT') {
-        console.log('PUT');
+        if(pathname=='/'){
+            HandleRootPutEP(req,res);
+        }
+        else{
+            res.writeHead(400,{'content-type':'application/json'});
+            res.end(JSON.stringify({error:"Bad request. There's no such endpoint"}));
+        }
     }
     else if (method == 'DELETE') {
         console.log('DELETE');
