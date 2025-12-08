@@ -11,6 +11,7 @@ const rpc = new rws({
     port:RPC_PORT,
     host:'localhost'
 });
+
 rpc.event('server-notification');
 
 const SendNotifications = (notificationMessage)=>{
@@ -20,7 +21,7 @@ const SendNotifications = (notificationMessage)=>{
         timestamp:Date.now()
     }
 
-    console.log("Notification sent. Notification message: ",notification);
+    //console.log("Notification sent. Notification message: ",notification);
     rpc.emit('server-notification',notification);
 }
 
@@ -33,8 +34,9 @@ rpc.on('disconnection',()=>{
 });
 
 fs.watch('./',(event,f)=>{
-    if(f){
-        SendNotifications(`Backup file added. File:${f}, event:${event}`);
+    if(f&&DateFormatParser(f.split('_')[0])){
+        console.log("f split: ",f.split('_')[0]);
+        SendNotifications(`Backup file changed. File:${f}, event:${event}`);
     }
 });
 
@@ -144,9 +146,6 @@ const CompareDates = (fileDate, parsedDate) => {
         }
     }
 }
-
-
-//TODO: notifications implementation via RPC websockets
 
 const HandleRootGetEP = (req, res) => {
     let jsonContents = fs.readFileSync('./StudentsList.json');
