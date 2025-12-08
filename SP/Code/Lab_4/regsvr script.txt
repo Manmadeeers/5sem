@@ -1,2 +1,2 @@
-regsvr32 "C:/Users/Manmade/Desktop/5sem/SP/Code/Lab_4/x64/Debug/OS13_HTCOM.dll"
+regsvr32 "C:\Users\Manmade\Desktop\5sem\SP\Code\Lab_4\x64\Debug\OS13_HTCOM.dll"
 regsvr32 /u "C:/Users/Manmade/Desktop/5sem/SP/Code/Lab_4/x64/Debug/OS13_HTCOM.dll"

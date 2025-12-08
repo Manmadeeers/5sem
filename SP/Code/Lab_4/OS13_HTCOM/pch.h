@@ -9,5 +9,14 @@
 
 // Добавьте сюда заголовочные файлы для предварительной компиляции
 #include "framework.h"
+#include <iostream>
+#include <Unknwn.h>
+#include <Windows.h>
+#include <assert.h>
+#include <objbase.h>
 
+#include "HTInterface.h"
+#include "Component.h"
+#include "HTFactory.h"
+#include "Registry.h"
 #endif //PCH_H
