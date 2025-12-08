@@ -1,4 +1,5 @@
 
+
 create table AUDITORIUM_TYPE (
 AUDITORIUM_TYPE char(20) constraint AUDITORIUM_TYPE_PK primary key,
 AUDITORIUM_TYPENAME varchar2(60) constraint AUDITORIUM_TYPENAME_NOT_NULL not null
@@ -264,7 +265,7 @@ values ('ТОПИ', 'Технология обогащения полезных 
 insert into SUBJECT (SUBJECT, SUBJECT_NAME, PULPIT )
 values ('ПЭХ', 'Прикладная электрохимия', 'ХТЭПиМЭЕ');
 
-select table_name from all_tables where owner = 'KEO';
+select table_name from all_tables where owner = 'FIA';
 
 drop table AUDITORIUM_TYPE;
 drop table AUDITORIUM;
