@@ -4,8 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
-
 typedef struct {
     DWORD iterations;
 } THREAD_ARG;
