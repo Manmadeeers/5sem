@@ -1,73 +1,60 @@
-﻿#include <WinSock2.h>
+﻿#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#include <WinSock2.h>
 #include <ws2tcpip.h>
 #include <tchar.h>
 #include <iostream>
 #include <cstdlib>
 #include <string>
 #pragma comment(lib,"WS2_32.lib")
+#define PORT 40000
+using namespace std;
 
-std::string SetError(std::string message, int code) {
+std::string SetErrorMsgText(std::string message, int code) {
 	return message + ". Error code: " + std::to_string(code);
 }
 
 int main(int argc, char* argv[]) {
-	try {
-		WSADATA WSD_pointer;
-		int WSD_version = MAKEWORD(2, 0);
-
-		if (WSAStartup(WSD_version, &WSD_pointer) != 0) {
-			throw SetError("WSAStartup() failed", WSAGetLastError());
-		}
-		std::cout << "--WSAStartup() executed" << std::endl;
-
-		SOCKET clientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	SOCKET sS;
+	WSADATA wsaData;
+	try
+	{
+		if (WSAStartup(MAKEWORD(2, 0), &wsaData) != 0)
+			throw SetErrorMsgText("Startup:", WSAGetLastError());
+		if ((sS = socket(AF_INET, SOCK_STREAM, NULL)) == INVALID_SOCKET)
+			throw SetErrorMsgText("socket:", WSAGetLastError());
 
 		SOCKADDR_IN serv;
 		serv.sin_family = AF_INET;
-		serv.sin_port = htons(2000);
+		serv.sin_port = htons(40000);
+		serv.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-		if (inet_pton(AF_INET, "127.0.0.1", &serv.sin_addr) <= 0) {
-			throw SetError("inet_pton() function failed", WSAGetLastError());
-		}
+		if ((connect(sS, (sockaddr*)&serv, sizeof(serv))) == SOCKET_ERROR)
+			throw SetErrorMsgText("connect:", WSAGetLastError());
 
-		if (connect(clientSocket, (sockaddr*)&serv, sizeof(serv)) == SOCKET_ERROR) {
-			throw SetError("connect() function failed", WSAGetLastError());
-		}
+		char ibuf[50];
+		int  libuf = 0, lobuf = 0;
 
-		const char* message = "Hello from Client!\n";
+		string obuf = "Hello";
 
-		if (send(clientSocket, message, strlen(message), NULL) == SOCKET_ERROR) {
-			throw SetError("send() function failed", WSAGetLastError());
-		}
-		else {
-			std::cout << "Message sent to server" << std::endl;
-		}
+		if ((lobuf = send(sS, obuf.c_str(), strlen(obuf.c_str()) + 1, NULL)) == SOCKET_ERROR)
+			throw SetErrorMsgText("send: ", WSAGetLastError());
 
-		char in_buffer[50];
-		if (recv(clientSocket, in_buffer, sizeof(in_buffer), NULL) == SOCKET_ERROR) {
-			throw SetError("recv() function failed", WSAGetLastError());
-		}
-		else {
-			std::cout << "Received from server: " << in_buffer << std::endl;
-		}
+		if ((libuf = recv(sS, ibuf, sizeof(ibuf), NULL)) == SOCKET_ERROR)
+			throw SetErrorMsgText("recv: ", WSAGetLastError());
 
-		if (closesocket(clientSocket) == SOCKET_ERROR) {
-			throw SetError("closesocket() function failed", WSAGetLastError());
-		}
-		std::cout << "Socket closed" << std::endl;
+		printf(ibuf);
 
-		if (WSACleanup() == SOCKET_ERROR) {
-			throw SetError("WSACleanup() function failed", WSAGetLastError());
-		}
-		std::cout << "Cleanup executed" << std::endl;
-
-
-		system("pause");
-
+		if (closesocket(sS) == SOCKET_ERROR)
+			throw SetErrorMsgText("closesocket:", WSAGetLastError());
+		if (WSACleanup() == SOCKET_ERROR)
+			throw SetErrorMsgText("Cleanup:", WSAGetLastError());
 	}
-	catch (std::string message) {
-		std::cerr << message << std::endl;
+	catch (string errorMsgText)
+	{
+		cout << endl << errorMsgText;
 	}
 
+	cout << endl;
+	system("pause");
 	return 0;
 }

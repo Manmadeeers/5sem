@@ -5,99 +5,71 @@
 #include <cstring>
 #include <string>
 #pragma comment(lib,"WS2_32.lib")
+#define PORT 2000
+using namespace std;
 
-std::string SetError(std::string message, int code) {
+std::string SetErrorMsgText(std::string message, int code) {
 	return message+" Error code: " + std::to_string(code);
 }
 
 int main(int argc, char*argv[]) {
 
-	WSADATA WSD_pointer;
-	int WSD_version = MAKEWORD(2, 0);
-
-	SOCKET serverSocket;
-
-	try {
-
-		if (WSAStartup(WSD_version, &WSD_pointer) != 0) {
-			throw SetError("Startup failed", WSAGetLastError());
-		}
-		std::cout << "--Server started" << std::endl;
-
-		serverSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-		if (serverSocket == INVALID_SOCKET) {
-			throw SetError("socket() function failed", WSAGetLastError());
-		}
-		std::cout << "--Server socket created" << std::endl;
+	SOCKET sS;
+	WSADATA wsaData;
+	try
+	{
+		if (WSAStartup(MAKEWORD(2, 0), &wsaData) != 0)
+			throw SetErrorMsgText("Startup:", WSAGetLastError());
+		if ((sS = socket(AF_INET, SOCK_STREAM, NULL)) == INVALID_SOCKET)
+			throw SetErrorMsgText("socket:", WSAGetLastError());
 
 		SOCKADDR_IN serv;
 		serv.sin_family = AF_INET;
-		serv.sin_port = htons(2000);
-		serv.sin_addr.S_un.S_addr = INADDR_ANY;
+		serv.sin_port = htons(40000);
+		serv.sin_addr.s_addr = INADDR_ANY;
 
-		if (bind(serverSocket, (LPSOCKADDR)&serv, sizeof(serv)) == SOCKET_ERROR) {
-			throw SetError("bind() function failed", WSAGetLastError());
-		}
-		std::cout << "--Socket parameters binded" << std::endl;
+		if (bind(sS, (LPSOCKADDR)&serv, sizeof(serv)) == SOCKET_ERROR)
+			throw SetErrorMsgText("bind:", WSAGetLastError());
 
-		if (listen(serverSocket, SOMAXCONN) == SOCKET_ERROR) {
-			throw SetError("listen() function failed", WSAGetLastError());
-		}
-		std::cout << "--Server listening to a port" << std::endl;
+		if (listen(sS, SOMAXCONN) == SOCKET_ERROR)
+			throw SetErrorMsgText("listen:", WSAGetLastError());
 
-		char in_buffer[50];
-		int in_buffer_length = 0;
+		while (true) {
+			SOCKET cS;
+			SOCKADDR_IN clnt;
+			memset(&clnt, 0, sizeof(clnt));
+			int lclnt = sizeof(clnt);
 
-		SOCKET clientSocket;
-		SOCKADDR_IN client;
-		memset(&client, 0, sizeof(client));
-		int Lclient = sizeof(client);
+			if ((cS = accept(sS, (sockaddr*)&clnt, &lclnt)) == INVALID_SOCKET)
+				throw SetErrorMsgText("accept:", WSAGetLastError());
 
-		std::cout << "--Accept and wait" << std::endl;
+			string obuf;
+			bool flag = true;
 
-		clientSocket = accept(serverSocket, (sockaddr*)&client, &Lclient);
-		if (clientSocket == INVALID_SOCKET) {
-			throw SetError("accept() function failed", WSAGetLastError());
-		}
+			int lobuf = 0;
+			int libuf = 0;
+			char ibuf[50];
 
-		char ip_buffer[INET_ADDRSTRLEN];
-		if (inet_ntop(AF_INET, &client.sin_addr, ip_buffer, sizeof(ip_buffer)) == nullptr) {
-			std::cerr << "Error converting IP address" << WSAGetLastError() << std::endl;
-		}
-		std::cout << "----------Client info----------" << std::endl;
-		std::cout << "Client's IP address: " << ip_buffer << std::endl;
-		std::cout << "Client's port: " << ntohs(client.sin_port) << std::endl;
 
-		in_buffer_length = recv(clientSocket, in_buffer, sizeof(in_buffer) - 1, NULL);
-		if (in_buffer_length == SOCKET_ERROR) {
-			throw SetError("recv() function failed", WSAGetLastError());
-		}
-		else {
-			in_buffer[in_buffer_length] = '\0';
-			std::cout << "got from client: " << in_buffer << std::endl;
+			if ((libuf = recv(cS, ibuf, sizeof(ibuf), NULL)) == SOCKET_ERROR)
+				throw SetErrorMsgText("recv: ", WSAGetLastError());
+
+			obuf = "ECHO: " + (string)ibuf + '\0';
+			if ((lobuf = send(cS, obuf.c_str(), strlen(obuf.c_str()) + 1, NULL)) == SOCKET_ERROR)
+				throw SetErrorMsgText("send: ", WSAGetLastError());
+
+			cout<<"Received from client: " << ibuf << endl;
 		}
 
-
-		if (closesocket(serverSocket) == SOCKET_ERROR) {
-			throw SetError("closesocket() function faield", WSAGetLastError());
-		}
-
-		std::cout << "--Server socket closed" << std::endl;
-
-		if (WSACleanup() == SOCKET_ERROR) {
-			throw SetError("WSACleanup function failed", WSAGetLastError());
-		}
-
-		std::cout << "Cleanup executed" << std::endl;
-
-
-		system("pause");
-
-	
+		if (closesocket(sS) == SOCKET_ERROR)
+			throw SetErrorMsgText("closesocket:", WSAGetLastError());
+		if (WSACleanup() == SOCKET_ERROR)
+			throw SetErrorMsgText("Cleanup:", WSAGetLastError());
 	}
-	catch (std::string message) {
-		std::cerr << message << std::endl;
+	catch (string errorMsgText)
+	{
+		cout << "\nWSAGetLastError: " << errorMsgText;
 	}
-
+	cout << endl;
 	return 0;
 }
