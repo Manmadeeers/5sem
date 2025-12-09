@@ -1,35 +1,25 @@
 ﻿#include "pch.h"
 
-HMODULE g_hModule;                                          
-const wchar_t* g_szFriendlyName = L"OS13.ComponentHT.COM";   
-const wchar_t* g_szVerIndProgID = L"OS13.ComponentHT.1";     
-const wchar_t* g_szProgID = L"OS13.ComponentHT";             
-long g_cComponents = 0;		                                
-long g_cServerLocks = 0;                                  
-
+HMODULE g_hModule = nullptr;
+long g_cComponents = 0;		                               
+long g_cServerLocks = 0;
 
 BOOL APIENTRY DllMain(HMODULE hModule,
-    DWORD  ul_reason_for_call,
-    LPVOID lpReserved
+	DWORD  ul_reason_for_call,
+	LPVOID lpReserved
 )
 {
-    switch (ul_reason_for_call)
-    {
-    case DLL_PROCESS_ATTACH:
-        g_hModule = hModule;
-        break;
-    case DLL_THREAD_ATTACH:
-    case DLL_THREAD_DETACH:
-    case DLL_PROCESS_DETACH:
-        break;
-    }
-    return TRUE;
+	if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
+		g_hModule = hModule;
+		DisableThreadLibraryCalls(hModule);
+	}
+	return TRUE;
 }
 
 
 
-extern "C" __declspec(dllexport) STDAPI DllCanUnloadNow()
-{
+extern "C" STDAPI DllCanUnloadNow()
+{   
 	if ((g_cComponents == 0) && (g_cServerLocks == 0))
 	{
 		return S_OK;
@@ -41,7 +31,7 @@ extern "C" __declspec(dllexport) STDAPI DllCanUnloadNow()
 }
 
 
-extern "C" __declspec(dllexport) STDAPI DllGetClassObject(const CLSID& clsid,
+extern "C" STDAPI DllGetClassObject(const CLSID& clsid,
 	const IID& iid,
 	void** ppv)
 {
@@ -64,19 +54,124 @@ extern "C" __declspec(dllexport) STDAPI DllGetClassObject(const CLSID& clsid,
 	return hr;
 }
 
-extern "C" __declspec(dllexport) HRESULT __stdcall DllRegisterServer()
-{
-	return RegisterServer(g_hModule,
-		CLSID_OS13,
-		g_szFriendlyName,
-		g_szVerIndProgID,
-		g_szProgID);
+static HRESULT SetRegKeyValue(HKEY hRoot, LPCWSTR subKey, LPCWSTR valueName, LPCWSTR valueData) {
+    HKEY hKey = nullptr;
+    LONG l = RegCreateKeyExW(hRoot, subKey, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &hKey, NULL);
+
+    if (l != ERROR_SUCCESS) {
+        return HRESULT_FROM_WIN32(l);
+    }
+    if (valueData) {
+        l = RegSetValueExW(hKey, valueName, 0, REG_SZ, (const BYTE*)valueData, (DWORD)((wcslen(valueData) + 1) * sizeof(wchar_t)));
+    }
+
+    RegCloseKey(hKey);
+    return HRESULT_FROM_WIN32(l);
 }
 
-extern "C" __declspec(dllexport) HRESULT __stdcall DllUnregisterServer()
-{
-	return UnregisterServer(CLSID_OS13,
-		g_szVerIndProgID,
-		g_szProgID);
+
+extern "C" __declspec(dllexport) HRESULT __stdcall DllRegisterServer() {
+    wchar_t modulePath[MAX_PATH];
+
+    if (!GetModuleFileNameW(g_hModule, modulePath, ARRAYSIZE(modulePath))) {
+        return HRESULT_FROM_WIN32(GetLastError());
+    }
+
+    LPOLESTR clsidString = nullptr;
+
+    HRESULT hr = StringFromCLSID(CLSID_OS13, &clsidString);
+    if (FAILED(hr)) {
+        return hr;
+    }
+
+    wchar_t keyPath[512];
+
+    hr = StringCchPrintfW(keyPath, ARRAYSIZE(keyPath), L"CLSID\\%s", clsidString);
+    if (SUCCEEDED(hr)) {
+        hr = SetRegKeyValue(HKEY_CLASSES_ROOT, keyPath, NULL, L"OS13 COM Object");
+    }
+    if (FAILED(hr)) {
+        CoTaskMemFree(clsidString);
+        return hr;
+    }
+
+    hr = StringCchPrintfW(keyPath, ARRAYSIZE(keyPath), L"CLSID\\%s\\InprocServer32", clsidString);
+    if (SUCCEEDED(hr)) {
+        hr = SetRegKeyValue(HKEY_CLASSES_ROOT, keyPath, NULL, modulePath);
+    }
+    if (FAILED(hr)) {
+        CoTaskMemFree(clsidString);
+        return hr;
+    }
+
+    hr = SetRegKeyValue(HKEY_CLASSES_ROOT, keyPath, L"ThreadingModel", L"Both");
+
+    if (FAILED(hr)) {
+        CoTaskMemFree(clsidString);
+        return hr;
+    }
+
+    hr = SetRegKeyValue(HKEY_CLASSES_ROOT, L"OS13_COM.1", NULL, L"OS13 COM Object");
+    if (FAILED(hr)) {
+        CoTaskMemFree(clsidString);
+        return hr;
+    }
+
+    hr = SetRegKeyValue(HKEY_CLASSES_ROOT, L"OS13_COM.1\\CLSID", NULL, clsidString);
+    if (FAILED(hr)) {
+        CoTaskMemFree(clsidString);
+        return hr;
+    }
+
+    CoTaskMemFree(clsidString);
+    return hr;
+}
+
+extern "C" __declspec(dllexport) HRESULT __stdcall DllUnregisterServer() {
+
+    HRESULT hr = S_OK;
+    LPOLESTR clsidString = nullptr;
+
+    hr = StringFromCLSID(CLSID_OS13, &clsidString);
+    if (FAILED(hr)) {
+
+        return hr;
+    }
+
+    wchar_t keyPath[512];
+    if (SUCCEEDED(StringCchPrintfW(keyPath, ARRAYSIZE(keyPath), L"CLSID\\%s", clsidString)))
+    {
+
+#if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600)
+
+        if (RegDeleteTreeW(HKEY_CLASSES_ROOT, keyPath) != ERROR_SUCCESS)
+            hr = S_FALSE;
+#else
+        wchar_t inprocPath[512];
+        if (SUCCEEDED(StringCchPrintfW(inprocPath, ARRAYSIZE(inprocPath), L"%s\\InprocServer32", keyPath)))
+        {
+            RegDeleteKeyW(HKEY_CLASSES_ROOT, inprocPath);
+        }
+
+        RegDeleteKeyW(HKEY_CLASSES_ROOT, keyPath);
+#endif
+    }
+
+#if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600)
+
+    if (RegDeleteTreeW(HKEY_CLASSES_ROOT, L"OS13_COM.1") != ERROR_SUCCESS) {
+        hr = S_FALSE;
+    }
+
+#else
+
+    RegDeleteKeyW(HKEY_CLASSES_ROOT, L"OS13_COM.1\\CLSID");
+    RegDeleteKeyW(HKEY_CLASSES_ROOT, L"OS13_COM.1");
+
+#endif
+
+    CoTaskMemFree(clsidString);
+    return hr;
+
 }
 

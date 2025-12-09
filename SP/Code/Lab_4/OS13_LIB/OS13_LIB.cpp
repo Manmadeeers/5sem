@@ -4,13 +4,16 @@
 IHT* pIHT = nullptr;
 IElement* pIElement = nullptr;
 
+static const GUID CLSID_OS13L =
+{ 0xa61d3d18, 0x8a94, 0x429e, { 0x8f, 0x67, 0xfa, 0xd1, 0xc5, 0xff, 0x6f, 0xd5 } };
+
 #pragma region Implementing Init and Dispose
 
 OS13_HTCOM_HAHNDLE OS13_LIB::Init() {
 	IUnknown* pIUnknown = NULL;
 	CoInitialize(NULL);
 
-	HRESULT hr0 = CoCreateInstance(CLSID_OS13, NULL, CLSCTX_INPROC_SERVER, IID_IUnknown, (void**)&pIUnknown);
+	HRESULT hr0 = CoCreateInstance(CLSID_OS13L, NULL, CLSCTX_INPROC_SERVER, IID_IUnknown, (void**)&pIUnknown);
 
 	if (SUCCEEDED(hr0)) {
 		return pIUnknown;

@@ -14,9 +14,9 @@
 #include <Windows.h>
 #include <assert.h>
 #include <objbase.h>
+#include <strsafe.h>
 
 #include "HTInterface.h"
 #include "Component.h"
 #include "HTFactory.h"
-#include "Registry.h"
 #endif //PCH_H

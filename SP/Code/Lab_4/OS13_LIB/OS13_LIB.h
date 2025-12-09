@@ -22,7 +22,7 @@ namespace OS13_LIB {
 		HT::Element* LIB_ConstructInsertElement(OS13_HTCOM_HAHNDLE h, const void* Key, int KeyLength, const void* Payload, int PayloadLength);
 		HT::Element* LIB_ConstructUpdateElement(OS13_HTCOM_HAHNDLE h, HT::Element* OldElement, const void* NewPayload, int NewPayloadLength);
 	}
-
+	
 	void Dispose(OS13_HTCOM_HAHNDLE h);
 }
 
