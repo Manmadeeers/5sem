@@ -96,6 +96,21 @@ namespace HT {
         return buffer;
     }
 
+    static unsigned int InsertHashFunction(const void* Key, int KeyLength, int Capacity) {
+        int hash = 5381;
+        const char* str = static_cast<const char*>(Key);
+
+        for (int i = 0; i < KeyLength; ++i) {
+
+
+            hash = ((hash << 5) + hash) + str[i];
+
+        }
+
+
+        return abs(hash % Capacity);
+    }
+
 
     HTHANDLE* Create(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char FileName[512]) {
         std::lock_guard<std::mutex>lock(thread_mutex);
@@ -317,6 +332,219 @@ namespace HT {
     }
 
 
+        
+    BOOL Insert(HTHANDLE* handle, Element* element) {
+        if (!handle || !element) {
+            std::cerr << "Insert: Invalid function parameters" << std::endl;
+            return FALSE;
+        }
+
+        if (handle->Addr == NULL) {
+            std::cerr << "Insert: Failed to access mapped address. Error code: " << GetLastError() << std::endl;
+            return FALSE;
+        }
+
+        if (handle->CurrentElements >= handle->Capacity) {
+            std::cerr << "Insert: Attempted to exceed storage capacity" << std::endl;
+            return FALSE;
+        }
+
+        if (element->KeyLength >= handle->MaxKeyLength || element->PayloadLength >= handle->MaxPayloadLength) {
+            std::cerr << "Insert: Element instance was invalid. Key or payload length exceed storage parameters" << std::endl;
+            return FALSE;
+        }
+
+        if (!element->Key || !element->Payload) {
+            std::cerr << "Insert: Element instance was invalid. Key or Payload does not exist" << std::endl;
+            return FALSE;
+        }
+
+        std::lock_guard<std::mutex> lock(thread_mutex);
+
+        int slot_size = handle->MaxKeyLength + handle->MaxPayloadLength;
+        int hash_index = InsertHashFunction(element->Key, element->KeyLength, handle->Capacity);
+        char* base = static_cast<char*>(handle->Addr) + METADATA_OFFSET;
+
+        for (int i = 0; i < handle->Capacity; ++i) {
+            char* current_slot = base + (i * slot_size);
+            bool is_empty = true;
+
+            for (int j = 0; j < handle->MaxKeyLength; ++j) {
+                if (current_slot[j] != 0) {
+                    is_empty = false;
+                    break;
+                }
+            }
+
+            if (is_empty) {
+                memcpy(current_slot, element->Key, element->KeyLength);
+                if (element->KeyLength < handle->MaxKeyLength) {
+                    memset(current_slot + element->KeyLength, 0, handle->MaxKeyLength - element->KeyLength);
+                }
+
+                char* payload_area = current_slot + handle->MaxKeyLength;
+                memcpy(payload_area, element->Payload, element->PayloadLength);
+                if (element->PayloadLength < handle->MaxPayloadLength) {
+                    memset(payload_area + element->PayloadLength, 0, handle->MaxPayloadLength - element->PayloadLength);
+                }
+
+                handle->CurrentElements++;
+                std::cout << "Insert: inserted at index " << hash_index << std::endl;
+                return TRUE;
+            }
+            hash_index = (hash_index + 1) % handle->Capacity;
+        }
+
+        std::cerr << "Insert: No free slots available" << std::endl;
+        return FALSE;
+
+    }
+
+    BOOL Delete(HTHANDLE* handle, Element* element) {
+        if (!handle || !element) {
+            std::cerr << "Delete: parameters were invalid" << std::endl;
+            return FALSE;
+        }
+
+        if (!element->Key || element->KeyLength <= 0||element->KeyLength>=handle->MaxKeyLength) {
+            std::cerr << "Delete:element instance was invalid" << std::endl;
+            return FALSE;
+        }
+
+        std::lock_guard<std::mutex> lock(thread_mutex);
+
+        int slot_size = handle->MaxKeyLength + handle->MaxPayloadLength;
+        char* base = static_cast<char*>(handle->Addr) + METADATA_OFFSET;
+        int index_to_delete = -1;
+
+        for (int i = 0; i < handle->Capacity; ++i) {
+            char* current_slot = base + (i * slot_size);
+            bool is_empty = true;
+
+            for (int j = 0; j < handle->MaxKeyLength; ++j) {
+                if (current_slot[j] != 0) {
+                    is_empty = false;
+                    break;
+                }
+            }
+
+            if (is_empty) {
+                continue;
+            }
+
+            if (element->KeyLength <= handle->MaxKeyLength && memcmp(current_slot, element->Key, element->KeyLength) == 0) {
+                index_to_delete = i;
+                break;
+            }
+        }
+
+        if (index_to_delete == -1) {
+            std::cerr << "Delete: Element not found" << std::endl;
+            return FALSE;
+        }
+
+        for (int i = index_to_delete + 1; i < handle->Capacity; ++i) {
+            char* src_location = base + (i * slot_size);
+            char* dest_location = base + ((i - 1) * slot_size);
+            memcpy(dest_location, src_location, slot_size);
+        }
+
+        handle->CurrentElements--;
+
+        std::cout << "Delete: Successfully deleted an element with key: " << static_cast<const char*>(element->Key) << std::endl;
+
+        return TRUE;
+    }
+
+
+    Element* Get(HTHANDLE* handle, Element* element) {
+        if (!handle || !element) {
+            std::cerr << "Get: function parameters were invalid" << std::endl;
+            return nullptr;
+        }
+        if (!element->Key || element->KeyLength <= 0 || element->KeyLength >= handle->MaxKeyLength) {
+            std::cerr << "Get: Element instance was invalid" << std::endl;
+            return FALSE;
+        }
+
+        std::lock_guard<std::mutex>lock(thread_mutex);
+
+        int slot_size = handle->MaxKeyLength + handle->MaxPayloadLength;
+        char* base = static_cast<char*>(handle->Addr) + METADATA_OFFSET;
+
+        for (int i = 0; i < handle->Capacity; ++i) {
+            char* current_slot = base + (i * slot_size);
+            bool is_empty = true;
+
+            for (int j = 0; j < handle->MaxKeyLength; ++j) {
+                if (current_slot[j] != 0) {
+                    is_empty = false;
+                    break;
+                }
+            }
+
+            if (is_empty) {
+                continue;
+            }
+
+            if (memcmp(current_slot, element->Key, element->KeyLength) == 0) {
+                Element* found = new Element(current_slot, element->KeyLength, current_slot + handle->MaxKeyLength, handle->MaxPayloadLength);
+                return found;
+            }
+        }
+
+        std::cerr << "Get: element not found" << std::endl;
+        return nullptr;
+    }
+
+    BOOL Update(HTHANDLE* handle, Element* element, const void* NewPayload, int NewPayloadLength) {
+        if (!handle || !element||!NewPayload) {
+            std::cerr << "Update: function parameters were invalid" << std::endl;
+            return FALSE;
+        }
+        if (element->KeyLength <= 0 || element->KeyLength >= handle->MaxKeyLength || !element->Payload || element->PayloadLength <= 0 || element->PayloadLength >= handle->MaxPayloadLength) {
+            std::cerr << "Update: Element instance was invalid" << std::endl;
+            return FALSE;
+        }
+        if (NewPayloadLength <= 0 || NewPayloadLength >= handle->MaxPayloadLength) {
+            std::cerr << "Update: NewPayloadLength was invalid" << std::endl;
+            return FALSE;
+        }
+
+        std::lock_guard<std::mutex>lock(thread_mutex);
+
+        int slot_size = handle->MaxKeyLength + handle->MaxPayloadLength;
+        char* base = static_cast<char*>(handle->Addr) + METADATA_OFFSET;
+
+        for (int i = 0; i < handle->Capacity; ++i) {
+            char* current_slot = base + (i * slot_size);
+            bool is_empty = true;
+
+            for (int j = 0; j < handle->MaxKeyLength; ++j) {
+                if (current_slot[j] != 0) {
+                    is_empty = false;
+                    break;
+                }
+            }
+
+            if (is_empty) {
+                continue;
+            }
+
+            if (memcmp(current_slot, element->Key, element->KeyLength) == 0) {
+                memcpy(current_slot + handle->MaxKeyLength, NewPayload, NewPayloadLength);
+                std::cout << "Update: Element with key "<<static_cast<const char*>(element->Key)<<" updated" << std::endl;
+                return TRUE;
+            }
+        }
+
+        std::cerr << "Update:  element not found" << std::endl;
+        return FALSE;
+    }
+
+    void Print(Element* element) {
+        std::cout << "Key: " << static_cast<const char*>(element->Key) << " Payload: " << static_cast<const char*>(element->Payload) << std::endl;
+    }
 
 
 }

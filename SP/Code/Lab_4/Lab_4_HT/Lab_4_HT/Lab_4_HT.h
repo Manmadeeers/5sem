@@ -4,7 +4,6 @@
 #include <mutex>
 #include <thread>
 #include <cstring>
-#include <Windows.h>
 #include <cstdlib>
 #include <future>
 
