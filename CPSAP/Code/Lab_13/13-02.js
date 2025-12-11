@@ -1,23 +1,15 @@
-const net = require('net');
-const HOST = 'localhost';
-const PORT = 2000;
+let net = require('net');
 
-const client = new net.Socket();
-client.connect(PORT,HOST,()=>{
-    console.log(`Client connected. Address: ${client.remoteAddress},Port: ${client.remotePort}`);
-});
+let HOST = '127.0.0.1';
+let PORT = 40000;
 
-client.write('Hello from client');
+let client = new net.Socket();
+client.connect(PORT, HOST, ()=>console.log('Client connected:' + client.remoteAddress + ': ' + client.remotePort));
 
-client.on('data',(data)=>{
-    console.log(`Received message: ${data}`);
-    client.destroy();
-});
+client.write('Hello\0');
 
-client.on('close',()=>{
-    console.log('Client closed');
-});
+client.on('data', (data) => {console.log(data.toString()); client.destroy();});
 
-client.on('error',(err)=>{
-    console.log(`Error occured. Error:${err}`);
-});
+client.on('close', () => {console.log('client closed')});
+
+client.on('error', () => {console.log('client error');})

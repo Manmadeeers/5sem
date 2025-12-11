@@ -6,7 +6,7 @@
 #include <cstdlib>
 #include <string>
 #pragma comment(lib,"WS2_32.lib")
-#define PORT 40000
+#define PORT 2000
 using namespace std;
 
 std::string SetErrorMsgText(std::string message, int code) {

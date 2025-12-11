@@ -1,39 +1,28 @@
-const net = require('net');
-const HOST = 'localhost';
-const PORT = 2000;
-let serverSUM = 0;
+let net = require('net');
 
-const SERVER = net.createServer();
+let HOST = '0.0.0.0';
+let PORT = 40000;
 
-SERVER.on('connection',(socket)=>{
-    console.log(`Server connected: ${socket.remoteAddress} ${socket.remotePort}`);
+let sum = 0;
 
-    socket.on('data',(chunk)=>{
-        console.log("Server data: ",chunk,serverSUM);
-        serverSUM+=chunk.readInt32LE();
+let server = net.createServer();
+server.on('connection', sock => {
+
+    console.log('Server connected: ' + sock.remoteAddress + ': ' + sock.remotePort);
+
+    sock.on('data', (data) => {
+        console.log('Server DATA: ', data, sum);
+        sum += data.readInt32LE();        
     });
 
-    let buff = Buffer.alloc(4);
-    setInterval(()=>{
-        buff.writeInt32LE(serverSUM,0);
-        socket.write(buff);
-    },5000);
+    let buf = Buffer.alloc(4);
+    setInterval(() => {buf.writeInt32LE(sum, 0); sock.write(buf)}, 5000);
 
-    socket.on('close',()=>{
-        console.log('Server closed: ',socket.remoteAddress+' '+socket.remotePort);
-    });
+    sock.on('close', () => console.log('socket closed: ', sock.remoteAddress + ' ' + sock.remotePort))
+    sock.on('error', () => console.log('socket error: ', sock.remoteAddress + ' ' + sock.remotePort))
 
-    socket.on('error',(err)=>{
-        console.log("Error occured: ",err);
-    });
-});
+})
 
-SERVER.on('listening',()=>{
-    console.log("TCP Server: ",HOST+ ' '+ PORT);
-});
-
-SERVER.on('error',(err)=>{
-    console.log("Server error: ",err);
-});
-
-SERVER.listen(PORT,HOST);
+server.on('listening', () => {console.log('TCP-server ', HOST, PORT);});
+server.on('error', (e) => {console.log('TCP-сервер error', e);});
+server.listen(PORT, HOST);

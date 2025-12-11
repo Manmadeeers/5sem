@@ -1,35 +1,20 @@
-const { time } = require('console');
-const { connect } = require('http2');
-const net = require('net');
-const HOST = 'localhost';
-const PORT = 2000;
+let net = require('net');
 
-const client = new net.Socket();
-let buff = new Buffer.alloc(4);
+let HOST = '127.0.0.1';
+let PORT = 40000;
+
+let client = new net.Socket();
+let buf = new Buffer.alloc(4);
 let timerId = null;
 
-client.connect(PORT,HOST,()=>{
-    console.log("Client connected: ",client.remoteAddress+ ' '+client.remotePort);
-    let k=0;
+client.connect(PORT, HOST, ()=>{
+    console.log('Client connected: ', client.remoteAddress + ' ' + client.remotePort);
+    let k = 0;
+    timerId = setInterval(() => {client.write((buf.writeInt32LE(k++, 0), buf))}, 1000);
+    setTimeout(() => {clearTimeout(timerId); client.end();}, 20000);
+})
 
-    timerId = setInterval(()=>{
-        client.write((buff.writeInt32LE(k++,0),buff))
-    },1000);
+client.on('data', (data) => {console.log('client data: ', data.readInt32LE());});
 
-    setTimeout(()=>{
-        clearInterval(timerId);
-        client.end();
-    },20000);
-});
-
-client.on('data',(data)=>{
-    console.log('Received data: ',data.readInt32LE());
-});
-
-client.on('close',()=>{
-    console.log('Client closed');
-});
-
-client.on('error',(err)=>{
-    console.log("Client error: ",err);
-});
+client.on('close', () => {console.log('client close');});
+client.on('error', (e) => {console.log('client error', e);});
