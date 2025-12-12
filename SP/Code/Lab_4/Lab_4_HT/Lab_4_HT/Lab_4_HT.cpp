@@ -2,6 +2,50 @@
 #include "Lab_4_HT.h"
 #define METADATA_OFFSET 4*sizeof(int)
 
+struct ProcessMutex {
+    HANDLE hMutex;
+    bool locked;
+    bool ownHandle;
+
+    ProcessMutex(const char* name, DWORD timeout = INFINITE) :hMutex(NULL), locked(false), ownHandle(false) {
+        if (name == nullptr) {
+            return;
+        }
+
+        hMutex = CreateMutexA(NULL, FALSE, name);
+        if (!hMutex) {
+            std::cerr << "ScopedNamedMutex: CreateMutexA() failed for mutex handle. Error code: " << GetLastError() << std::endl;
+            return;
+        }
+        ownHandle = true;
+
+
+        DWORD w = WaitForSingleObject(hMutex, timeout);
+        if (w == WAIT_OBJECT_0 || w == WAIT_ABANDONED) {
+            locked = true;
+            if (w == WAIT_ABANDONED) {
+                std::cerr << "ScopedNamedMutex: Wait returned WAIT_ABANDONED" << std::endl;
+            }
+        }
+        else {
+            std::cerr << "ScopedNamedMutex: WaitForSingleObject returned " << w << " Error code: " << GetLastError() << std::endl;
+        }
+    }
+    ~ProcessMutex() {
+        if (locked && hMutex != NULL) {
+            ReleaseMutex(hMutex);
+            locked = false;
+        }
+        if (ownHandle && hMutex != NULL) {
+            ownHandle = false;
+            CloseHandle(hMutex);
+            hMutex = NULL;
+        }
+    }
+
+    bool isLocked() const { return locked; }
+};
+
 namespace HT {
 	std::mutex thread_mutex;
 
@@ -111,6 +155,43 @@ namespace HT {
         return abs(hash % Capacity);
     }
 
+    static unsigned int MutexHashFunction(const char* str) {
+        unsigned int hash = 5381;
+
+        while (*str) {
+            hash = ((hash << 5) + hash) + (unsigned char)(*str++);
+        }
+        return hash;
+    }
+
+    static HANDLE CreateOpenProcessMutex(const char* fileName, char* outNameBuf, size_t outNameBufSize) {
+        if (!fileName) {
+            return NULL;
+        }
+        unsigned int hash = MutexHashFunction(fileName);
+
+        char nameBuf[128];
+
+        snprintf(nameBuf, sizeof(nameBuf), "Global\\HT_Mutex_%08X", hash);
+        nameBuf[sizeof(nameBuf) - 1] = '\0';
+
+        if (outNameBuf && outNameBufSize > 0) {
+            strncpy_s(outNameBuf, outNameBufSize, nameBuf, _TRUNCATE);
+        }
+
+        HANDLE hMutex = CreateMutexA(
+            NULL,
+            FALSE,
+            nameBuf
+        );
+
+        if (!hMutex) {
+            std::cerr << "CreateOpenProcessMutex : CreateMutexA() failed for mutex handle. Error code: " << GetLastError() << std::endl;
+        }
+
+        return hMutex;
+    }
+
 
     HTHANDLE* Create(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char FileName[512]) {
         std::lock_guard<std::mutex>lock(thread_mutex);
@@ -170,6 +251,16 @@ namespace HT {
 
 
         WriteMetadata(handle);
+
+        handle->MutexHandle = CreateOpenProcessMutex(FileName, handle->MutexName, sizeof(handle->MutexName));
+        if (handle->MutexHandle == NULL) {
+            std::cerr << "Create: CreateOpenProcessMutex() for handle->MutexHandle failed. Error code: " << GetLastError() << std::endl;
+            UnmapViewOfFile(handle->Addr);
+            CloseHandle(handle->FileMapping);
+            CloseHandle(handle->File);
+            delete handle;
+            return nullptr;
+        }
 
         return handle;
 
@@ -249,12 +340,29 @@ namespace HT {
         }
 
 
+        handle->MutexHandle = CreateOpenProcessMutex(FileName, handle->MutexName, sizeof(handle->MutexName));
+        if (handle->MutexHandle == NULL) {
+            std::cerr << "Open: CreateOpenProcessMutex() for handle->MutexHandle failed. Error code: " << GetLastError() << std::endl;
+            UnmapViewOfFile(handle->Addr);
+            CloseHandle(handle->FileMapping);
+            CloseHandle(handle->File);
+            delete handle;
+            return nullptr;
+        }
+
+
         return handle;
     }
 
     BOOL Snap(HTHANDLE* handle) {
         if (!handle) {
             std::cerr << "Snap: Failed to access HTHANDLE instance. Error code: " << GetLastError() << std::endl;
+            return FALSE;
+        }
+
+        ProcessMutex cpMutex(handle->FileName);
+        if (!cpMutex.isLocked()) {
+            std::cerr << "Snap: failed to acquire cross process mutex. Error code: " << GetLastError() << std::endl;
             return FALSE;
         }
 
@@ -305,7 +413,16 @@ namespace HT {
             return FALSE;
         }
 
-        std::lock_guard<std::mutex>lock(thread_mutex);
+        ProcessMutex cpMutex(handle->FileName);
+        if (!cpMutex.isLocked()) {
+            std::cerr << "Close: failed to acquire cross process mutex. Error code: " << GetLastError() << std::endl;
+            return FALSE;
+        }
+
+        {
+            std::lock_guard<std::mutex>lock(thread_mutex);
+        }
+      
         std::future<BOOL> snapshot_result = std::async(Snap, handle);
 
         if (!snapshot_result.get()) {
@@ -359,6 +476,13 @@ namespace HT {
             return FALSE;
         }
 
+        ProcessMutex cpMutex(handle->FileName);
+        if (!cpMutex.isLocked()) {
+            std::cerr << "Insert: failed to acquire cross process mutex. Error code: " << GetLastError() << std::endl;
+            return FALSE;
+        }
+
+
         std::lock_guard<std::mutex> lock(thread_mutex);
 
         int slot_size = handle->MaxKeyLength + handle->MaxPayloadLength;
@@ -408,6 +532,12 @@ namespace HT {
 
         if (!element->Key || element->KeyLength <= 0||element->KeyLength>=handle->MaxKeyLength) {
             std::cerr << "Delete:element instance was invalid" << std::endl;
+            return FALSE;
+        }
+
+        ProcessMutex cpMutex(handle->FileName);
+        if (!cpMutex.isLocked()) {
+            std::cerr << "Delete: failed to acquire cross process mutex. Error code: " << GetLastError() << std::endl;
             return FALSE;
         }
 
@@ -464,7 +594,13 @@ namespace HT {
         }
         if (!element->Key || element->KeyLength <= 0 || element->KeyLength >= handle->MaxKeyLength) {
             std::cerr << "Get: Element instance was invalid" << std::endl;
-            return FALSE;
+            return nullptr;
+        }
+
+        ProcessMutex cpMutex(handle->FileName);
+        if (!cpMutex.isLocked()) {
+            std::cerr << "Get: failed to acquire cross process mutex. Error code: " << GetLastError() << std::endl;
+            return nullptr;
         }
 
         std::lock_guard<std::mutex>lock(thread_mutex);
@@ -508,6 +644,12 @@ namespace HT {
         }
         if (NewPayloadLength <= 0 || NewPayloadLength >= handle->MaxPayloadLength) {
             std::cerr << "Update: NewPayloadLength was invalid" << std::endl;
+            return FALSE;
+        }
+
+        ProcessMutex cpMutex(handle->FileName);
+        if (!cpMutex.isLocked()) {
+            std::cerr << "Update: failed to acquire cross process mutex. Error code: " << GetLastError() << std::endl;
             return FALSE;
         }
 

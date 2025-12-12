@@ -22,6 +22,8 @@ namespace HT {
 		LPVOID Addr;
 		time_t LastSnapTime;
 		int CurrentElements;
+		HANDLE MutexHandle;
+		char MutexName[512];
 	};
 
 	struct Element {

@@ -135,11 +135,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ClassFactory.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="Interface.h" />
+    <ClInclude Include="OS13.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ClassFactory.cpp" />
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="OS13.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
