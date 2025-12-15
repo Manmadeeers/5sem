@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Задание №3</title>
+    <style>
+        :root {
+    --bg: #0f1720;
+    --panel: #111827;
+    --text: #e6eef3;
+    --muted: #9aa4b2;
+    --accent: #8b5cf6;
+    --border: rgba(255, 255, 255, 0.06);
+    --danger: #ff6b6b;
+}
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, sans-serif;
+    margin: 0;
+    padding: 30px;
+    display: flex;
+    justify-content: center;
+}
+
+.container {
+    width: 700px;
+}
+
+#btnLoad {
+    width: 100%;
+    padding: 12px;
+    background: var(--accent);
+    border: none;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+
+.forms {
+    background: var(--panel);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 10px;
+}
+
+label {
+    width: 140px;
+    color: var(--muted);
+}
+
+input {
+    flex: 1;
+    padding: 8px;
+    background: #0b1220;
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 5px;
+}
+
+button {
+    padding: 10px 14px;
+    background: #2d3748;
+    border: 1px solid #4a5568;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 6px;
+}
+
+button:hover {
+    background: #4a5568;
+}
+
+#error {
+    color: var(--danger);
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+#select_result {
+    margin-top: 15px;
+    display: grid;
+    gap: 12px;
+}
+
+.el {
+    padding: 12px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+}
+
+.el span {
+    color: var(--accent);
+    font-weight: bold;
+}
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div id="error"></div>
+
+    <button id="btnLoad" class="big-btn" onclick="select()">Получить все кафедры</button>
+
+    <div class="forms">
+
+        <h3>Добавить кафедру</h3>
+        <div class="row">
+            <label>PULPIT</label>
+            <input type="text" id="pulpit">
+        </div>
+        <div class="row">
+            <label>PULPIT_NAME</label>
+            <input type="text" id="pulpit_name">
+        </div>
+        <div class="row">
+            <label>FACULTY</label>
+            <input type="text" id="faculty">
+        </div>
+        <button onclick="insert()">Добавить</button>
+
+        <hr>
+
+        <h3>Обновить кафедру</h3>
+        <div class="row">
+            <label>PULPIT</label>
+            <input type="text" id="pulpit_update" onchange="getPulpitById()">
+        </div>
+        <div class="row">
+            <label>PULPIT_NAME</label>
+            <input type="text" id="pulpit_name_update">
+        </div>
+        <div class="row">
+            <label>FACULTY</label>
+            <input type="text" id="faculty_update">
+        </div>
+        <button onclick="update()">Обновить</button>
+
+        <hr>
+
+        <h3>Удалить кафедру</h3>
+        <div class="row">
+            <label>PULPIT</label>
+            <input type="text" id="pulpit_delete">
+        </div>
+        <button onclick="remove()">Удалить</button>
+
+    </div>
+
+    <h3 style="margin-top: 20px;">Результаты</h3>
+    <div id="select_result"></div>
+
+</div>
+
+<script>
+    const select = () => {
+    fetch("/api/pulpits")
+        .then(r => r.json())
+        .then(data => {
+            select_result.innerHTML = "";
+            data.forEach(el => {
+                select_result.innerHTML += `
+                    <div class="el">
+                        <span>PULPIT:</span> ${el.PULPIT}<br>
+                        <span>PULPIT_NAME:</span> ${el.PULPIT_NAME}<br>
+                        <span>FACULTY:</span> ${el.FACULTY}
+                    </div>
+                `;
+            });
+        });
+};
+
+const insert = () => {
+    error.innerHTML = "";
+    fetch("/api/pulpits", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            PULPIT: pulpit.value,
+            PULPIT_NAME: pulpit_name.value,
+            FACULTY: faculty.value
+        })
+    })
+        .then(r => r.json())
+        .then(data => {
+            if (data.errorMessage) error.innerHTML = data.errorMessage;
+            pulpit.value = "";
+            pulpit_name.value = "";
+            faculty.value = "";
+            select();
+        });
+};
+
+const update = () => {
+    error.innerHTML = "";
+    fetch("/api/pulpits", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            PULPIT: pulpit_update.value,
+            PULPIT_NAME: pulpit_name_update.value,
+            FACULTY: faculty_update.value
+        })
+    })
+        .then(r => r.json())
+        .then(data => {
+            if (data.errorMessage) error.innerHTML = data.errorMessage;
+
+            pulpit_update.value = "";
+            pulpit_name_update.value = "";
+            faculty_update.value = "";
+
+            select();
+        });
+};
+
+const remove = () => {
+    error.innerHTML = "";
+    fetch(`/api/pulpits/${pulpit_delete.value}`, { method: "DELETE" })
+        .then(r => r.json())
+        .then(data => {
+            if (data.errorMessage) error.innerHTML = data.errorMessage;
+            pulpit_delete.value = "";
+            select();
+        });
+};
+
+const getPulpitById = async () => {
+    let list = await fetch("/api/pulpits").then(r => r.json());
+    let found = list.find(p => p.PULPIT.trim() === pulpit_update.value.trim());
+
+    if (!found) {
+        error.innerHTML = "Нет кафедры с таким кодом";
+        pulpit_name_update.value = "";
+        faculty_update.value = "";
+        return;
+    }
+
+    pulpit_name_update.value = found.PULPIT_NAME.trim();
+    faculty_update.value = found.FACULTY.trim();
+};
+
+</script>
+</body>
+</html>

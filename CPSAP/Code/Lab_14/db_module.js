@@ -1,32 +1,36 @@
 let sql = require('mssql');
 
 let prop = {
-    user: 'UniversityUser', password: '1111', server: 'DESKTOP-I', port:14625, database: 'UNIVERCITY',
-    pool: {max: 10, min: 4},
+    user: 'UNIVER_USER',
+    server: 'DESKTOP-I',
+    password:'Strong_pass123!',
+    database: 'UNIVERCITY',
+    pool: { max: 10, min: 4 },
     options: {
         trustServerCertificate: true,
         enableArithAbort: true
     },
-    connectionTimeout: 450000
+    connectionTimeout: 5000
 };
 
 class DB {
-    
+
     pool = new sql.ConnectionPool(prop).connect()
         .then(pool => {
             console.log('connect to database');
             return pool;
         })
-        .catch(err => 
-            console.error('connection failed:', err.message)           
+        .catch(err =>
+            console.error('connection failed:', err.message)
         );
     getFaculties = () => {
         return this.pool.then(pool => {
             if (pool) {
-            return pool.request().query('SELECT * FROM faculty');
-        } else {
-            throw new Error('No connection pool available');
-        }});
+                return pool.request().query('SELECT * FROM faculty');
+            } else {
+                throw new Error('No connection pool available');
+            }
+        });
     }
     getPulpits = () => {
         return this.pool.then(pool => pool.request().query('select * from pulpit'));
@@ -79,9 +83,9 @@ class DB {
     }
     insertAuditorium = (auditorium, auditoriumName, capasity, auditoriumtype) => {
         console.log(auditorium);
-                    console.log(auditoriumName);
-                    console.log(capasity);
-                    console.log(auditoriumtype);
+        console.log(auditoriumName);
+        console.log(capasity);
+        console.log(auditoriumtype);
         return this.pool.then(pool => {
 
             return pool.request()
@@ -95,15 +99,15 @@ class DB {
 
     //-------------------------------
 
-    updateFaculty = async(faculty, facultyName) => {
+    updateFaculty = async (faculty, facultyName) => {
         let faculties = (await this.getFaculties()).recordset;
         let isFound = false;
-        for(let fac of faculties){
-            if(fac.FACULTY.trim() === faculty.trim()){
+        for (let fac of faculties) {
+            if (fac.FACULTY.trim() === faculty.trim()) {
                 isFound = true;
             }
         }
-        if(!isFound){
+        if (!isFound) {
             throw new Error('faculty is not found');
         }
         return this.pool.then(pool => {
@@ -113,15 +117,15 @@ class DB {
                 .query('update faculty set faculty_name = @facultyName where faculty = @faculty');
         })
     }
-    updatePulpit = async(pulpit, pulpitName, faculty) => {
+    updatePulpit = async (pulpit, pulpitName, faculty) => {
         let pulpits = (await this.getPulpits()).recordset;
         let isFound = false;
-        for(let pul of pulpits){
-            if(pul.PULPIT.trim() === pulpit.trim()){
+        for (let pul of pulpits) {
+            if (pul.PULPIT.trim() === pulpit.trim()) {
                 isFound = true;
             }
         }
-        if(!isFound){
+        if (!isFound) {
             throw new Error('pulpit is not found');
         }
         return this.pool.then(pool => {
@@ -132,15 +136,15 @@ class DB {
                 .query('update pulpit set pulpit_name = @pulpitName, faculty = @faculty where pulpit = @pulpit');
         })
     }
-    updateSubject = async(subject, subjectName, pulpit) => {
+    updateSubject = async (subject, subjectName, pulpit) => {
         let subjects = (await this.getSubjects()).recordset;
         let isFound = false;
-        for(let sub of subjects){
-            if(sub.SUBJECT.trim() === subject.trim()){
+        for (let sub of subjects) {
+            if (sub.SUBJECT.trim() === subject.trim()) {
                 isFound = true;
             }
         }
-        if(!isFound){
+        if (!isFound) {
             throw new Error('subject is not found');
         }
         return this.pool.then(pool => {
@@ -154,12 +158,12 @@ class DB {
     updateAuditoriumtype = async (auditoriumtype, auditoriumtypeName) => {
         let auditoriumtypes = (await this.getAuditoriumstypes()).recordset;
         let isFound = false;
-        for(let aut of auditoriumtypes){
-            if(aut.AUDITORIUM_TYPE.trim() === auditoriumtype.trim()){
+        for (let aut of auditoriumtypes) {
+            if (aut.AUDITORIUM_TYPE.trim() === auditoriumtype.trim()) {
                 isFound = true;
             }
         }
-        if(!isFound){
+        if (!isFound) {
             throw new Error('auditoriumtype is not found');
         }
         return this.pool.then(pool => {
@@ -169,15 +173,15 @@ class DB {
                 .query('update auditorium_type set auditorium_typename = @auditoriumtypeName where auditorium_type = @auditoriumtype');
         })
     }
-    updateAuditorium = async(auditorium, auditoriumName, capacity, auditoriumtype) => {
+    updateAuditorium = async (auditorium, auditoriumName, capacity, auditoriumtype) => {
         let auditoriums = (await this.getAuditoriums()).recordset;
         let isFound = false;
-        for(let aud of auditoriums){
-            if(aud.AUDITORIUM.trim() === auditorium.trim()){
+        for (let aud of auditoriums) {
+            if (aud.AUDITORIUM.trim() === auditorium.trim()) {
                 isFound = true;
             }
         }
-        if(!isFound){
+        if (!isFound) {
             throw new Error('auditorium is not found');
         }
         return this.pool.then(pool => {
@@ -195,12 +199,12 @@ class DB {
     deleteFaculty = async (faculty) => {
         let faculties = (await this.getFaculties()).recordset;
         let isFound = false;
-        for(let fac of faculties){
-            if(fac.FACULTY.trim() === faculty.trim()){
+        for (let fac of faculties) {
+            if (fac.FACULTY.trim() === faculty.trim()) {
                 isFound = true;
             }
         }
-        if(!isFound){
+        if (!isFound) {
             throw new Error('faculty is not found');
         }
         return this.pool.then(pool => {
@@ -210,16 +214,16 @@ class DB {
         })
     }
 
-    deletePulpit = async(pulpit) => {
+    deletePulpit = async (pulpit) => {
         let pulpits = (await this.getPulpits()).recordset;
         let isFound = false;
-        for(let pul of pulpits){
+        for (let pul of pulpits) {
             console.log(pul);
-            if(pul.PULPIT.trim() === pulpit.trim()){
+            if (pul.PULPIT.trim() === pulpit.trim()) {
                 isFound = true;
             }
         }
-        if(!isFound){
+        if (!isFound) {
             throw new Error('pulpit is not found');
         }
         return this.pool.then(pool => {
@@ -232,12 +236,12 @@ class DB {
     deleteSubject = async (subject) => {
         let subjects = (await this.getSubjects()).recordset;
         let isFound = false;
-        for(let sub of subjects){
-            if(sub.SUBJECT.trim() === subject.trim()){
+        for (let sub of subjects) {
+            if (sub.SUBJECT.trim() === subject.trim()) {
                 isFound = true;
             }
         }
-        if(!isFound){
+        if (!isFound) {
             throw new Error('subject is not found');
         }
         return this.pool.then(pool => {
@@ -250,12 +254,12 @@ class DB {
     deleteAuditoriumtype = async (auditoriumtype) => {
         let auditoriumtypes = (await this.getAuditoriumstypes()).recordset;
         let isFound = false;
-        for(let aut of auditoriumtypes){
-            if(aut.AUDITORIUM_TYPE.trim() === auditoriumtype.trim()){
+        for (let aut of auditoriumtypes) {
+            if (aut.AUDITORIUM_TYPE.trim() === auditoriumtype.trim()) {
                 isFound = true;
             }
         }
-        if(!isFound){
+        if (!isFound) {
             throw new Error('auditoriumtype is not found');
         }
         return this.pool.then(pool => {
@@ -267,12 +271,12 @@ class DB {
     deleteAuditorium = async (auditorium) => {
         let auditoriums = (await this.getAuditoriums()).recordset;
         let isFound = false;
-        for(let aud of auditoriums){
-            if(aud.AUDITORIUM.trim() === auditorium.trim()){
+        for (let aud of auditoriums) {
+            if (aud.AUDITORIUM.trim() === auditorium.trim()) {
                 isFound = true;
             }
         }
-        if(!isFound){
+        if (!isFound) {
             throw new Error('auditorium is not found');
         }
         return this.pool.then(pool => {
