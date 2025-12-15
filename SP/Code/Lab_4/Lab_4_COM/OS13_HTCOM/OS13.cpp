@@ -1,6 +1,11 @@
 #include "pch.h"
 #include "OS13.h"
+
+#ifdef _WIN64
 #pragma comment(lib,"../../Lab_4_HT/x64/Debug/Lab_4_HT.lib")
+#else
+#pragma comment(lib,"../../Lab_4_HT/Debug/Lab_4_HT.lib")
+#endif
 
 HRESULT __stdcall OS13::QueryInterface(REFIID riid, void** ppv) {
 	if (!ppv) {
@@ -38,7 +43,7 @@ HRESULT __stdcall OS13::COM_Create(HT::HTHANDLE** ppHandle, int Capacity, int Se
 	return S_OK;
 }
 
-HRESULT __stdcall OS13::COM_Open(HT::HTHANDLE** ppHandle, const char FileName[512])) {
+HRESULT __stdcall OS13::COM_Open(HT::HTHANDLE** ppHandle, const char FileName[512]){
 	*ppHandle = HT::Open(FileName);
 	return S_OK;
 }

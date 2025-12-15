@@ -8,7 +8,7 @@ static const GUID IID_IHT =
 
 __interface IHT :IUnknown {
 	virtual HRESULT __stdcall COM_Create(HT::HTHANDLE** ppHandle, int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char FileName[512])PURE;
-	virtual HRESULT __stdcall COM_Open(HT::HTHANDLE* ppHandle, const char FileName[512])PURE;
+	virtual HRESULT __stdcall COM_Open(HT::HTHANDLE** ppHandle, const char FileName[512])PURE;
 	virtual HRESULT __stdcall COM_Snap(BOOL& rc, HT::HTHANDLE* Handle)PURE;
 	virtual HRESULT __stdcall COM_Close(BOOL& rc, HT::HTHANDLE* Handle)PURE;
 	virtual HRESULT __stdcall COM_Insert(BOOL& rc, HT::HTHANDLE* Handle, HT::Element* Element)PURE;

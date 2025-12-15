@@ -1,8 +1,10 @@
 #pragma once
 #include "Interface.h"
 
-extern long g_cObjects = 0;
-extern long g_cServerLocks = 0;
+//belongs to OS13.
+extern long g_cComponents;
+extern long g_cServerLocks;
+
 
 class OS13 :public IHT {
 public:
@@ -21,11 +23,12 @@ public:
 	virtual HRESULT __stdcall COM_Print(HT::Element* Element);
 
 	OS13() :m_ref(1) {
-		InterlockedIncrement(&g_cObjects);
+		InterlockedIncrement(&g_cComponents);
 	}
 
-	virtual ~OS13() {
-		InterlockedDecrement(&g_cObjects);
+	~OS13() {
+		InterlockedDecrement(&g_cComponents);
+		std::cout << "OS13: Destroying COM component" << std::endl;
 	}
 
 private:

@@ -135,15 +135,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="ClassFactory.h" />
+    <ClInclude Include="Factory.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="Interface.h" />
     <ClInclude Include="OS13.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Registry.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ClassFactory.cpp" />
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="Factory.cpp" />
     <ClCompile Include="OS13.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -151,6 +152,10 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Registry.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="OS13_HTCOM.def" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

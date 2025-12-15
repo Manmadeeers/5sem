@@ -27,7 +27,10 @@
     <ClInclude Include="OS13.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="ClassFactory.h">
+    <ClInclude Include="Factory.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="Registry.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>
@@ -41,8 +44,16 @@
     <ClCompile Include="OS13.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="ClassFactory.cpp">
+    <ClCompile Include="Factory.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="Registry.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="OS13_HTCOM.def">
+      <Filter>Исходные файлы</Filter>
+    </None>
   </ItemGroup>
 </Project>
