@@ -10,10 +10,4 @@
 // Добавьте сюда заголовочные файлы для предварительной компиляции
 #include "framework.h"
 
-// explicit native COM exports — no macro ambiguity
-extern "C" __declspec(dllexport) HRESULT __stdcall DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID* ppv);
-extern "C" __declspec(dllexport) HRESULT __stdcall DllCanUnloadNow();
-extern "C" __declspec(dllexport) HRESULT __stdcall DllRegisterServer();
-extern "C" __declspec(dllexport) HRESULT __stdcall DllUnregisterServer();
-
 #endif //PCH_H

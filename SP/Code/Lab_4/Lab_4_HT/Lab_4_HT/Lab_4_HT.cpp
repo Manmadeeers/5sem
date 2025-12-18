@@ -218,13 +218,16 @@ namespace HT {
             delete handle;
             return NULL;
         }
+        
+        int slot_size = handle->MaxKeyLength + handle->MaxPayloadLength;
+        DWORD file_size = METADATA_OFFSET + (handle->Capacity * slot_size);
 
         handle->FileMapping = CreateFileMappingA(
             handle->File,
             NULL,
             PAGE_READWRITE,
             0,
-            storage_size,
+            file_size,
             "HT_Mapping"
         );
         if (handle->FileMapping == NULL) {
@@ -419,13 +422,10 @@ namespace HT {
             return FALSE;
         }
 
-        {
-            std::lock_guard<std::mutex>lock(thread_mutex);
-        }
-      
-        std::future<BOOL> snapshot_result = std::async(Snap, handle);
+        BOOL snapshot_result = HT::Snap(handle);
+        //std::future<BOOL> snapshot_result = std::async(Snap, handle);
 
-        if (!snapshot_result.get()) {
+        if (!snapshot_result) {
             std::cerr << "Close: failed to take a snapshot. Error code: " << GetLastError() << std::endl;
             return FALSE;
         }
