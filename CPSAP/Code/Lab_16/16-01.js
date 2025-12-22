@@ -206,7 +206,7 @@ const root = {
                 MERGE FACULTY AS target
                 USING (SELECT @id, @name) AS source (id, name)
                 ON (target.FACULTY = source.id)
-                WHEN MATCHED THEN
+                WHEN MATCHED THEN  
                     UPDATE SET FACULTY_NAME = source.name
                 WHEN NOT MATCHED THEN
                     INSERT (FACULTY, FACULTY_NAME) VALUES (source.id, source.name);
@@ -318,6 +318,7 @@ const root = {
     }
 };
 
+//
 const server = http.createServer((req, res) => {
     res.setHeader('Content-Type', 'application/json');
 
