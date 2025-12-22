@@ -39,7 +39,6 @@ const schema = buildSchema(`
         PULPIT: String!
     }
 
-    # Сложные типы для отчетов
     type TEACHERS_BY_FACULTY_RESULT {
         FACULTY: String!
         TEACHERS: [TEACHER]
