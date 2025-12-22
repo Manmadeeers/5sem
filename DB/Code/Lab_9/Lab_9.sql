@@ -492,6 +492,8 @@ declare
 
 --18: delete all auditoriums with capacity less then 20 using an explicit cursor
 
+select count(*) from auditorium;
+
 declare
     vUpperLimit number := 20;
 
@@ -566,37 +568,30 @@ declare
 --20: print all TEACHERS in one looop and devide groups with ---- line
 
 declare
-    cursor cTeach is
-        select teacher, teacher_name, pulpit
-        from teacher;
-
-    vTeach teacher%rowtype;
-    begin
-    dbms_output.put_line('TASK 20');
-    open cTeach;
-    
-    
-    
-    loop
-        fetch cTeach into vTeach;
-        exit when cTeach%notfound;
-     
-        dbms_output.put_line(vTeach.teacher||' '||vTeach.teacher_name||' '||vTeach.pulpit);
-    
-         if mod(cTeach%rowcount,3) = 0 then
-            dbms_output.put_line('--------------------------');
-        end if;
-     
-    end loop;   
-    
-    close cTeach;
-    
-    exception
-    when others then
-        dbms_output.put_line('error = '||sqlerrm);
-        rollback; 
-    end;
-    /
+  cursor cTeach is
+    select teacher, teacher_name, pulpit
+    from teacher;
+  v_teacher     teacher.teacher%TYPE;         -- or appropriate column types
+  v_teacher_name teacher.teacher_name%TYPE;
+  v_pulpit      teacher.pulpit%TYPE;
+begin
+  dbms_output.put_line('TASK 20');
+  open cTeach;
+  loop
+    fetch cTeach into v_teacher, v_teacher_name, v_pulpit;
+    exit when cTeach%notfound;
+    dbms_output.put_line(v_teacher||' '||v_teacher_name||' '||v_pulpit);
+    if mod(cTeach%rowcount,3) = 0 then
+      dbms_output.put_line('--------------------------');
+    end if;
+  end loop;
+  close cTeach;
+exception
+  when others then
+    dbms_output.put_line('error = '||sqlerrm);
+    rollback;
+end;
+/
     
 
 
