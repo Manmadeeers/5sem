@@ -15,6 +15,10 @@ namespace OS13_LIB {
 		BOOL Delete_HT(OS13_HANDLE h, HT::HTHANDLE* Handle, HT::Element* Element);
 		HT::Element* Get_HT(OS13_HANDLE h, HT::HTHANDLE* Handle, HT::Element* Element);
 		void Print_HT(OS13_HANDLE h, HT::Element* Element);
+
+		HT::Element* ConstructInsertElement_HT(OS13_HANDLE h, const void* Key, int KeyLength, const void* Payload, int PayloadLength);
+		HT::Element* ConstructGetElement_HT(OS13_HANDLE h, const void* Key, int KeyLength);
+		HT::Element* ConstructUpdateElement_HT(OS13_HANDLE h, HT::Element* OldElement, const void* NewPayload, int NewPayloadLength);
 	}
 
 	void Dispose(OS13_HANDLE h);

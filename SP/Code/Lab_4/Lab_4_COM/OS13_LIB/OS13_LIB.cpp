@@ -225,3 +225,71 @@ void OS13_LIB::OS13_HTCOM::Print_HT(OS13_HANDLE h, HT::Element* Element) {
 		throw (int)hr0;
 	}
 }
+
+HT::Element* OS13_LIB::OS13_HTCOM::ConstructInsertElement_HT(OS13_HANDLE h, const void* Key, int KeyLength, const void* Payload, int PayloadLength) {
+	HT::Element** ppElement = new HT::Element*;
+
+	HRESULT hr0 = ((IUnknown*)h)->QueryInterface(IID_IHT, (void**)&pIHT);
+	if (SUCCEEDED(hr0)) {
+		HRESULT hr1 = pIHT->COM_ConstructInsertElement(ppElement, Key, KeyLength, Payload, PayloadLength);
+		if (!SUCCEEDED(hr1)) {
+			pIHT->Release();
+			throw (int)hr1;
+			return nullptr;
+		}
+		else {
+			pIHT->Release();
+			return *ppElement;
+		}
+	}
+	else {
+		throw (int)hr0;
+		return nullptr;
+	}
+}
+
+HT::Element* OS13_LIB::OS13_HTCOM::ConstructGetElement_HT(OS13_HANDLE h, const void* Key, int KeyLength) {
+	HT::Element** ppElement = new HT::Element*;
+
+	HRESULT hr0 = ((IUnknown*)h)->QueryInterface(IID_IHT, (void**)&pIHT);
+	if (SUCCEEDED(hr0)) {
+		HRESULT hr1 = pIHT->COM_ConstructGetElement(ppElement, Key, KeyLength);
+		if (!SUCCEEDED(hr1)) {
+			pIHT->Release();
+			throw (int)hr1;
+			return nullptr;
+		}
+		else {
+			pIHT->Release();
+			return *ppElement;
+		}
+	}
+	else {
+		throw (int)hr0;
+		return nullptr;
+	}
+}
+
+HT::Element* OS13_LIB::OS13_HTCOM::ConstructUpdateElement_HT(OS13_HANDLE h, HT::Element* OldElement, const void* NewPayload, int NewPayloadLength) {
+	HT::Element** ppElement = new HT::Element*;
+
+	HRESULT hr0 = ((IUnknown*)h)->QueryInterface(IID_IHT, (void**)&pIHT);
+	if (SUCCEEDED(hr0)) {
+		HRESULT hr1 = pIHT->COM_ConstructUpdateElement(ppElement, OldElement, NewPayload, NewPayloadLength);
+		if (!SUCCEEDED(hr1)) {
+			pIHT->Release();
+			throw (int)hr1;
+			return nullptr;
+		}
+		else {
+			pIHT->Release();
+			return *ppElement;
+		}
+	}
+	else {
+		throw (int)hr0;
+		return nullptr;
+	}
+}
+
+

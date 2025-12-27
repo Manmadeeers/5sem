@@ -82,3 +82,18 @@ HRESULT __stdcall OS13::COM_Print(HT::Element* Element) {
 	HT::Print(Element);
 	return S_OK;
 }
+
+HRESULT __stdcall OS13::COM_ConstructInsertElement(HT::Element** ppElement, const void* Key, int KeyLength, const void* Payload, int PayloadLength) {
+	*ppElement = new HT::Element(Key, KeyLength, Payload, PayloadLength);
+	return S_OK;
+}
+
+HRESULT __stdcall OS13::COM_ConstructGetElement(HT::Element** ppElement, const void* Key, int KeyLength) {
+	*ppElement = new HT::Element(Key, KeyLength);
+	return S_OK;
+}
+
+HRESULT __stdcall OS13::COM_ConstructUpdateElement(HT::Element** ppElement, HT::Element* OldElement, const void* NewPayload, int NewPayloadLength) {
+	*ppElement = new HT::Element(OldElement, NewPayload, NewPayloadLength);
+	return S_OK;
+}
