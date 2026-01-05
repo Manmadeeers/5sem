@@ -896,7 +896,7 @@ namespace HT {
             std::cerr << "Update: function parameters were invalid" << std::endl;
             return FALSE;
         }
-        if (element->KeyLength <= 0 || element->KeyLength >= handle->MaxKeyLength || !element->Payload || element->PayloadLength <= 0 || element->PayloadLength >= handle->MaxPayloadLength) {
+        if (element->KeyLength <= 0 || element->KeyLength > handle->MaxKeyLength || !element->Payload || element->PayloadLength <= 0 || element->PayloadLength > handle->MaxPayloadLength) {
             std::cerr << "Update: Element instance was invalid" << std::endl;
             return FALSE;
         }

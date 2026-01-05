@@ -104,8 +104,11 @@ int main(int argc, char* argv[]) {
 						OS14_LIB::OS14_HTCOM::Print_HT(h, retElement);
 
 						const void* tmp_payload = retElement->Payload;
+					
+
 						int tmp_plength = retElement->PayloadLength;
 						std::string payloadStr(reinterpret_cast<const char*>(tmp_payload), tmp_plength);
+
 						unsigned int retPayload = 0;
 
 						try {
