@@ -14,6 +14,7 @@ namespace OS14_LIB {
 		BOOL Insert_HT(OS14_HANDLE h, HT::HTHANDLE* Handle, HT::Element* Element);
 		BOOL Delete_HT(OS14_HANDLE h, HT::HTHANDLE* Handle, HT::Element* Element);
 		HT::Element* Get_HT(OS14_HANDLE h, HT::HTHANDLE* Handle, HT::Element* Element);
+		BOOL Update_HT(OS14_HANDLE h, HT::HTHANDLE* Handle, HT::Element* OldElement, const void* NewPayload, int NewPayloadLength);
 		void Print_HT(OS14_HANDLE h, HT::Element* Element);
 
 		HT::Element* ConstructInsertElement_HT(OS14_HANDLE h, const void* Key, int KeyLength, const void* Payload, int PayloadLength);
