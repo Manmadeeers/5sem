@@ -335,8 +335,6 @@ namespace HT {
 #pragma endregion
 
 
-#pragma region Main Functionality
-
     HTHANDLE* Create(int Capacity, int SecSnapshotInterval, int MaxKeyLength, int MaxPayloadLength, const char HTUserGroup[512], const char FileName[512]) {
 
         if (CanCreateFor(HTUserGroup)) {
@@ -950,6 +948,3 @@ namespace HT {
 
 
 }
-
-
-#pragma endregion

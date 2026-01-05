@@ -1,0 +1,6 @@
+LIBRARY "OS13_HTCOM"
+EXPORTS
+    DllGetClassObject
+    DllCanUnloadNow
+    DllRegisterServer
+    DllUnregisterServer
