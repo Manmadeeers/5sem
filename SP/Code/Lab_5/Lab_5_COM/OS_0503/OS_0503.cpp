@@ -9,17 +9,16 @@
 #pragma comment(lib,"../Debug/OS14_LIB.lib")
 #endif
 
-
 int main(int argc, char* argv[]) {
-
 	const char* StartEventName = "Global\\Start_Event";
 	const char* StopEventName = "Global\\Stop_Event";
 	const char* SuspendEventName = "Global\\Suspend_Event";
 
-	if (argc < 2||argc>4) {
+	if (argc < 2 || argc>4) {
 		std::cerr << "Usage: ./OS_0502.exe <FileName> OR ./OS_0502.exe <UserName> <Password> <FileName>" << std::endl;
 		return EXIT_FAILURE;
 	}
+
 
 	try {
 		HANDLE hStart = nullptr;
@@ -52,7 +51,6 @@ int main(int argc, char* argv[]) {
 			return EXIT_FAILURE;
 		}
 
-	
 		OS14_HANDLE h = OS14_LIB::Init();
 		HT::HTHANDLE* handle = nullptr;
 
@@ -88,13 +86,13 @@ int main(int argc, char* argv[]) {
 					int rand_key = rand() % 50;
 					std::string s = "key" + std::to_string(rand_key);
 					const char* key = s.c_str();
-					std::string value = "0";
 
-					HT::Element* insertElement = OS14_LIB::OS14_HTCOM::ConstructInsertElement_HT(h, key, (int)strlen(key), value.c_str(), (int)value.size());
-					if (!OS14_LIB::OS14_HTCOM::Insert_HT(h, handle, insertElement)) {
+
+					HT::Element* deleteElement = OS14_LIB::OS14_HTCOM::ConstructGetElement_HT(h, key, (int)strlen(key));
+					if (!OS14_LIB::OS14_HTCOM::Delete_HT(h, handle, deleteElement)) {
 						DWORD err = GetLastError();
 						if (err != 0) {
-							std::cerr << "Insertion failed. Error code: " << err << std::endl;
+							std::cerr << "Deletion failed. Error code: " << err << std::endl;
 						}
 
 
@@ -107,19 +105,20 @@ int main(int argc, char* argv[]) {
 							continue;
 						}
 
-						delete insertElement;
+						delete deleteElement;
 					}
 					else {
-						std::cout << "Inserted: KEY=" << key << "; VALUE=" << value << std::endl;
+						std::cout << "Deleted: KEY=" << key << std::endl;
 					}
 				}
-				
+
 
 				Sleep(1000);
 
 			}
 
 		});
+
 
 		WaitForSingleObject(hStop, INFINITE);
 		std::cout << "Stop event signaled. Exiting the application...";
@@ -132,10 +131,9 @@ int main(int argc, char* argv[]) {
 
 		return EXIT_SUCCESS;
 
-
 	}
 	catch (const char* message) {
-		std::cerr << "Error message: "<<message << std::endl;
+		std::cerr << "Error message: " << message << std::endl;
 	}
 	catch (int code) {
 		std::cerr << "Error code: " << code << std::endl;

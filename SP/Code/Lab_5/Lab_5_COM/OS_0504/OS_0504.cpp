@@ -11,12 +11,11 @@
 
 
 int main(int argc, char* argv[]) {
-
 	const char* StartEventName = "Global\\Start_Event";
 	const char* StopEventName = "Global\\Stop_Event";
 	const char* SuspendEventName = "Global\\Suspend_Event";
 
-	if (argc < 2||argc>4) {
+	if (argc < 2 || argc>4) {
 		std::cerr << "Usage: ./OS_0502.exe <FileName> OR ./OS_0502.exe <UserName> <Password> <FileName>" << std::endl;
 		return EXIT_FAILURE;
 	}
@@ -52,7 +51,6 @@ int main(int argc, char* argv[]) {
 			return EXIT_FAILURE;
 		}
 
-	
 		OS14_HANDLE h = OS14_LIB::Init();
 		HT::HTHANDLE* handle = nullptr;
 
@@ -88,38 +86,61 @@ int main(int argc, char* argv[]) {
 					int rand_key = rand() % 50;
 					std::string s = "key" + std::to_string(rand_key);
 					const char* key = s.c_str();
-					std::string value = "0";
 
-					HT::Element* insertElement = OS14_LIB::OS14_HTCOM::ConstructInsertElement_HT(h, key, (int)strlen(key), value.c_str(), (int)value.size());
-					if (!OS14_LIB::OS14_HTCOM::Insert_HT(h, handle, insertElement)) {
+					HT::Element* getElement = OS14_LIB::OS14_HTCOM::ConstructGetElement_HT(h, key, (int)strlen(key));
+
+					HT::Element* retElement = OS14_LIB::OS14_HTCOM::Get_HT(h, handle, getElement);
+					if (retElement == NULL) {
 						DWORD err = GetLastError();
-						if (err != 0) {
-							std::cerr << "Insertion failed. Error code: " << err << std::endl;
+						if (err == 0 || err == 183) {
+							std::cout << "Element does not exist in a storage" << std::endl;
 						}
-
-
-						if (err == ERROR_INVALID_HANDLE || handle->Addr == NULL) {
-							std::cerr << "Invalid storage indicated. Closing handle and waiting for availability." << std::endl;
-							OS14_LIB::OS14_HTCOM::Close_HT(h, handle);
-							handle = nullptr;
-
-							std::this_thread::sleep_for(std::chrono::milliseconds(200));
-							continue;
+						else {
+							std::cerr << "Get_HT() failed. Error code: " << err << std::endl;
 						}
-
-						delete insertElement;
 					}
 					else {
-						std::cout << "Inserted: KEY=" << key << "; VALUE=" << value << std::endl;
+						std::cout << "Retrieved: ";
+						OS14_LIB::OS14_HTCOM::Print_HT(h, retElement);
+
+						const void* tmp_payload = retElement->Payload;
+						int tmp_plength = retElement->PayloadLength;
+						std::string payloadStr(reinterpret_cast<const char*>(tmp_payload), tmp_plength);
+						unsigned int retPayload = 0;
+
+						try {
+							retPayload = std::stoull(payloadStr);
+
+						}
+						catch (const std::exception& ex) {
+							std::cerr << "Failed to parse payload as integer. Error specific: " << ex.what() << std::endl;
+							return EXIT_FAILURE;
+						}
+
+						retPayload++;
+
+						std::string upd = std::to_string(retPayload);
+						const char* upd_payload = upd.c_str();
+
+						if (!OS14_LIB::OS14_HTCOM::Update_HT(h, handle, retElement, upd_payload, (int)strlen(upd_payload))) {
+							DWORD err = GetLastError();
+							if (err != 0) {
+								std::cerr << "Update() failed. Error: " << err << std::endl;
+							}
+						}
+						else {
+							std::cout << "Element updated. New Payload: " << upd_payload << std::endl;
+						}
 					}
 				}
-				
+
 
 				Sleep(1000);
 
 			}
 
 		});
+
 
 		WaitForSingleObject(hStop, INFINITE);
 		std::cout << "Stop event signaled. Exiting the application...";
@@ -132,10 +153,9 @@ int main(int argc, char* argv[]) {
 
 		return EXIT_SUCCESS;
 
-
 	}
 	catch (const char* message) {
-		std::cerr << "Error message: "<<message << std::endl;
+		std::cerr << "Error message: " << message << std::endl;
 	}
 	catch (int code) {
 		std::cerr << "Error code: " << code << std::endl;

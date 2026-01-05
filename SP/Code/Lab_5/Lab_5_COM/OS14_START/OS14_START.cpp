@@ -2,6 +2,8 @@
 #include <Windows.h>
 #include <conio.h>
 #include <atomic>
+#include <thread>
+#include <chrono>
 #include "../../Lab_5_COM/OS14_LIB/OS14_LIB.h"
 
 #ifdef _WIN64
@@ -13,6 +15,9 @@
 
 static std::atomic<bool>g_stopSnapshot(false);
 
+static HANDLE g_hStart = nullptr;
+static HANDLE g_hStop = nullptr;
+static HANDLE g_hSuspend = nullptr;
 void takeSnapshot(OS14_HANDLE h, HT::HTHANDLE* handle, int snapshot_interval) {
 
 	while (!g_stopSnapshot.load()) {
@@ -25,7 +30,6 @@ void takeSnapshot(OS14_HANDLE h, HT::HTHANDLE* handle, int snapshot_interval) {
 			break;
 		}
 		if (handle) {
-			std::cout << "Snapshot executed" << std::endl;
 			OS14_LIB::OS14_HTCOM::Snap_HT(h, handle);
 		}
 	}
@@ -38,28 +42,41 @@ int main(int argc, char* argv[]) {
 
 	const char* StartEventName = "Global\\Start_Event";
 	const char* StopEventName = "Global\\Stop_Event";
+	const char* SuspendEventName = "Global\\Suspend_Event";
 	try {
-		HANDLE hStart = CreateEventA(
+		g_hStart = CreateEventA(
 			nullptr,
 			TRUE,
 			FALSE,
 			StartEventName
 		);
-		if (!hStart) {
+		if (!g_hStart) {
 			std::cerr << "CreateEventA() for hStart failed. Error code: " << GetLastError() << std::endl;
 			return EXIT_FAILURE;
 		}
 
-		HANDLE hStop = CreateEventA(
+		g_hStop = CreateEventA(
 			nullptr,
 			TRUE,
 			FALSE,
 			StopEventName
 		);
-		if (!hStop) {
+		if (!g_hStop) {
 			std::cerr << "CreateEventA() for hStop failed. Error code: " << GetLastError() << std::endl;
 			return EXIT_FAILURE;
 		}
+
+		g_hSuspend = CreateEventA(
+			nullptr,
+			TRUE,
+			FALSE,
+			SuspendEventName
+		);
+		if (!g_hSuspend) {
+			std::cerr << "CreateEventA() for hSuspend failed. Error code: " << GetLastError() << std::endl;
+			return EXIT_FAILURE;
+		}
+
 
 		std::cout << "Initializing COM component:" << std::endl;
 		OS14_HANDLE h = OS14_LIB::Init();
@@ -95,30 +112,27 @@ int main(int argc, char* argv[]) {
 		}
 
 
-		SetEvent(hStart);
+		SetEvent(g_hStart);
 		std::cout << "Start event signaled. Workers may proceed" << std::endl;
 
 
 		std::thread snapshotThread(takeSnapshot, h, handle, handle->SecSnapshotInterval);
 
-		std::cout << "Press any key to stop..." << std::endl;
-		while (!_kbhit()) {
-			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		std::cout << "Press any key to exit..." << std::endl;
+		while (!kbhit()) {
+			if (WaitForSingleObject(g_hSuspend,0) == WAIT_TIMEOUT) {
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+			}
+			else {
+				system("pause");
+				ResetEvent(g_hSuspend);
+			}
 		}
-		_getch();
+		_getch();	
 
-
-		SetEvent(hStop);
+		SetEvent(g_hStop);
 		std::cout << "Stop event signaled. Workers should close" << std::endl;
 
-		if (hStart) {
-			CloseHandle(hStart);
-			hStart = NULL;
-		}
-		if (hStop) {
-			CloseHandle(hStop);
-			hStop = NULL;
-		}
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(200));
 		g_stopSnapshot.store(true);
@@ -137,7 +151,18 @@ int main(int argc, char* argv[]) {
 		std::cout << std::endl << "Delete COM component and unload DLL if possible" << std::endl;
 		OS14_LIB::Dispose(h);
 
-
+		if (g_hStart) {
+			CloseHandle(g_hStart);
+			g_hStart = nullptr;
+		}
+		if (g_hStop) {
+			CloseHandle(g_hStop);
+			g_hStop = nullptr;
+		}
+		if (g_hSuspend) {
+			CloseHandle(g_hSuspend);
+			g_hSuspend = nullptr;
+		}
 	}
 	catch (const char* message) {
 		std::cerr << "Error message: " << message << std::endl;
