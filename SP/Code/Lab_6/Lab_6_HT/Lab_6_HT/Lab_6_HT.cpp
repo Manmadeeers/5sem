@@ -324,7 +324,14 @@ namespace HT {
         return false;
     }
 
-    bool CanOpenWithoutAuth() {
+
+    bool CanOpenWithoutAuth(const char UserGroup[512]) {
+        if (CurrentUserBelongsToGroup(UserGroup)) {
+            return true;
+        }
+
+        //FOR DEBUG AND DEMO ONLY. 
+        //According to LAb text this function should check wheather the current user belongs to a specified user group or not
         if (CurrentUserBelongsToGroup("Administrators")) {
             return true;
         }
@@ -418,97 +425,97 @@ namespace HT {
     }
 
     HTHANDLE* Open(const char FileName[512]) {
-        if (CanOpenWithoutAuth()) {
-            std::lock_guard<std::mutex>lock(thread_mutex);
-            HTHANDLE* handle = new HTHANDLE();
+        std::lock_guard<std::mutex>lock(thread_mutex);
+        HTHANDLE* handle = new HTHANDLE;
 
-            handle->File = CreateFileA(
-                FileName,
-                GENERIC_READ | GENERIC_WRITE,
-                FILE_SHARE_READ | FILE_SHARE_WRITE,
-                NULL,
-                OPEN_EXISTING,
-                FILE_ATTRIBUTE_NORMAL,
-                NULL
-            );
-            if (handle->File == INVALID_HANDLE_VALUE) {
-                std::cerr << "Open: CreateFileA() for handle->File failed. Error code: " << GetLastError() << std::endl;
-                delete handle;
-                return NULL;
-            }
-
-
-            handle->FileMapping = CreateFileMappingA(
-                handle->File,
-                NULL,
-                PAGE_READWRITE,
-                0,
-                0,
-                "HT_Mapping"
-            );
-            if (handle->FileMapping == NULL) {
-                std::cerr << "Open: CreateFileMappingA() for handle->FileMapping failed. Error code: " << GetLastError() << std::endl;
-                CloseHandle(handle->File);
-                delete handle;
-                return NULL;
-            }
-
-
-            handle->Addr = MapViewOfFile(
-                handle->FileMapping,
-                FILE_MAP_ALL_ACCESS,
-                0,
-                0,
-                0
-            );
-            if (handle->Addr == NULL) {
-                std::cerr << "Open: MapViewOfFile() for handle->Addr failed. Error code: " << GetLastError() << std::endl;
-                CloseHandle(handle->FileMapping);
-                CloseHandle(handle->File);
-                delete handle;
-                return NULL;
-            }
-
-
-            ReadMetadata(handle);
-
-            int slot_size = handle->MaxKeyLength + handle->MaxPayloadLength;
-            char* base = static_cast<char*>(handle->Addr) + METADATA_OFFSET;
-
-            for (int i = 0; i < handle->Capacity; ++i) {
-                char* current_slot = base + (i * slot_size);
-                bool is_empty = true;
-
-                for (int j = 0; j < handle->MaxKeyLength; ++j) {
-                    if (current_slot[j] != 0) {
-                        is_empty = false;
-                        handle->CurrentElements++;
-                        break;
-                    }
-                }
-
-                if (is_empty) {
-                    continue;
-                }
-
-            }
-
-            handle->MutexHandle = CreateOpenProcessMutex(FileName, handle->MutexName, sizeof(handle->MutexName));
-            if (handle->MutexHandle == NULL) {
-                std::cerr << "Open: CreateOpenProcessMutex() for handle->MutexHandle failed. Error code: " << GetLastError() << std::endl;
-                UnmapViewOfFile(handle->Addr);
-                CloseHandle(handle->FileMapping);
-                CloseHandle(handle->File);
-                delete handle;
-                return nullptr;
-            }
-
-
-            return handle;
-        }
-        else {
+        handle->File = CreateFileA(
+            FileName,
+            GENERIC_READ | GENERIC_WRITE,
+            FILE_SHARE_READ | FILE_SHARE_WRITE,
+            NULL,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            NULL
+        );
+        if (handle->File == INVALID_HANDLE_VALUE) {
+            std::cerr << "Open: CreateFileA() for handle->File failed. Error code: " << GetLastError() << std::endl;
+            delete handle;
             return NULL;
         }
+        handle->FileMapping = CreateFileMappingA(
+            handle->File,
+            NULL,
+            PAGE_READWRITE,
+            0,
+            0,
+            "HT_Mapping"
+        );
+        if (handle->FileMapping == NULL) {
+            std::cerr << "Open: CreateFileMappingA() for handle->FileMapping failed. Error code: " << GetLastError() << std::endl;
+            CloseHandle(handle->File);
+            delete handle;
+            return NULL;
+        }
+
+
+        handle->Addr = MapViewOfFile(
+            handle->FileMapping,
+            FILE_MAP_ALL_ACCESS,
+            0,
+            0,
+            0
+        );
+        if (handle->Addr == NULL) {
+            std::cerr << "Open: MapViewOfFile() for handle->Addr failed. Error code: " << GetLastError() << std::endl;
+            CloseHandle(handle->FileMapping);
+            CloseHandle(handle->File);
+            delete handle;
+            return NULL;
+        }
+
+        ReadMetadata(handle);
+        if (!CanOpenWithoutAuth(handle->HTUserGroup)) {
+            std::cerr << "Open(): can not open storage. CanOpenWithoutAuth() returned false" << std::endl;
+            UnmapViewOfFile(handle->Addr);
+            CloseHandle(handle->FileMapping);
+            CloseHandle(handle->File);
+            delete handle;
+            return NULL;
+        }
+
+        int slot_size = handle->MaxKeyLength + handle->MaxPayloadLength;
+        char* base = static_cast<char*>(handle->Addr) + METADATA_OFFSET;
+
+        for (int i = 0; i < handle->Capacity; ++i) {
+            char* current_slot = base + (i * slot_size);
+            bool is_empty = true;
+
+            for (int j = 0; j < handle->MaxKeyLength; ++j) {
+                if (current_slot[j] != 0) {
+                    is_empty = false;
+                    handle->CurrentElements++;
+                    break;
+                }
+            }
+
+            if (is_empty) {
+                continue;
+            }
+
+        }
+
+        handle->MutexHandle = CreateOpenProcessMutex(FileName, handle->MutexName, sizeof(handle->MutexName));
+        if (handle->MutexHandle == NULL) {
+            std::cerr << "Open: CreateOpenProcessMutex() for handle->MutexHandle failed. Error code: " << GetLastError() << std::endl;
+            UnmapViewOfFile(handle->Addr);
+            CloseHandle(handle->FileMapping);
+            CloseHandle(handle->File);
+            delete handle;
+            return nullptr;
+        }
+
+
+        return handle;
     }
 
     HTHANDLE* Open(const char HTUser[256], const char HTPassword[256], const char FileName[512]) {

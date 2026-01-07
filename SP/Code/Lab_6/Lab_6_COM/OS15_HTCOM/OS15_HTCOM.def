@@ -1,0 +1,6 @@
+LIBRARY "OS15_HTCOM"
+EXPORTS
+    DllGetClassObject
+    DllCanUnloadNow
+    DllRegisterServer
+    DllUnregisterServer
