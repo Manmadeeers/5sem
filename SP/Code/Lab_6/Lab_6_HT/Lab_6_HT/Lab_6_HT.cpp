@@ -186,7 +186,7 @@ namespace HT {
 
         char nameBuf[128];
 
-        snprintf(nameBuf, sizeof(nameBuf), "Global\\HT_Mutex_%08X", hash);
+        snprintf(nameBuf, sizeof(nameBuf), "HT_Mutex_%08X", hash);
         nameBuf[sizeof(nameBuf) - 1] = '\0';
 
         if (outNameBuf && outNameBufSize > 0) {

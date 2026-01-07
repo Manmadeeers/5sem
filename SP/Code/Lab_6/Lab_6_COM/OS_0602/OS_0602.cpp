@@ -17,10 +17,10 @@
 
 std::string intToString(int number);
 SECURITY_ATTRIBUTES getSecurityAttributes();
-HANDLE createStopEvent(const wchar_t* stopEventName);
+HANDLE createControlEvent(const wchar_t* baseName, const wchar_t*suffix);
 
 int main(int argc, char* argv[]) {
-	HANDLE hStopEvent = createStopEvent(WIDEPATH);
+	HANDLE hStopEvent = createControlEvent(WIDEPATH,L"-stopEvent");
 
 	try {
 		std::cout << "Initiaizing COM compoment" << std::endl;
@@ -35,6 +35,7 @@ int main(int argc, char* argv[]) {
 		}
 
 		while (WaitForSingleObject(hStopEvent, 0) == WAIT_TIMEOUT) {
+			
 			int numberKey = rand() % 50;
 			std::string key = intToString(numberKey);
 			
@@ -94,16 +95,25 @@ SECURITY_ATTRIBUTES getSecurityAttributes()
 	return SA;
 }
 
-HANDLE createStopEvent(const wchar_t* stopEventName)
+HANDLE createControlEvent(const wchar_t* baseName,const wchar_t*suffix)
 {
-	std::wstring closeEventName = L"Global\\"; closeEventName += stopEventName; closeEventName += L"-stopEvent";
+	std::wstring name = L"Global\\";
+
+	name += baseName;
+
+	name += suffix;
+
 	SECURITY_ATTRIBUTES SA = getSecurityAttributes();
 
-	HANDLE hStopEvent = CreateEvent(
-		&SA,
-		TRUE, //FALSE - автоматический сброс; TRUE - ручной
-		FALSE,
-		closeEventName.c_str());
+	HANDLE hEvent = CreateEvent(
 
-	return hStopEvent;
+		&SA,
+
+		TRUE, // manual-reset
+
+		FALSE, // initially not signaled
+
+		name.c_str());
+
+	return hEvent;
 }
