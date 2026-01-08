@@ -332,9 +332,9 @@ namespace HT {
 
         //FOR DEBUG AND DEMO ONLY. 
         //According to LAb text this function should check wheather the current user belongs to a specified user group or not
-        if (CurrentUserBelongsToGroup("Administrators")) {
+       /* if (CurrentUserBelongsToGroup("Administrators")) {
             return true;
-        }
+        }*/
 
         return false;
     }

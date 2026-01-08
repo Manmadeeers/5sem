@@ -25,6 +25,7 @@ int main(int argc, char* argv[]) {
 		while (!hStart) {
 			hStart = OpenEventA(SYNCHRONIZE, FALSE, StartEventName);
 			if (!hStart) {
+
 				Sleep(200);
 			}
 		}

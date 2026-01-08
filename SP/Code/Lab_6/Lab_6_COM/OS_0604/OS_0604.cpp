@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
 				std::cerr << "Get failed. Element does not exist yet" << std::endl;
 			}
 
-			delete element;
+
 			Sleep(1000);
 		}
 		OS15_LIB::OS15_HTCOM::Close_HT(h, handle);
