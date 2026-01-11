@@ -41,7 +41,8 @@ int main(int argc, char* argv[]) {
 			int numberKey = rand() % 50;
 			std::string key = intToString(numberKey);
 			
-			HT::Element* element = OS15_LIB::OS15_HTCOM::ConstructGetElement_HT(h, key.c_str(), key.length() + 1);
+			HT::Element* Constructedelement = OS15_LIB::OS15_HTCOM::ConstructGetElement_HT(h, key.c_str(), key.length() + 1);
+			HT::Element* element = OS15_LIB::OS15_HTCOM::Get_HT(h, handle, Constructedelement);
 			if (element) {
 				std::cout << "Element with KEY=" << key << " exists!" << std::endl;
 				std::string newPayload = incrementPayload((char*)element->Payload);
