@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
     CreateProcessA(NULL, cmdA, NULL, NULL, FALSE, 0, NULL, NULL, &siA, &piA);
     CreateProcessA(NULL, cmdB, NULL, NULL, FALSE, 0, NULL, NULL, &siB, &piB);
 
-    const char* username = "User-512b44d0";
+    const char* username = "User-ee4aed31";
     int len = strlen(username);
 
     for (int i = 0; i <= 90; i++) {
