@@ -1,0 +1,69 @@
+
+    Подготовка среды (если ещё не выполнено)
+
+    Создайте tablespace и пользователя, если это не сделано (см. ваш основной скрипт).
+    Убедитесь, что у пользователя есть квоты на tablespace TS1..TS4.
+
+    Создание таблиц (из вашего скрипта)
+
+    Выполните DDL для создания таблиц T_RANGE, T_INTERVAL, T_HASH, T_LIST (в точности как в лабораторном коде): create table T_RANGE ( id number, TIME_ID date ) partition by range (id) ( partition p0 values less than (100) tablespace TS1, partition p1 values less than (200) tablespace TS2, partition PMAX values less than (maxvalue) tablespace TS4 );
+
+    create table T_INTERVAL ( id number, TIME_ID date ) tablespace TS1 partition by range (TIME_ID) interval (numtoyminterval(1,'MONTH')) ( partition p1 values less than (date '2024-01-01') );
+
+    create table T_HASH ( code varchar2(10), data varchar2(20) ) tablespace TS2 partition by hash (code) partitions 4;
+
+    create table T_LIST ( status char(1), descr varchar2(20) ) partition by list (status) ( partition p_a values ('A') tablespace TS1, partition p_b values ('B') tablespace TS2, partition p_other values (default) tablespace TS4 );
+
+    Вставка исходных данных
+
+    Выполните вставки и подтвердите транзакцию: insert into T_RANGE values (1, sysdate); insert into T_RANGE values (101, sysdate); insert into T_RANGE values (201, sysdate);
+
+    insert into T_INTERVAL values (1, date '2023-12-01'); insert into T_INTERVAL values (2, date '2024-02-01'); insert into T_INTERVAL values (3, date '2025-03-01');
+
+    insert into T_HASH values ('A1','one'); insert into T_HASH values ('B2','two'); insert into T_HASH values ('C3','three');
+
+    insert into T_LIST values ('A','alpha'); insert into T_LIST values ('B','beta'); insert into T_LIST values ('C','other');
+
+    commit;
+
+    Проверка размещения строк по партициям (до UPDATE)
+
+    Сбор сведений о партициях: select table_name, partition_name, num_rows, high_value from user_tab_partitions where table_name in ('T_RANGE','T_INTERVAL','T_HASH','T_LIST') order by table_name, partition_position;
+    Просмотр содержимого конкретных партиций (пример): select * from T_RANGE partition (p0); select * from T_RANGE partition (p1); select * from T_RANGE partition (PMAX);
+
+    Включение row movement (обязательно перед перемещением)
+
+    Для каждой таблицы, где будет меняться секционирующий столбец: alter table T_RANGE enable row movement; alter table T_INTERVAL enable row movement; alter table T_HASH enable row movement; alter table T_LIST enable row movement;
+    Объяснение: без этой опции Oracle может запретить или не позволить перемещение строки между партициями.
+
+    Выполнение UPDATE — инициирование перемещения строк
+
+    Выполните следующие UPDATE и зафиксируйте: update T_RANGE set id = 250 where id = 1; update T_INTERVAL set TIME_ID = date '2024-02-06' where TIME_ID = date '2023-12-01'; update T_HASH set code = 'Z9' where code = 'A1'; update T_LIST set status = 'A' where descr = 'other';
+
+    commit;
+
+    Ожидаемое поведение:
+        T_RANGE: строка с id=1 должна перейти из партиции p0 в ту партицию, куда попадает id=250 (в вашем случае — PMAX или соответствующая партиция по диапазону).
+        T_INTERVAL: при изменении TIME_ID на дату, находящуюся в другом диапазоне, строка перейдёт в соответствующую партицию; если дата выше существующей границы, возможна автоматическая генерация новой интервальной партиции.
+        T_HASH: значение ключа изменится, строка будет перераспределена хеш‑функцией в другую партицию.
+        T_LIST: строка с descr='other' (раньше в p_other) при смене status на 'A' перейдёт в p_a.
+
+    Немедленная проверка (после COMMIT)
+
+    Просмотрите партиции и содержимое: select * from T_RANGE partition (p0); select * from T_RANGE partition (p1); select * from T_RANGE partition (PMAX);
+
+    select table_name, partition_name, num_rows, high_value from user_tab_partitions where table_name in ('T_RANGE','T_INTERVAL','T_HASH','T_LIST') order by table_name, partition_position;
+
+    Сравните num_rows и содержимое партиций до/после — вы должны увидеть уменьшение/увеличение строк в соответствующих партициях.
+
+    Сбор статистики
+
+    После значимых изменений рекомендуется обновить статистику: exec dbms_stats.gather_table_stats(user, 'T_RANGE'); exec dbms_stats.gather_table_stats(user, 'T_INTERVAL'); exec dbms_stats.gather_table_stats(user, 'T_HASH'); exec dbms_stats.gather_table_stats(user, 'T_LIST');
+
+    Рекомендации и предостережения
+
+    Всегда COMMIT после UPDATE для отображения изменений в других сессиях.
+    Для T_INTERVAL будьте внимательны: при вставке/обновлении дат, выходящих за последний интервал, Oracle автоматически создаёт новую партицию — это может изменить структуру таблицы.
+    Если есть глобальные индексы — операции перемещения строк могут требовать дополнительной поддержки (REBUILD индексов). Локальные индексы обновляются автоматически с меньшими затратами.
+    Для демонстрации учебных ошибок вы можете сначала выполнить UPDATE без ENABLE ROW MOVEMENT — показать отказ/ошибку, затем включить и повторить.
+    Если нужно показать транзакционный эффект, можно выполнить UPDATE, не коммитить, и в отдельной сессии посмотреть, что изменения невидимы до commit — потом commit и показать видимость.
