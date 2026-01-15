@@ -26,7 +26,7 @@ end;
 
 
 --2: Develop a local function that will print the amount of teachers working on a specified pulpit
-create or replace function GET_NUM_TEACHERS(pcode in teacher.pulpit%TYPE)
+declare function GET_NUM_TEACHERS(pcode in teacher.pulpit%TYPE)
 return number is
 counter number;
 cur SYS_REFCURSOR;
