@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{ed91ef7a-491d-4675-8a81-5b26b468a32b}</ProjectGuid>
-    <RootNamespace>ConcurrentServer</RootNamespace>
+    <ProjectGuid>{b154afff-116c-4761-b182-1813fa96a5d4}</ProjectGuid>
+    <RootNamespace>Client</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -123,10 +123,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ConcurrentServer.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="Server.h" />
+    <ClCompile Include="Client.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
